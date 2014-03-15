@@ -830,8 +830,9 @@ static int sky2k_solve(char *lib_dir)
 	struct astrodb_db *db;
 	struct astrodb_solve *solve;
 	struct astrodb_object_set *set;
-	const struct astrodb_object **objects;
-	int ret = 0, table_id, found;
+	struct astrodb_solve_objects *solve_objects;
+	const struct astrodb_object *object;
+	int ret = 0, table_id, found, i, solutions;
 
 	/* set the remote CDS server and initialise local repository/cache */
 	lib = astrodb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
@@ -858,35 +859,48 @@ static int sky2k_solve(char *lib_dir)
 		goto table_err;
 	}
 
-	/* create a fast lookup hash on object HD number and name */
-	astrodb_table_hash_key(db, table_id, "HD");
-	astrodb_table_hash_key(db, table_id, "Name");
-
+	/* create a new set for solver */
 	set = astrodb_table_set_new(db, table_id);
 	if (!set)
 		goto set_err;
-// TODO max mag not addding more tests
+
+	/* set sky area constraints for solver */
 	astrodb_table_set_constraints(set, 60.0, 30.0, 90.0, -2.0, 5.0);
-	//astrodb_table_set_constraints(set, 57.0, 24.0, 5.0, -2.0, 6.0);
+
 	/* we can now solve images */
 	solve = astrodb_solve_new(db, table_id);
 
+	/* set magnitude and distance constraints */
 	astrodb_solve_constraint(solve, ADB_CONSTRAINT_MAG, 6.0, -2.0);
 	astrodb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1, 2.0);
 
+	/* add plate/ccd objects */
 	astrodb_solve_add_plate_object(solve, &pobject[0]);
 	astrodb_solve_add_plate_object(solve, &pobject[1]);
 	astrodb_solve_add_plate_object(solve, &pobject[2]);
 	astrodb_solve_add_plate_object(solve, &pobject[3]);
 
+	/* set image tolerances */
 	astrodb_solve_set_magnitude_delta(solve, 0.25);
-	astrodb_solve_set_distance_delta(solve, 2.0);
-	astrodb_solve_set_pa_delta(solve, 1.0);
+	astrodb_solve_set_distance_delta(solve, 4.0);
+	astrodb_solve_set_pa_delta(solve, 2.0);
 
 	start_timer();
-	found = astrodb_solve(solve, set, ADB_FIND_ALL);
+	found = astrodb_solve(solve, set, ADB_FIND_FIRST);
 	end_timer(found, 0);
 	fprintf(stdout, "found %d prospects\n", found);
+
+	/* dump first set of objects */
+	astrodb_solve_get_solutions(solve, 0, &solve_objects);
+	for (i = 0; i < 4; i++)
+		object_printf(solve_objects->object[i]);
+
+	/* set FoV and mag limits for single object searches */
+	astrodb_solve_prep_solution(solve, 0, 2.0, 8.0);
+
+	/* get subsequent objects */
+	astrodb_solve_get_object(solve, solve_objects, &pobject[4], &object);
+	object_printf(object);
 
 	/* were done with the db */
 	astrodb_solve_free(solve);

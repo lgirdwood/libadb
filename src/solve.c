@@ -76,6 +76,9 @@ struct solve_runtime {
 	/* potential matches after magnitude, distance and PA */
 	struct astrodb_solve_objects pot_pa[MAX_POTENTAL_MATCHES];
 	int num_pot_pa;
+
+	/* target cluster */
+	struct target_object soln_target[MIN_PLATE_OBJECTS];
 };
 
 struct solve_constraint {
@@ -107,9 +110,8 @@ struct astrodb_solve {
 	/* target cluster */
 	struct target_pattern target;
 
-	/* source object storage */
-	const struct astrodb_object **source_objects;
-	int num_source_objects;
+	/* source object set */
+	struct astrodb_source_objects source;
 
 	/* tuning coefficients */
 	double dist_coeff;
@@ -120,6 +122,36 @@ struct astrodb_solve {
 	struct astrodb_solve_objects solve_objects[MAX_RT_SOLUTIONS];
 	int num_solutions;
 };
+
+static inline double dmax(double a, double b)
+{
+	return a > b ? a : b;
+}
+
+static inline double dmin(double a, double b)
+{
+	return a < b ? a : b;
+}
+
+static inline double tri_max(double a, double b, double c)
+{
+	return dmax(dmax(a, b), c);
+}
+
+static inline double quad_max(double a, double b, double c, double d)
+{
+	return dmax(dmax(a, b), dmax(c, d));
+}
+
+static double tri_diff(double a, double b, double c)
+{
+	return tri_max(a, b, c);
+}
+
+static double quad_diff(double a, double b, double c, double d)
+{
+	return quad_max(a, b, c, d);
+}
 
 static int solution_cmp(const void *o1, const void *o2)
 {
@@ -170,7 +202,7 @@ static double get_plate_distance(struct astrodb_pobject *primary,
 	return sqrt((x * x) + (y * y));
 }
 
-/* distance in between two source_objects */
+/* distance in between two astrodb_source_objects */
 static double get_equ_distance(const struct astrodb_object *o1,
 	const struct astrodb_object *o2)
 {
@@ -211,7 +243,17 @@ static double get_plate_pa(struct astrodb_pobject *primary,
 	return atan2(y, x);
 }
 
-/* pposition angle in radians */
+static inline int not_within_fov_fast(struct astrodb_solve *solve,
+		const struct astrodb_object *p, const struct astrodb_object *s)
+{
+	if (fabs(p->posn_mag.ra - s->posn_mag.ra) > solve->constraint.max_fov)
+		return 1;
+	if (fabs(p->posn_mag.dec - s->posn_mag.dec) > solve->constraint.max_fov)
+		return 1;
+	return 0;
+}
+
+/* position angle in radians */
 static double get_equ_pa(const struct astrodb_object *o1,
 		const struct astrodb_object *o2)
 {
@@ -315,9 +357,134 @@ static void create_target_pattern(struct astrodb_solve *solve)
 			t2->pa.plate_actual += 2.0 * M_PI;
 }
 
-/* get a set of source objects to chack the pattern against */
+/* calculate object pattern variables to match against source objects */
+static void create_single_object(struct astrodb_solve *solve, int target,
+	struct astrodb_pobject *primary, struct astrodb_pobject *secondary,
+	struct solve_runtime *runtime, struct astrodb_solve_objects *solve_objects)
+{
+	struct target_object *t = &runtime->soln_target[target];
+
+	t->pobject = secondary;
+
+	/* calculate plate distance and min,max to primary */
+	t->distance.plate_actual = get_plate_distance(primary, secondary);
+	t->distance.pattern_min = solve_objects->rad_per_pix *
+		(t->distance.plate_actual - solve->dist_coeff);
+	t->distance.pattern_max = solve_objects->rad_per_pix *
+		(t->distance.plate_actual + solve->dist_coeff);
+
+	/* calculate plate magnitude and min,max to primary */
+	t->mag.plate_actual = get_plate_mag_diff(primary, secondary);
+	t->mag.pattern_min = t->mag.plate_actual - solve_objects->delta_magnitude;
+	t->mag.pattern_max = t->mag.plate_actual + solve_objects->delta_magnitude;
+
+	/* calculate plate position angle to primary */
+	t->pa.plate_actual = get_plate_pa(primary, secondary);
+}
+
+/* create a pattern of plate targets and sort by magnitude */
+static void create_target_single(struct astrodb_solve *solve,
+	struct astrodb_pobject *pobject,
+	struct astrodb_solve_objects *solve_objects,
+	struct solve_runtime *runtime)
+{
+	struct target_object *t0, *t1, *t2, *t3;
+	int i;
+
+	/* create target pattern - use pobject as primary  */
+	for (i = 0; i < solve->num_plate_objects; i++)
+		create_single_object(solve, i, pobject,
+			&solve->pobject[i], runtime, solve_objects);
+
+	/* work out PA deltas */
+	t0 = &runtime->soln_target[0];
+	t1 = &runtime->soln_target[1];
+	t2 = &runtime->soln_target[2];
+	t3 = &runtime->soln_target[3];
+
+	t0->pa.pattern_min = t1->pa.plate_actual - t0->pa.plate_actual;
+	if (t0->pa.pattern_min < 0.0)
+		t0->pa.pattern_min += 2.0 * M_PI;
+	t0->pa.pattern_max = t0->pa.pattern_min + solve->pa_delta;
+	t0->pa.pattern_min -= solve->pa_delta;
+
+	t1->pa.pattern_min = t2->pa.plate_actual - t1->pa.plate_actual;
+	if (t1->pa.pattern_min < 0.0)
+		t1->pa.pattern_min += 2.0 * M_PI;
+	t1->pa.pattern_max = t1->pa.pattern_min + solve->pa_delta;
+	t1->pa.pattern_min -= solve->pa_delta;
+
+	t2->pa.pattern_min = t3->pa.plate_actual - t2->pa.plate_actual;
+	if (t2->pa.pattern_min < 0.0)
+		t2->pa.pattern_min += 2.0 * M_PI;
+	t2->pa.pattern_max = t2->pa.pattern_min + solve->pa_delta;
+	t2->pa.pattern_min -= solve->pa_delta;
+
+	t3->pa.pattern_min = t0->pa.plate_actual - t3->pa.plate_actual;
+	if (t3->pa.pattern_min < 0.0)
+		t3->pa.pattern_min += 2.0 * M_PI;
+	t3->pa.pattern_max = t3->pa.pattern_min + solve->pa_delta;
+	t3->pa.pattern_min -= solve->pa_delta;
+
+	t0->pa.plate_actual = t0->pa.pattern_min +
+			(t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
+	if (t0->pa.plate_actual < 0.0)
+			t0->pa.plate_actual += 2.0 * M_PI;
+	t1->pa.plate_actual = t1->pa.pattern_min +
+			(t1->pa.pattern_max - t1->pa.pattern_min) / 2.0;
+	if (t1->pa.plate_actual < 0.0)
+			t1->pa.plate_actual += 2.0 * M_PI;
+	t2->pa.plate_actual = t2->pa.pattern_min +
+			(t2->pa.pattern_max - t2->pa.pattern_min) / 2.0;
+	if (t2->pa.plate_actual < 0.0)
+			t2->pa.plate_actual += 2.0 * M_PI;
+	t3->pa.plate_actual = t3->pa.pattern_min +
+			(t3->pa.pattern_max - t3->pa.pattern_min) / 2.0;
+	if (t3->pa.plate_actual < 0.0)
+			t3->pa.plate_actual += 2.0 * M_PI;
+}
+
+/* add matching cluster to list of potentials */
+static void add_pot_on_distance(struct solve_runtime *runtime,
+	const struct astrodb_object *primary,
+	struct astrodb_source_objects *source,
+	int i, int j, int k, double delta, double rad_per_pix)
+{
+	struct astrodb_solve_objects *p;
+
+	if (runtime->num_pot_distance >= MAX_POTENTAL_MATCHES)
+		return;
+
+	p = &runtime->pot_distance[runtime->num_pot_distance];
+
+	p->object[0] = primary;
+	p->object[1] = source->objects[i];
+	p->object[2] = source->objects[j];
+	p->object[3] = source->objects[k];
+	p->delta_distance = delta;
+	p->rad_per_pix = rad_per_pix;
+	runtime->num_pot_distance++;
+}
+
+static void add_single_pot_on_distance(struct solve_runtime *runtime,
+	const struct astrodb_object *primary,
+	struct astrodb_source_objects *source, double delta)
+{
+	struct astrodb_solve_objects *p;
+
+	if (runtime->num_pot_distance >= MAX_POTENTAL_MATCHES)
+		return;
+
+	p = &runtime->pot_distance[runtime->num_pot_distance];
+
+	p->delta_distance = delta;
+	p->object[0] = primary;
+	runtime->num_pot_distance++;
+}
+
+/* get a set of source objects to check the pattern against */
 static int build_and_sort_object_set(struct astrodb_solve *solve,
-	struct astrodb_object_set *set)
+	struct astrodb_object_set *set, struct astrodb_source_objects *source)
 {
 	int object_heads, i, j, count = 0;
 
@@ -326,36 +493,36 @@ static int build_and_sort_object_set(struct astrodb_solve *solve,
 	if (object_heads <= 0)
 		return object_heads;
 
-	/* allocate space for source_objects */
-	solve->source_objects = calloc(set->count, sizeof(struct astrodb_object *));
-	if (solve->source_objects == NULL)
+	/* allocate space for astrodb_source_objects */
+	source->objects = calloc(set->count, sizeof(struct astrodb_object *));
+	if (source->objects == NULL)
 		return -ENOMEM;
 
-	/* copy source_objects ptrs from head set */
+	/* copy astrodb_source_objects ptrs from head set */
 	for (i = 0; i < object_heads; i++) {
 
 		const void *object = set->object_heads[i].objects;
 
 		for (j = 0; j < set->object_heads[i].count; j++)  {
 
-			solve->source_objects[count++] = object;
+			source->objects[count++] = object;
 			object += solve->table->object.bytes;
 		}
 	}
 
-	/* sort source_objects on magnitude */
-	qsort(solve->source_objects, set->count, sizeof(struct astrodb_object *),
+	/* sort astrodb_source_objects on magnitude */
+	qsort(source->objects, set->count, sizeof(struct astrodb_object *),
 		object_cmp);
-	solve->num_source_objects = count;
+	source->num_objects = count;
 
 	return set->count;
 }
 
 /* binary search the set for magnitude head */
-static int bsearch_head(struct astrodb_solve *solve, double value,
-	int start, int end, int idx)
+static int bsearch_head(const struct astrodb_object **astrodb_source_objects,
+	double value, int start, int end, int idx)
 {
-	const struct astrodb_object *object = solve->source_objects[idx];
+	const struct astrodb_object *object = astrodb_source_objects[idx];
 
 	/* search complete */
 	if (end - start < 2)
@@ -363,33 +530,33 @@ static int bsearch_head(struct astrodb_solve *solve, double value,
 
 	/* narrow search */
 	if (object->posn_mag.Vmag > value)
-		return bsearch_head(solve, value, start, idx - 1,
+		return bsearch_head(astrodb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
 	else if (object->posn_mag.Vmag < value)
-		return bsearch_head(solve, value, idx + 1, end,
+		return bsearch_head(astrodb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
 		return idx;
 }
 
 /* get first object with magnitude >= Vmag */
-static int object_get_first_on_mag(struct astrodb_solve *solve,
+static int object_get_first_on_mag(struct astrodb_source_objects *source,
 	double vmag, int start_idx)
 {
 	const struct astrodb_object *object;
 	int idx;
 
-	/* find one of the first source_objects >= vmag  */
-	idx = bsearch_head(solve, vmag, start_idx, solve->num_source_objects - 1,
-		(solve->num_source_objects - 1) / 2);
-	object = solve->source_objects[idx];
+	/* find one of the first astrodb_source_objects >= vmag  */
+	idx = bsearch_head(source->objects, vmag, start_idx,
+		source->num_objects - 1, (source->num_objects - 1) / 2);
+	object = source->objects[idx];
 
 	/* make sure the object is first in the array amongst equals */
 	if (object->posn_mag.Vmag < vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
-		for (idx++; idx < solve->num_source_objects; idx++) {
-			object = solve->source_objects[idx];
+		for (idx++; idx < source->num_objects; idx++) {
+			object = source->objects[idx];
 
 			if (object->posn_mag.Vmag >= vmag)
 				return idx - 1;
@@ -397,7 +564,7 @@ static int object_get_first_on_mag(struct astrodb_solve *solve,
 	} else {
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx--; idx > start_idx; idx--) {
-			object = solve->source_objects[idx];
+			object = source->objects[idx];
 
 			if (object->posn_mag.Vmag < vmag)
 				return idx + 1;
@@ -409,10 +576,10 @@ static int object_get_first_on_mag(struct astrodb_solve *solve,
 }
 
 /* binary search the set for magnitude tail */
-static int bsearch_tail(struct astrodb_solve *solve, double value,
-	int start, int end, int idx)
+static int bsearch_tail(const struct astrodb_object **astrodb_source_objects,
+	double value, int start, int end, int idx)
 {
-	const struct astrodb_object *object = solve->source_objects[idx];
+	const struct astrodb_object *object = astrodb_source_objects[idx];
 
 	/* search complete */
 	if (end - start < 2)
@@ -420,41 +587,41 @@ static int bsearch_tail(struct astrodb_solve *solve, double value,
 
 	/* narrow search */
 	if (object->posn_mag.Vmag > value)
-		return bsearch_tail(solve, value, start, idx - 1,
+		return bsearch_tail(astrodb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
 	else if (object->posn_mag.Vmag < value)
-		return bsearch_tail(solve, value, idx + 1, end,
+		return bsearch_tail(astrodb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
 		return idx;
 }
 
 /* get last object with magnitude <= Vmag */
-static int object_get_last_with_mag(struct astrodb_solve *solve,
-	double vmag, int start_idx)
+static int object_get_last_with_mag(struct astrodb_source_objects *source,
+		double vmag, int start_idx)
 {
 	const struct astrodb_object *object;
 	int idx;
 
-	/* find one of the last source_objects <= vmag  */
-	idx = bsearch_tail(solve, vmag, start_idx, solve->num_source_objects - 1,
-		(solve->num_source_objects - 1) / 2);
-	object = solve->source_objects[idx];
+	/* find one of the last astrodb_source_objects <= vmag  */
+	idx = bsearch_tail(source->objects, vmag, start_idx,
+		source->num_objects - 1, (source->num_objects - 1) / 2);
+	object = source->objects[idx];
 
 	/* make sure the object is last in the array amongst equals */
 	if (object->posn_mag.Vmag > vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx--; idx > start_idx; idx--) {
-			object = solve->source_objects[idx];
+			object = source->objects[idx];
 
 			if (object->posn_mag.Vmag <= vmag)
 				return idx + 1;
 		}
 	} else {
 		/* make sure we return the idx of the object with equal vmag */
-		for (idx++; idx < solve->num_source_objects; idx++) {
-			object = solve->source_objects[idx];
+		for (idx++; idx < source->num_objects; idx++) {
+			object = source->objects[idx];
 
 			if (object->posn_mag.Vmag > vmag)
 				return idx - 1;
@@ -462,7 +629,7 @@ static int object_get_last_with_mag(struct astrodb_solve *solve,
 	}
 
 	/* not found */
-	return solve->num_source_objects - 1;
+	return source->num_objects - 1;
 }
 
 /* compare pattern objects magnitude against source objects */
@@ -472,16 +639,17 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 	struct magnitude_range *range = &runtime->pot_magnitude;
 	struct astrodb_solve *solve = runtime->solve;
 	struct target_object *t = &solve->target.secondary[idx];
+	struct astrodb_source_objects *source = &solve->source;
 	int start, end, pos;
 
 	/* get search start position */
-	pos = object_get_first_on_mag(solve,
-			primary->posn_mag.Vmag - solve->mag_delta, 0);
+	pos = object_get_first_on_mag(source,
+		primary->posn_mag.Vmag - solve->mag_delta, 0);
 
 	/* get start and end indices for secondary vmag */
-	start = object_get_first_on_mag(solve,
+	start = object_get_first_on_mag(source,
 		t->mag.pattern_min + primary->posn_mag.Vmag, pos);
-	end = object_get_last_with_mag(solve,
+	end = object_get_last_with_mag(source,
 		t->mag.pattern_max + primary->posn_mag.Vmag, pos);
 
 	/* both out of range */
@@ -497,38 +665,109 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 	/* is start out of range */
 	range->start[idx] = start;
 
-	/* return number of candidate source_objects based on vmag */
+	/* return number of candidate astrodb_source_objects based on vmag */
 	return range->end[idx] - range->start[idx];
 }
 
-/* add matching cluster to list of potentials */
-static void add_pot_on_distance(struct solve_runtime *runtime,
-	const struct astrodb_object *primary, int i, int j, int k, double delta)
+/* compare pattern objects magnitude against source objects */
+static int solve_single_object_on_magnitude(struct solve_runtime *runtime,
+		struct astrodb_solve_objects *solve_objects,
+		struct astrodb_pobject *pobject)
 {
+	struct magnitude_range *range = &runtime->pot_magnitude;
 	struct astrodb_solve *solve = runtime->solve;
-	struct astrodb_solve_objects *p;
+	struct astrodb_source_objects *source = &solve_objects->source;
+	int start, end;
+	float mag_min, mag_max;
 
-	if (runtime->num_pot_distance >= MAX_POTENTAL_MATCHES)
-		return;
+	mag_min = solve_objects->object[0]->posn_mag.Vmag -
+		get_plate_mag_diff(&solve->pobject[0], pobject);
+	mag_max = solve_objects->object[3]->posn_mag.Vmag +
+		get_plate_mag_diff(&solve->pobject[0], pobject);
 
-	p = &runtime->pot_distance[runtime->num_pot_distance];
+	/* get start and end indices for secondary vmag */
+	start = object_get_first_on_mag(source,
+			mag_min - solve_objects->delta_magnitude, 0);
 
-	p->object[0] = primary;
-	p->object[1] = solve->source_objects[i];
-	p->object[2] = solve->source_objects[j];
-	p->object[3] = solve->source_objects[k];
-	p->delta_distance = delta;
-	runtime->num_pot_distance++;
+	end = object_get_last_with_mag(source,
+			mag_max + solve_objects->delta_magnitude, 0);
+
+	/* both out of range */
+	if (start == end)
+		return 0;
+
+	range->end[0] = end;
+
+	/* no object */
+	if (range->end[0] < start)
+		return 0;
+
+	/* is start out of range */
+	range->start[0] = start;
+
+	/* return number of candidate astrodb_source_objects based on vmag */
+	return range->end[0] - range->start[0];
 }
 
-static inline int not_within_fov_fast(struct astrodb_solve *solve,
-		const struct astrodb_object *p, const struct astrodb_object *s)
+static int solve_single_object_on_distance(struct solve_runtime *runtime,
+	struct astrodb_solve_objects *solve_objects)
 {
-	if (fabs(p->posn_mag.ra - s->posn_mag.ra) > solve->constraint.max_fov)
-		return 1;
-	if (fabs(p->posn_mag.dec - s->posn_mag.dec) > solve->constraint.max_fov)
-		return 1;
-	return 0;
+	const struct astrodb_object *s;
+	struct magnitude_range *range = &runtime->pot_magnitude;
+	int i, count = 0;
+	double distance, diff[4], diverge;
+
+	/* check distance ratio for each matching candidate against targets */
+	runtime->num_pot_distance = 0;
+
+	/* check t0 candidates */
+	for (i = range->start[0]; i < range->end[0]; i++) {
+
+		s = solve_objects->source.objects[i];
+
+		/* plate object to candidate object 0 */
+		distance = get_equ_distance(solve_objects->object[0], s);
+
+		if (distance > runtime->soln_target[0].distance.pattern_max)
+			continue;
+		if (distance < runtime->soln_target[0].distance.pattern_min)
+			continue;
+		diff[0] = distance / runtime->soln_target[0].distance.plate_actual;
+
+		/* plate object to candidate object 1 */
+		distance = get_equ_distance(solve_objects->object[1], s);
+
+		if (distance > runtime->soln_target[1].distance.pattern_max)
+			continue;
+		if (distance < runtime->soln_target[1].distance.pattern_min)
+			continue;
+		diff[1] = distance / runtime->soln_target[1].distance.plate_actual;
+
+		/* plate object to candidate object 2 */
+		distance = get_equ_distance(solve_objects->object[2], s);
+
+		if (distance > runtime->soln_target[2].distance.pattern_max)
+			continue;
+		if (distance < runtime->soln_target[2].distance.pattern_min)
+			continue;
+		diff[2] = distance / runtime->soln_target[2].distance.plate_actual;
+
+		/* plate object to candidate object 3 */
+		distance = get_equ_distance(solve_objects->object[3], s);
+
+		if (distance > runtime->soln_target[3].distance.pattern_max)
+			continue;
+		if (distance < runtime->soln_target[3].distance.pattern_min)
+			continue;
+		diff[3] = distance / runtime->soln_target[3].distance.plate_actual;
+
+		diverge = quad_diff(diff[0], diff[1], diff[2], diff[3]);
+
+		add_single_pot_on_distance(runtime, s, &solve_objects->source, diverge);
+		count++;
+	}
+
+	return count;
 }
 
 /* check magnitude matched objects on pattern distance */
@@ -540,7 +779,7 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 	struct astrodb_solve *solve = runtime->solve;
 	struct magnitude_range *range = &runtime->pot_magnitude;
 	int i, j, k, count = 0;
-	double distance0, distance1, distance2, ratio0;
+	double distance0, distance1, distance2, rad_per_pixel;
 	double t1_min, t1_max, t2_max, t2_min;
 
 	/* check distance ratio for each matching candidate against targets */
@@ -552,7 +791,7 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 	/* check t0 candidates */
 	for (i = range->start[0]; i < range->end[0]; i++) {
 
-		s[0] = solve->source_objects[i];
+		s[0] = solve->source.objects[i];
 		if (s[0] == primary)
 			continue;
 
@@ -565,16 +804,16 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 		if (distance0 > solve->constraint.max_fov)
 			continue;
 
-		ratio0 = distance0 / t0->distance.plate_actual;
+		rad_per_pixel = distance0 / t0->distance.plate_actual;
 
 		/* use ratio based on t0 <-> primary distance for t1 */
-		t1_min = t1->distance.pattern_min * ratio0;
-		t1_max = t1->distance.pattern_max * ratio0;
+		t1_min = t1->distance.pattern_min * rad_per_pixel;
+		t1_max = t1->distance.pattern_max * rad_per_pixel;
 
 		/* check each t1 candidates against t0 <-> primary distance ratio */
 		for (j = range->start[1]; j < range->end[1]; j++) {
 
-			s[1] = solve->source_objects[j];
+			s[1] = solve->source.objects[j];
 			if (s[0] == s[1] || s[1] == primary)
 				continue;
 
@@ -590,13 +829,13 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 			/* is this t1 candidate within t0 primary ratio */
 			if (distance1 >= t1_min && distance1 <= t1_max) {
 
-				t2_min = t2->distance.pattern_min * ratio0;
-				t2_max = t2->distance.pattern_max * ratio0;
+				t2_min = t2->distance.pattern_min * rad_per_pixel;
+				t2_max = t2->distance.pattern_max * rad_per_pixel;
 
 				/* check t2 candidates */
 				for (k = range->start[2]; k < range->end[2]; k++) {
 
-					s[2] = solve->source_objects[k];
+					s[2] = solve->source.objects[k];
 					if (s[0] == s[2] || s[1] == s[2] || s[2] == primary)
 						continue;
 
@@ -616,10 +855,10 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 						ratio1 = distance1 / t1->distance.plate_actual;
 						ratio2 = distance2 / t2->distance.plate_actual;
 
-						delta = fabs(ratio0 -
-							((ratio0 + ratio1 + ratio2) / 3.0));
+						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
 
-						add_pot_on_distance(runtime, primary, i, j, k, delta);
+						add_pot_on_distance(runtime, primary, &solve->source,
+							i, j, k, delta, rad_per_pixel);
 						count++;
 					}
 				}
@@ -655,7 +894,8 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 	t2 = &solve->target.secondary[2];
 
 	/* for each potential cluster */
-	for (i = runtime->num_pot_distance_checked; i < runtime->num_pot_distance; i++) {
+	for (i = runtime->num_pot_distance_checked;
+		i < runtime->num_pot_distance; i++) {
 
 		p = &runtime->pot_distance[i];
 
@@ -683,14 +923,75 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 		if (pa_delta31 < t2->pa.pattern_min || pa_delta31 > t2->pa.pattern_max)
 			continue;
 
-		delta = (fabs(pa_delta12 - t0->pa.plate_actual) +
-				fabs(pa_delta23 - t1->pa.plate_actual) +
-				fabs(pa_delta31 - t2->pa.plate_actual)) / 3.0;
+		delta = tri_diff(pa_delta12 - t0->pa.plate_actual,
+				pa_delta23 - t1->pa.plate_actual,
+				pa_delta31 - t2->pa.plate_actual);
 		add_pot_on_pa(runtime, p, delta);
 		count++;
 	}
 
 	runtime->num_pot_distance_checked = runtime->num_pot_distance;
+	return count;
+}
+
+static int solve_single_object_on_pa(struct solve_runtime *runtime,
+	struct astrodb_solve_objects *solve_objects)
+{
+	struct astrodb_solve_objects *p;
+	double pa0, pa1, pa2, pa3;
+	double pa_delta01, pa_delta12, pa_delta23, pa_delta30, delta;
+	int i, count = 0;
+
+	/* for each potential cluster */
+	for (i = 0; i < runtime->num_pot_distance; i++) {
+
+		p = &runtime->pot_distance[i];
+
+		/* check object against 0 -> 1 */
+		pa0 = get_equ_pa(p->object[0], solve_objects->object[0]);
+		pa1 = get_equ_pa(p->object[0], solve_objects->object[1]);
+		pa_delta01 = pa0 - pa1;
+		if (pa_delta01 < 0.0)
+			pa_delta01 += 2.0 * M_PI;
+		if (pa_delta01 < runtime->soln_target[0].pa.pattern_min ||
+			pa_delta01 > runtime->soln_target[0].pa.pattern_max)
+			continue;
+
+		/* check object against 1 -> 2 */
+		pa2 = get_equ_pa(p->object[0], solve_objects->object[2]);
+		pa_delta12 = pa1 - pa2;
+		if (pa_delta12 < 0.0)
+			pa_delta12 += 2.0 * M_PI;
+		if (pa_delta12 < runtime->soln_target[1].pa.pattern_min ||
+			pa_delta12 > runtime->soln_target[1].pa.pattern_max)
+			continue;
+
+		/* check object against 2 -> 3 */
+		pa3 = get_equ_pa(p->object[0], solve_objects->object[3]);
+		pa_delta23 = pa2 - pa3;
+		if (pa_delta23 < 0.0)
+			pa_delta23 += 2.0 * M_PI;
+		if (pa_delta23 < runtime->soln_target[2].pa.pattern_min ||
+			pa_delta23 > runtime->soln_target[2].pa.pattern_max)
+			continue;
+
+		/* check object against 3 -> 0 */
+		pa_delta30 = pa3 - pa0;
+		if (pa_delta30 < 0.0)
+			pa_delta30 += 2.0 * M_PI;
+
+		if (pa_delta30 < runtime->soln_target[3].pa.pattern_min ||
+			pa_delta30 > runtime->soln_target[3].pa.pattern_max)
+			continue;
+
+		delta = quad_diff(pa_delta01 - runtime->soln_target[0].pa.plate_actual,
+				pa_delta12 - runtime->soln_target[1].pa.plate_actual,
+				pa_delta23 - runtime->soln_target[2].pa.plate_actual,
+				pa_delta30 - runtime->soln_target[3].pa.plate_actual);
+		add_pot_on_pa(runtime, p, delta);
+		count++;
+	}
+
 	return count;
 }
 
@@ -720,6 +1021,49 @@ static void calc_cluster_divergence(struct solve_runtime *runtime)
 			(calc_magnitude_deltas(runtime, i, 0) +
 			calc_magnitude_deltas(runtime, i, 1) +
 			calc_magnitude_deltas(runtime, i, 2)) / 3.0;
+
+		runtime->pot_pa[i].divergance =
+			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
+			runtime->pot_pa[i].delta_distance * DELTA_DIST_COEFF +
+			runtime->pot_pa[i].delta_pa * DELTA_PA_COEFF;
+		printf("div %f mag %f dist %9.9f pa %f\n",
+			runtime->pot_pa[i].divergance,
+			runtime->pot_pa[i].delta_magnitude,
+			runtime->pot_pa[i].delta_distance,
+			runtime->pot_pa[i].delta_pa);
+	}
+}
+
+static double calc_single_magnitude_deltas(struct solve_runtime *runtime,
+	int pot, int idx, struct astrodb_solve_objects *solve_objects,
+	struct astrodb_pobject *pobject)
+{
+	struct astrodb_solve *solve = runtime->solve;
+	struct astrodb_solve_objects *s = &runtime->pot_pa[pot];
+	double plate_diff, db_diff;
+
+	plate_diff = get_plate_mag_diff(&solve->pobject[idx], pobject);
+
+	db_diff = solve_objects->object[idx]->posn_mag.Vmag -
+			s->object[0]->posn_mag.Vmag;
+
+	return plate_diff - db_diff;
+}
+
+static void calc_object_divergence(struct solve_runtime *runtime,
+		struct astrodb_solve_objects *solve_objects,
+		struct astrodb_pobject *pobject)
+{
+	int i;
+
+	/* calculate differences in magnitude from DB and plate objects */
+	for (i = 0; i < runtime->num_pot_pa; i++) {
+
+		runtime->pot_pa[i].delta_magnitude =
+			(calc_single_magnitude_deltas(runtime, i, 0, solve_objects, pobject) +
+			calc_single_magnitude_deltas(runtime, i, 1, solve_objects, pobject) +
+			calc_single_magnitude_deltas(runtime, i, 2, solve_objects, pobject) +
+			calc_single_magnitude_deltas(runtime, i, 3, solve_objects, pobject)) / 4.0;
 
 		runtime->pot_pa[i].divergance =
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
@@ -768,6 +1112,7 @@ static void copy_solution(struct solve_runtime *runtime)
 		soln->delta_distance = runtime->pot_pa[i].delta_distance;
 		soln->delta_magnitude = runtime->pot_pa[i].delta_magnitude;
 		soln->delta_pa = runtime->pot_pa[i].delta_pa;
+		soln->rad_per_pix = runtime->pot_pa[i].rad_per_pix;
 		soln->object[0] = runtime->pot_pa[i].object[0];
 		soln->object[1] = runtime->pot_pa[i].object[1];
 		soln->object[2] = runtime->pot_pa[i].object[2];
@@ -790,7 +1135,7 @@ static int try_object_as_primary(struct astrodb_solve *solve,
 	runtime.num_pot_pa = 0;
 	runtime.solve = solve;
 
-	/* find secondary candidate source_objects on magnitude */
+	/* find secondary candidate astrodb_source_objects on magnitude */
 	for (i = 0; i < MIN_PLATE_OBJECTS - 1; i++) {
 		count = solve_object_on_magnitude(&runtime, primary, i);
 		if (!count)
@@ -825,8 +1170,8 @@ static int solve_plate_cluster_for_set_all(struct astrodb_solve *solve,
 
 	/* attempt to solve for each object in set */
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:count)
-	for (i = 0; i < solve->num_source_objects; i++)
-		count += try_object_as_primary(solve, solve->source_objects[i], i);
+	for (i = 0; i < solve->source.num_objects; i++)
+		count += try_object_as_primary(solve, solve->source.objects[i], i);
 
 	qsort(solve->solve_objects, count,
 			sizeof(struct astrodb_solve_objects), solution_cmp);
@@ -841,12 +1186,12 @@ static int solve_plate_cluster_for_set_first(struct astrodb_solve *solve,
 
 	/* attempt to solve for each object in set */
 #pragma omp parallel for schedule(dynamic, 10)
-	for (i = 0; i < solve->num_source_objects; i++) {
+	for (i = 0; i < solve->source.num_objects; i++) {
 
 		if (count)
 			continue;
 
-		if (try_object_as_primary(solve, solve->source_objects[i], i)) {
+		if (try_object_as_primary(solve, solve->source.objects[i], i)) {
 			count = 1;
 /* TODO OpenMP cancel is supported in gcc 4.9 */
 /* #pragma omp cancel for */
@@ -893,7 +1238,7 @@ struct astrodb_solve *astrodb_solve_new(struct astrodb_db *db, int table_id)
 
 void astrodb_solve_free(struct astrodb_solve *solve)
 {
-	free(solve->source_objects);
+	free(solve->source.objects);
 	free(solve);
 }
 
@@ -901,7 +1246,8 @@ int astrodb_solve_add_plate_object(struct astrodb_solve *solve,
 				struct astrodb_pobject *pobject)
 {
 	if (solve->num_plate_objects == ADB_NUM_TARGETS - 1) {
-		adb_error(solve->db, "too many source_objects %d\n", ADB_NUM_TARGETS);
+		adb_error(solve->db, "too many astrodb_source_objects %d\n",
+			ADB_NUM_TARGETS);
 		return -EINVAL;
 	}
 
@@ -955,20 +1301,20 @@ int astrodb_solve_constraint(struct astrodb_solve *solve,
 *
 */
 int astrodb_solve(struct astrodb_solve *solve,
-				struct astrodb_object_set *set, enum astrodb_find find)
+		struct astrodb_object_set *set, enum astrodb_find find)
 {
 	int ret;
 
-	/* do we have enough plate source_objects to solve */
+	/* do we have enough plate astrodb_source_objects to solve */
 	if (solve->num_plate_objects < MIN_PLATE_OBJECTS) {
-		adb_error(solve->db, "not enough plate source_objects, need %d have %d\n",
+		adb_error(solve->db, "not enough plate astrodb_source_objects, need %d have %d\n",
 			MIN_PLATE_OBJECTS, solve->num_plate_objects);
 		return -EINVAL;
 	}
 
 	create_target_pattern(solve);
 
-	ret = build_and_sort_object_set(solve, set);
+	ret = build_and_sort_object_set(solve, set, &solve->source);
 	if (ret <= 0) {
 		adb_error(solve->db, "cant get trixels %d\n", ret);
 		return ret;
@@ -1015,27 +1361,113 @@ int astrodb_solve_get_solutions(struct astrodb_solve *solve,
 	return 0;
 }
 
+int astrodb_solve_prep_solution(struct astrodb_solve *solve,
+		unsigned int solution, double fov, double mag_limit)
+{
+	struct astrodb_solve_objects *solve_objects;
+	struct astrodb_object_set *set;
+	double centre_ra, centre_dec;
+	int object_heads, i, count = 0, j;
+
+	if (solution >= solve->num_solutions)
+		return -EINVAL;
+
+	solve_objects = &solve->solve_objects[solution];
+	set = solve_objects->set;
+
+	//if (set)
+	//	free(set);
+
+	centre_ra = solve_objects->object[0]->posn_mag.ra;
+	centre_dec = solve_objects->object[0]->posn_mag.dec;
+
+	/* create new set based on image fov and mag limits */
+	set = astrodb_table_set_new(solve->db, solve->table->id);
+	if (!set)
+		return -ENOMEM;
+	solve_objects->set = set;
+
+	astrodb_table_set_constraints(set, centre_ra * R2D, centre_dec *R2D,
+			fov, -10.0, mag_limit);
+
+	/* get object heads */
+	object_heads = astrodb_table_set_get_objects(set);
+	if (object_heads <= 0) {
+		free(set);
+		solve_objects->set = NULL;
+		return object_heads;
+	}
+
+	/* allocate space for astrodb_source_objects */
+	solve_objects->source.objects =
+		calloc(set->count, sizeof(struct astrodb_object *));
+	if (solve_objects->source.objects == NULL) {
+		free(set);
+		solve_objects->set = NULL;
+		return -ENOMEM;
+	}
+
+	/* copy astrodb_source_objects ptrs from head set */
+	for (i = 0; i < object_heads; i++) {
+
+		const void *object = set->object_heads[i].objects;
+
+		for (j = 0; j < set->object_heads[i].count; j++)  {
+			solve_objects->source.objects[count++] = object;
+			object += solve->table->object.bytes;
+		}
+	}
+
+	/* sort astrodb_source_objects on magnitude */
+	qsort(solve_objects->source.objects, set->count,
+		sizeof(struct astrodb_object *), object_cmp);
+	solve_objects->source.num_objects = count;
+
+	return 0;
+}
+
 int astrodb_solve_get_object(struct astrodb_solve *solve,
 	struct astrodb_solve_objects *solve_objects,
 	struct astrodb_pobject *pobject, const struct astrodb_object **object)
 {
-	/* sanity checks on inputs */
-	if (solve_objects == NULL)
-		return -EINVAL;
-	if (pobject == NULL)
-		return -EINVAL;
-	if (object == NULL)
+	struct solve_runtime runtime;
+	int count = 0;
+
+	if (solve_objects->set == NULL)
 		return -EINVAL;
 
-	// add object to plate
+	runtime.num_pot_distance = 0;
+	runtime.num_pot_distance_checked = 0;
+	runtime.num_pot_pa = 0;
+	runtime.solve = solve;
 
-	// calc differences to other plate objects
+	/* calculate plate parameters for new object */
+	create_target_single(solve, pobject, solve_objects, &runtime);
 
-	// search set on mag
+	/* find candidate astrodb_source_objects on magnitude */
+	count = solve_single_object_on_magnitude(&runtime, solve_objects, pobject);
+	if (!count)
+		return 0;
 
-	// search on distance
+	/* at this point we have a range of candidate stars that match the
+	 * magnitude bounds of the plate object now check for distance alignment */
+	count = solve_single_object_on_distance(&runtime, solve_objects);
+	if (!count)
+		return 0;
 
-	// search on PA
+	/* At this point we have a list of objects that match on magnitude and
+	 * distance, so we finally check the objects for PA alignment*/
+	count = solve_single_object_on_pa(&runtime, solve_objects);
+	if (!count)
+		return 0;
 
-	return 0;
+	calc_object_divergence(&runtime, solve_objects, pobject);
+
+	/* it's possible we may have > 1 solution so order them */
+	qsort(solve->solve_objects, count,
+		sizeof(struct astrodb_solve_objects), solution_cmp);
+
+	/* assign closest object */
+	*object = runtime.pot_pa[0].object[0];
+	return count;
 }

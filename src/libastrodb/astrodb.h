@@ -564,6 +564,11 @@ enum astrodb_find {
 	ADB_FIND_FIRST,
 };
 
+struct astrodb_source_objects {
+	const struct astrodb_object **objects;
+	int num_objects;
+};
+
 /*! \struct astrodb_solve_objects
  * \brief Solved objects
  * \ingroup solve
@@ -571,10 +576,16 @@ enum astrodb_find {
 struct astrodb_solve_objects {
 	/* in order of brightness */
 	const struct astrodb_object *object[ADB_NUM_TARGETS];
+
+	/* source object storage */
+	struct astrodb_source_objects source;
+	struct astrodb_object_set *set;
+
 	double delta_pa;
 	double delta_distance;
 	double delta_magnitude;
 	double divergance;
+	double rad_per_pix;
 };
 
 struct astrodb_solve;
@@ -639,6 +650,9 @@ int astrodb_solve_get_solutions(struct astrodb_solve *solve,
 int astrodb_solve_get_object(struct astrodb_solve *solve,
 	struct astrodb_solve_objects *solve_objects,
 	struct astrodb_pobject *pobject, const struct astrodb_object **object);
+
+int astrodb_solve_prep_solution(struct astrodb_solve *solve,
+		unsigned int solution, double fov, double mag_limit);
 
 #ifdef __cplusplus
 };
