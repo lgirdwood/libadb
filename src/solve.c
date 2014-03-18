@@ -143,14 +143,19 @@ static inline double quad_max(double a, double b, double c, double d)
 	return dmax(dmax(a, b), dmax(c, d));
 }
 
-static double tri_diff(double a, double b, double c)
+static inline double tri_diff(double a, double b, double c)
 {
 	return tri_max(a, b, c);
 }
 
-static double quad_diff(double a, double b, double c, double d)
+static inline double quad_diff(double a, double b, double c, double d)
 {
 	return quad_max(a, b, c, d);
+}
+
+static inline float quad_avg(float a, float b, float c, float d)
+{
+	return (a + b + c + d) / 4.0;
 }
 
 static int solution_cmp(const void *o1, const void *o2)
@@ -229,6 +234,24 @@ static double get_plate_mag_diff(struct astrodb_pobject *primary,
 	double s_adu = secondary->adu, p_adu = primary->adu;
 
 	return -2.5 * log10(s_adu / p_adu);
+}
+
+static float get_plate_magnitude(struct astrodb_solve *solve,
+	struct astrodb_solve_objects *solve_objects,
+	struct astrodb_pobject *primary)
+{
+	float delta[4];
+
+	delta[0] = solve_objects->object[0]->posn_mag.Vmag +
+		get_plate_mag_diff(&solve->pobject[0], primary);
+	delta[1] = solve_objects->object[0]->posn_mag.Vmag +
+		get_plate_mag_diff(&solve->pobject[1], primary);
+	delta[2] = solve_objects->object[0]->posn_mag.Vmag +
+		get_plate_mag_diff(&solve->pobject[2], primary);
+	delta[3] = solve_objects->object[0]->posn_mag.Vmag +
+		get_plate_mag_diff(&solve->pobject[3], primary);
+
+	return quad_avg(delta[0], delta[1], delta[2], delta[3]);
 }
 
 /* position angle in radians relative to plate north */
@@ -678,12 +701,12 @@ static int solve_single_object_on_magnitude(struct solve_runtime *runtime,
 	struct astrodb_solve *solve = runtime->solve;
 	struct astrodb_source_objects *source = &solve_objects->source;
 	int start, end;
-	float mag_min, mag_max;
+	float mag_min, mag_max, plate_mag;
 
-	mag_min = solve_objects->object[0]->posn_mag.Vmag -
-		get_plate_mag_diff(&solve->pobject[0], pobject);
-	mag_max = solve_objects->object[3]->posn_mag.Vmag +
-		get_plate_mag_diff(&solve->pobject[0], pobject);
+	plate_mag = get_plate_magnitude(solve, solve_objects, pobject);
+
+	mag_min = plate_mag - solve_objects->delta_magnitude;
+	mag_max = plate_mag + solve_objects->delta_magnitude;
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
@@ -1026,28 +1049,12 @@ static void calc_cluster_divergence(struct solve_runtime *runtime)
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
 			runtime->pot_pa[i].delta_distance * DELTA_DIST_COEFF +
 			runtime->pot_pa[i].delta_pa * DELTA_PA_COEFF;
-		printf("div %f mag %f dist %9.9f pa %f\n",
+		printf("** cluster div %f mag %f dist %9.9f pa %f\n",
 			runtime->pot_pa[i].divergance,
 			runtime->pot_pa[i].delta_magnitude,
 			runtime->pot_pa[i].delta_distance,
 			runtime->pot_pa[i].delta_pa);
 	}
-}
-
-static double calc_single_magnitude_deltas(struct solve_runtime *runtime,
-	int pot, int idx, struct astrodb_solve_objects *solve_objects,
-	struct astrodb_pobject *pobject)
-{
-	struct astrodb_solve *solve = runtime->solve;
-	struct astrodb_solve_objects *s = &runtime->pot_pa[pot];
-	double plate_diff, db_diff;
-
-	plate_diff = get_plate_mag_diff(&solve->pobject[idx], pobject);
-
-	db_diff = solve_objects->object[idx]->posn_mag.Vmag -
-			s->object[0]->posn_mag.Vmag;
-
-	return plate_diff - db_diff;
 }
 
 static void calc_object_divergence(struct solve_runtime *runtime,
@@ -1058,18 +1065,15 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 
 	/* calculate differences in magnitude from DB and plate objects */
 	for (i = 0; i < runtime->num_pot_pa; i++) {
-
 		runtime->pot_pa[i].delta_magnitude =
-			(calc_single_magnitude_deltas(runtime, i, 0, solve_objects, pobject) +
-			calc_single_magnitude_deltas(runtime, i, 1, solve_objects, pobject) +
-			calc_single_magnitude_deltas(runtime, i, 2, solve_objects, pobject) +
-			calc_single_magnitude_deltas(runtime, i, 3, solve_objects, pobject)) / 4.0;
+			fabs(get_plate_magnitude(runtime->solve, solve_objects, pobject) -
+			runtime->pot_pa[0].object[0]->posn_mag.Vmag);
 
 		runtime->pot_pa[i].divergance =
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
 			runtime->pot_pa[i].delta_distance * DELTA_DIST_COEFF +
 			runtime->pot_pa[i].delta_pa * DELTA_PA_COEFF;
-		printf("div %f mag %f dist %9.9f pa %f\n",
+		printf("** object div %f mag %f dist %9.9f pa %f\n",
 			runtime->pot_pa[i].divergance,
 			runtime->pot_pa[i].delta_magnitude,
 			runtime->pot_pa[i].delta_distance,
