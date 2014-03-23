@@ -44,13 +44,13 @@
 
 struct adb_search_branch;
 
-/*! \typedef struct astrodb_search
+/*! \typedef struct adb_search
  * \ingroup search
  * \brief Search object
  */
-struct astrodb_search {
-	struct astrodb_db *db;
-	struct astrodb_table *table;
+struct adb_search {
+	struct adb_db *db;
+	struct adb_table *table;
 
 	int test_count;         		/*!< number of search test_count */
 	int hit_count;			/*!< number of search hit_count */
@@ -66,14 +66,14 @@ struct astrodb_search {
 	struct adb_search_branch *start_branch;
 	int search_test_count;		/*!< number of search nodes */
 
-	const struct astrodb_object **objects;	/*!< search result objects */
+	const struct adb_object **objects;	/*!< search result objects */
 };
 
 /* compares <data> with <value> using <comparator_t> */
 typedef int (*comparator_t)(void *data, void *value);
 
 /* operation on  nodes / lists */
-typedef int (*operator_t)(const struct astrodb_object *object,
+typedef int (*operator_t)(const struct adb_object *object,
 		struct adb_search_branch *, int num);
 
 struct adb_search_branch {
@@ -184,7 +184,7 @@ static int string_eq_wildcard_comp(void *data, void *value)
 }
 
 /*  test list operators, operate on list of struct adb_search_branch's */
-static int test_AND_comp(const struct astrodb_object *object,
+static int test_AND_comp(const struct adb_object *object,
 		struct adb_search_branch *branch, int num)
 {
 	struct adb_search_branch *test = branch->branch[--num];
@@ -198,7 +198,7 @@ static int test_AND_comp(const struct astrodb_object *object,
 	return test->compare(ptr + test->offset, test->value);
 }
 
-static int test_OR_comp(const struct astrodb_object *object,
+static int test_OR_comp(const struct adb_object *object,
 		struct adb_search_branch *branch, int num)
 {
 	struct adb_search_branch *test = branch->branch[--num];
@@ -213,7 +213,7 @@ static int test_OR_comp(const struct astrodb_object *object,
 }
 
 /*  test list operators, operate on list of struct adb_search_branch's */
-static int test_AND_oper(const struct astrodb_object *object,
+static int test_AND_oper(const struct adb_object *object,
 		struct adb_search_branch *branch, int num)
 {
 	struct adb_search_branch *test = branch->branch[--num];
@@ -226,7 +226,7 @@ static int test_AND_oper(const struct astrodb_object *object,
 	return test->operator(object, test, test->test_count);
 }
 
-static int test_OR_oper(const struct astrodb_object *object,
+static int test_OR_oper(const struct adb_object *object,
 		struct adb_search_branch *branch, int num)
 {
 	struct adb_search_branch *test = branch->branch[--num];
@@ -238,8 +238,8 @@ static int test_OR_oper(const struct astrodb_object *object,
 	return test->operator(object, test, test->test_count);
 }
 
-static comparator_t get_comparator(enum astrodb_comparator comp,
-	astrodb_ctype ctype)
+static comparator_t get_comparator(enum adb_comparator comp,
+	adb_ctype ctype)
 {
 	switch (ctype) {
 	case ADB_CTYPE_INT:
@@ -305,21 +305,21 @@ static comparator_t get_comparator(enum astrodb_comparator comp,
 	return NULL;
 }
 
-/*! \fn astrodb_search* astrodb_search_new(astrodb_table *table)
+/*! \fn adb_search* adb_search_new(adb_table *table)
  * \param table dataset
- * \returns astrodb_search object on success or NULL on failure
+ * \returns adb_search object on success or NULL on failure
  *
  * Creates an new search object
  */
-struct astrodb_search *astrodb_search_new(struct astrodb_db *db, int table_id)
+struct adb_search *adb_search_new(struct adb_db *db, int table_id)
 {
-	struct astrodb_table *table = &db->table[table_id];
-	struct astrodb_search *search;
+	struct adb_table *table = &db->table[table_id];
+	struct adb_search *search;
 
 	if (table_id < 0 || table_id > db->table_count)
 		return NULL;
 
-	search = calloc(1, sizeof(struct astrodb_search));
+	search = calloc(1, sizeof(struct adb_search));
 	if (search == NULL)
 		return NULL;
 
@@ -327,7 +327,7 @@ struct astrodb_search *astrodb_search_new(struct astrodb_db *db, int table_id)
 	search->table = &db->table[table_id];
 
 	search->objects =
-		calloc(table->object.count, sizeof(struct astrodb_object *));
+		calloc(table->object.count, sizeof(struct adb_object *));
 	if (search->objects == NULL) {
 		free(search);
 		return NULL;
@@ -347,27 +347,27 @@ static inline void free_branch(struct adb_search_branch *branch)
 	free(branch);
 }
 
-/*! \fn void astrodb_search_free(astrodb_search* search);
+/*! \fn void adb_search_free(adb_search* search);
  * \param search Search
  *
  * Free's a search and it resources
  */
-void astrodb_search_free(struct astrodb_search *search)
+void adb_search_free(struct adb_search *search)
 {
 	free(search->objects);
 	free_branch(search->start_branch);
 	free(search);
 }
 
-/*! \fn int astrodb_search_add_operator(astrodb_search* search, astrodb_operator op);
+/*! \fn int adb_search_add_operator(adb_search* search, adb_operator op);
  * \param search Search
  * \param op Operator
  * \returns 0 on success
  *
  * Add a test operation in RPN to the search
  */
-int astrodb_search_add_operator(struct astrodb_search *search,
-				enum astrodb_operator op)
+int adb_search_add_operator(struct adb_search *search,
+				enum adb_operator op)
 {
 	struct adb_search_branch *branch;
 	int i;
@@ -451,7 +451,7 @@ int astrodb_search_add_operator(struct astrodb_search *search,
 	return 0;
 }
 
-/*! \fn int astrodb_search_add_comparator(astrodb_search* search, char* field, astrodb_comparator compare, char* value);
+/*! \fn int adb_search_add_comparator(adb_search* search, char* field, adb_comparator compare, char* value);
  * \param search Search
  * \param field Field name
  * \param compare Comparator
@@ -459,14 +459,14 @@ int astrodb_search_add_operator(struct astrodb_search *search,
  *
  * Add a comparator_t in RPN to the search
  */
-int astrodb_search_add_comparator(struct astrodb_search *search,
-		const char *field, enum astrodb_comparator comp, const char *value)
+int adb_search_add_comparator(struct adb_search *search,
+		const char *field, enum adb_comparator comp, const char *value)
 {
-	astrodb_ctype ctype;
+	adb_ctype ctype;
 	struct adb_search_branch *test;
 	comparator_t search_comp;
 	
-	ctype = astrodb_table_get_field_type(search->db, search->table->id, field);
+	ctype = adb_table_get_field_type(search->db, search->table->id, field);
 	if (ctype == ADB_CTYPE_NULL) {
 		adb_error(search->db, "invalid C type for field %s\n", field);
 		return -EINVAL;
@@ -486,7 +486,7 @@ int astrodb_search_add_comparator(struct astrodb_search *search,
 	if (test == NULL)
 		return -ENOMEM;
 
-	test->offset = astrodb_table_get_field_offset(search->db, search->table->id, field);
+	test->offset = adb_table_get_field_offset(search->db, search->table->id, field);
 	test->compare = search_comp;
 
 	adb_debug(search->db, ADB_LOG_SEARCH, "new test on field %s for value %s with type %d offset %d at %d comp %p\n\n",
@@ -538,7 +538,7 @@ err:
 	return -ENOMEM;
 }
 
-/*! \fn int astrodb_search_add_custom_comparator(astrodb_search* search, astrodb_custom_comparator compare)
+/*! \fn int adb_search_add_custom_comparator(adb_search* search, adb_custom_comparator compare)
  * \param search Search
  * \param compare Custom comparator_t function
  * \returns 0 on success
@@ -546,19 +546,19 @@ err:
  * Add a custom search comparator_t. It should return 1 for a match and 0 for a
  * search miss.
  */
-int astrodb_search_add_custom_comparator(struct astrodb_search *search,
-					astrodb_custom_comparator comp)
+int adb_search_add_custom_comparator(struct adb_search *search,
+					adb_custom_comparator comp)
 {
 	return -EINVAL;
 }
 
 static inline int check_object(struct adb_search_branch *branch,
-		const struct astrodb_object *object)
+		const struct adb_object *object)
 {
 	return branch->operator(object, branch, branch->test_count);
 }
 
-/*! \fn int astrodb_search_get_results(astrodb_search* search, astrodb_progress progress, astrodb_slist **result, unsigned int src) 
+/*! \fn int adb_search_get_results(adb_search* search, adb_progress progress, adb_slist **result, unsigned int src) 
  * \param search Search
  * \param progress Progress callback
  * \param result Search results
@@ -566,11 +566,11 @@ static inline int check_object(struct adb_search_branch *branch,
  *
  * Get search results.
  */
-int astrodb_search_get_results(struct astrodb_search *search,
-				struct astrodb_object_set *set,
-				const struct astrodb_object **objects[])
+int adb_search_get_results(struct adb_search *search,
+				struct adb_object_set *set,
+				const struct adb_object **objects[])
 {
-	struct astrodb_table *table = search->table;
+	struct adb_table *table = search->table;
 	int i, j, object_heads;
 
 	if (search->branch_orphan_count > 0) {
@@ -586,7 +586,7 @@ int astrodb_search_get_results(struct astrodb_search *search,
 	}
 
 	/* operator_t is root */
-	object_heads = astrodb_table_set_get_objects(set);
+	object_heads = adb_table_set_get_objects(set);
 
 	if (object_heads <= 0)
 		return object_heads;
@@ -616,24 +616,24 @@ int astrodb_search_get_results(struct astrodb_search *search,
 	return search->hit_count;
 }
 
-/*! \fn int astrodb_search_get_hits(astrodb_search* search);
+/*! \fn int adb_search_get_hits(adb_search* search);
  * \param search Search
  * \returns Hits
  *
  * Get the number of search hit_count.
  */
-int astrodb_search_get_hits(struct astrodb_search *search)
+int adb_search_get_hits(struct adb_search *search)
 {
 	return search->hit_count;
 }
 
-/*! \fn int astrodb_search_get_tests(astrodb_search* search);
+/*! \fn int adb_search_get_tests(adb_search* search);
  * \param search Search
  * \returns Tests
  *
  * Get the number of search test_count
  */
-int astrodb_search_get_tests(struct astrodb_search *search)
+int adb_search_get_tests(struct adb_search *search)
 {
 	return search->test_count;
 }

@@ -33,8 +33,8 @@
 
 #define ADB_TABLE_HISTOGRAM_DIVS	100
 
-struct astrodb_db;
-struct astrodb_table;
+struct adb_db;
+struct adb_table;
 
 struct depth_map {
 	int table_id;			/*!< our table ID at this depth */
@@ -43,16 +43,16 @@ struct depth_map {
 };
 
 
-/*! \struct struct astrodb_object_setper
+/*! \struct struct adb_object_setper
  * \brief Database Table Clipping.
  * \ingroup table
  *
  * Describes clipping table in database.
  */
-struct astrodb_object_set {
-	struct astrodb_db *db;
-	struct astrodb_table *table;
-	struct astrodb_object_head *object_heads;	/*!< clipped objects */
+struct adb_object_set {
+	struct adb_db *db;
+	struct adb_table *table;
+	struct adb_object_head *object_heads;	/*!< clipped objects */
 	struct htm_trixel *centre, **trixels;
 	
 	float fov;						/*!< Clipping radius in degrees */
@@ -69,13 +69,13 @@ struct astrodb_object_set {
 	int count;
 };
 
-/*! \struct struct astrodb_table
+/*! \struct struct adb_table
  * \brief Database Table.
  * \ingroup table
  *
  * Describes table in database.
  */
-struct astrodb_table {
+struct adb_table {
 	int id;
 
 	/* KD Tree Root */
@@ -100,25 +100,25 @@ struct astrodb_table {
 	/* table import info */
 	struct cds_importer import;
 
-	struct astrodb_db *db;
+	struct adb_db *db;
 
 	/* schema file index */
 	struct table_file_index file_index;
 
 	/* all objects in array */
-	struct astrodb_object *objects;
+	struct adb_object *objects;
 };
 
-astrodb_ctype table_get_column_ctype(char *type);
+adb_ctype table_get_column_ctype(char *type);
 int table_get_column_csize(char *type);
 
-int table_read_trixels(struct astrodb_db *db, struct astrodb_table *table, 
+int table_read_trixels(struct adb_db *db, struct adb_table *table, 
 	int table_id);
 
-int table_insert_object(struct astrodb_db *db, int table_id,
-		struct astrodb_object *object);
+int table_insert_object(struct adb_db *db, int table_id,
+		struct adb_object *object);
 
-int table_get_object_depth_max(struct astrodb_table *table, float value);
-int table_get_object_depth_min(struct astrodb_table *table, float value);
+int table_get_object_depth_max(struct adb_table *table, float value);
+int table_get_object_depth_min(struct adb_table *table, float value);
 
 #endif

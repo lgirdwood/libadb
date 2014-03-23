@@ -36,7 +36,7 @@
 #define GZ_CHUNK 16384
 #define CHUNK_SIZE (1024 * 32)
 
-static int inflate_file(struct astrodb_db *db, const char *path,
+static int inflate_file(struct adb_db *db, const char *path,
 	const char *src_file, const char *dest_file)
 {
 	gzFile src;
@@ -83,9 +83,9 @@ static int inflate_file(struct astrodb_db *db, const char *path,
 }
 
 /* FTP single file */
-static int ftp_get_file(struct astrodb_table *table, const char *file)
+static int ftp_get_file(struct adb_table *table, const char *file)
 {
-	struct astrodb_db *db = table->db;
+	struct adb_db *db = table->db;
 	netbuf *nbuf;
 	int ret;
 	char dest[ADB_PATH_SIZE], src[ADB_PATH_SIZE];
@@ -128,9 +128,9 @@ out:
 }
 
 /* FTP multiple files based on pattern */
-static int ftp_get_files(struct astrodb_table *table, const char *pattern)
+static int ftp_get_files(struct adb_table *table, const char *pattern)
 {
-	struct astrodb_db *db = table->db;
+	struct adb_db *db = table->db;
 	netbuf *nbuf, *nbuf_dir = NULL;
 	char dest[ADB_PATH_SIZE], src[ADB_PATH_SIZE], dir[ADB_PATH_SIZE];
 	static char *ftp_dir[CHUNK_SIZE];
@@ -226,10 +226,10 @@ out:
 	return ret;
 }
 
-static int concat_file(struct astrodb_table *table, struct dirent *dent,
+static int concat_file(struct adb_table *table, struct dirent *dent,
 	const char *ofile, FILE *ofd)
 {
-	struct astrodb_db *db = table->db;
+	struct adb_db *db = table->db;
 	char ifile[1024];
 	char buff[CHUNK_SIZE];
 	FILE *ifd;
@@ -285,9 +285,9 @@ out:
 }
 
 /* concat split CDS data files into signgle file */
-static int table_concat_files(struct astrodb_table *table)
+static int table_concat_files(struct adb_table *table)
 {
-	struct astrodb_db *db = table->db;
+	struct adb_db *db = table->db;
 	char ofile[1024];
 	struct dirent *dent;
 	FILE *ofd;
@@ -345,7 +345,7 @@ static int table_concat_files(struct astrodb_table *table)
 	return 0;
 }
 
-int cds_get_dataset(struct astrodb_db *db, struct astrodb_table *table)
+int cds_get_dataset(struct adb_db *db, struct adb_table *table)
 {
 	int ret;
 	struct stat stat_info;
@@ -372,7 +372,7 @@ int cds_get_dataset(struct astrodb_db *db, struct astrodb_table *table)
 	return -EIO;
 }
 
-int cds_get_split_dataset(struct astrodb_db *db, struct astrodb_table *table)
+int cds_get_split_dataset(struct adb_db *db, struct adb_table *table)
 {
 	int res;
 
@@ -388,7 +388,7 @@ int cds_get_split_dataset(struct astrodb_db *db, struct astrodb_table *table)
 }
 
 /* search the local directory for table CDS (ASCII) data files with extension */
-int cds_prepare_files(struct astrodb_db *db, struct astrodb_table *table,
+int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	const char *ext)
 {
 	struct dirent *dent;
@@ -457,9 +457,9 @@ int cds_prepare_files(struct astrodb_db *db, struct astrodb_table *table,
 	return found;
 }
 
-int cds_get_readme(struct astrodb_db *db, int table_id)
+int cds_get_readme(struct adb_db *db, int table_id)
 {
-	struct astrodb_table *table = &db->table[table_id];
+	struct adb_table *table = &db->table[table_id];
 	int ret = 0;
 	struct stat buf;
 	char file[ADB_PATH_SIZE];

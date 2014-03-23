@@ -22,16 +22,16 @@
 #define ADB_TABLE_HISTOGRAM_DIVS	100
 #define ADB_TABLE_DEPTH_DIVS	100
 
-struct astrodb_db;
-struct astrodb_table;
-struct astrodb_schema_field;
+struct adb_db;
+struct adb_table;
+struct adb_schema_field;
 
 struct table_depth {
 	float min;
 	float max;
 };
 
-/*! \typedef astrodb_table_info
+/*! \typedef adb_table_info
  * \brief Dataset binary db index.
  * \ingroup dataset
  *
@@ -54,30 +54,30 @@ struct table_file_index {
  * Importer API.
  */
 
-int schema_add_alternative_field(struct astrodb_db *db,
-	struct astrodb_table *table, const char *field, int pri_idx);
+int schema_add_alternative_field(struct adb_db *db,
+	struct adb_table *table, const char *field, int pri_idx);
 
-int schema_order_import_index(struct astrodb_db *db,
-	struct astrodb_table *table);
+int schema_order_import_index(struct adb_db *db,
+	struct adb_table *table);
 
-int schema_get_field(struct astrodb_db *db, struct astrodb_table *table,
+int schema_get_field(struct adb_db *db, struct adb_table *table,
 	const char *field);
-int schema_get_alt_field(struct astrodb_db *db, struct astrodb_table *table,
+int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
 	const char *field);
 
-int schema_add_field(struct astrodb_db *db, struct astrodb_table *table,
-	struct astrodb_schema_field *new_schema_object);
+int schema_add_field(struct adb_db *db, struct adb_table *table,
+	struct adb_schema_field *new_schema_object);
 
-int schema_add_alternative_field(struct astrodb_db *db,
-	struct astrodb_table *table, const char *field, int pri_idx);
+int schema_add_alternative_field(struct adb_db *db,
+	struct adb_table *table, const char *field, int pri_idx);
 
-int schema_write(struct astrodb_db *db, struct astrodb_table *table);
+int schema_write(struct adb_db *db, struct adb_table *table);
 
 
 /*
  * Data Access API
  */
 
-int schema_read(struct astrodb_db *db, struct astrodb_table *table);
+int schema_read(struct adb_db *db, struct adb_table *table);
 
 #endif

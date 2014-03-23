@@ -78,8 +78,8 @@
 
 struct htm_trixel;
 struct htm;
-struct astrodb_table;
-struct astrodb_object_set;
+struct adb_table;
+struct adb_object_set;
 
 /*! \struct struct htm_vertex
  *
@@ -100,7 +100,7 @@ struct htm_vertex {
 };
 
 struct htm_trixel_data {
-	struct astrodb_object *objects;	/*!< object catalog data */
+	struct adb_object *objects;	/*!< object catalog data */
 	union {
 		int num_objects;
 		float v;
@@ -162,7 +162,7 @@ struct htm {
 	int dec_strip_count;
 
 	/* logging */
-	enum astrodb_msg_level msg_level;
+	enum adb_msg_level msg_level;
 	int msg_flags;
 };
 
@@ -172,13 +172,13 @@ struct htm *htm_new(int depth, int tables);
 /* free HTM and resources */
 void htm_free(struct htm *htm);
 
-int htm_clip(struct htm *htm, struct astrodb_object_set *set, 
+int htm_clip(struct htm *htm, struct adb_object_set *set, 
 	float ra, float dec, float fov,
 	float min_depth, float max_depth);
 
 //int htm_unclip(struct htm *htm);
 
-int htm_get_trixels(struct htm *htm, struct astrodb_object_set *set);
+int htm_get_trixels(struct htm *htm, struct adb_object_set *set);
 
 int htm_get_depth_from_resolution(float resolution);
 
@@ -194,17 +194,17 @@ int htm_get_object_depth(struct htm *htm, float value);
 
 struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id);
 
-int htm_table_insert_object(struct htm *htm, struct astrodb_table *table,
-	struct astrodb_object *object, unsigned int object_count, 
+int htm_table_insert_object(struct htm *htm, struct adb_table *table,
+	struct adb_object *object, unsigned int object_count, 
 	unsigned int trixel_id);
 
-void htm_import_object_ascending(struct astrodb_db *db,
-	struct htm_trixel *trixel, struct astrodb_object *new_object,
-	struct astrodb_table *table);
+void htm_import_object_ascending(struct adb_db *db,
+	struct htm_trixel *trixel, struct adb_object *new_object,
+	struct adb_table *table);
 
-void htm_import_object_descending(struct astrodb_db *db,
-	struct htm_trixel *trixel, struct astrodb_object *new_object,
-	struct astrodb_table *table);
+void htm_import_object_descending(struct adb_db *db,
+	struct htm_trixel *trixel, struct adb_object *new_object,
+	struct adb_table *table);
 
 static inline unsigned int htm_trixel_id(struct htm_trixel *trixel)
 {

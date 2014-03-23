@@ -30,13 +30,13 @@
 /* points to array of objects that match hash number */
 struct hash_object {
 	int count; /* we can store > 1 object to cope with hash collisions */
-	const struct astrodb_object *object[];
+	const struct adb_object *object[];
 };
 
 struct hash_map {
 	struct hash_object **index;   /*!< Hash table pointing to objects */
 	int offset;					/*!< offset in object for hashed ID */
-	astrodb_ctype type;				/*!< C type  string or int */
+	adb_ctype type;				/*!< C type  string or int */
 	int size;						/*!< size in bytes */
 	const char *key;
 };
@@ -52,15 +52,15 @@ struct table_hash {
 	int num;
 };
 
-struct astrodb_table;
+struct adb_table;
 
 int hash_string(const char *data, int len, int mod);
 int hash_int(int val, int mod);
-void hash_free_maps(struct astrodb_table *table);
+void hash_free_maps(struct adb_table *table);
 
-int table_get_hashmap(struct astrodb_db *db, int table_id, const char *key);
+int table_get_hashmap(struct adb_db *db, int table_id, const char *key);
 
-int hash_build_table(struct astrodb_table *table, int map);
+int hash_build_table(struct adb_table *table, int map);
 
 
 #endif

@@ -69,7 +69,7 @@ int hash_int(int val, int mod)
 	return abs(val % mod);
 }
 
-void hash_free_maps(struct astrodb_table *table)
+void hash_free_maps(struct adb_table *table)
 {
 	int i, j;
 
@@ -84,8 +84,8 @@ void hash_free_maps(struct astrodb_table *table)
 	}
 }
 
-int hash_insert_object(struct astrodb_table *table, int map,
-		const struct astrodb_object *object, unsigned int index)
+int hash_insert_object(struct adb_table *table, int map,
+		const struct adb_object *object, unsigned int index)
 {
 	struct hash_map *hash_map = &table->hash.map[map];
 	int size, count;
@@ -96,7 +96,7 @@ int hash_insert_object(struct astrodb_table *table, int map,
 		count = hash_map->index[index]->count + 1;
 
 		size = sizeof(struct hash_object *) +
-			sizeof(struct astrodb_object *) * count;
+			sizeof(struct adb_object *) * count;
 
 		hash_map->index[index] = realloc(hash_map->index[index], size);
 		if (!hash_map->index[index])
@@ -108,7 +108,7 @@ int hash_insert_object(struct astrodb_table *table, int map,
 		/* no hash,so create new one */
 
 		hash_map->index[index] = calloc(1, sizeof(struct hash_object) +
-			sizeof(struct astrodb_object *));
+			sizeof(struct adb_object *));
 		if (!hash_map->index[index])
 			return -ENOMEM;
 
@@ -120,7 +120,7 @@ int hash_insert_object(struct astrodb_table *table, int map,
 	return 0;
 }
 
-static void build_hash_string(struct astrodb_table *table, int map)
+static void build_hash_string(struct adb_table *table, int map)
 {
 	const void *object = table->objects;
 	const void *field;
@@ -138,7 +138,7 @@ static void build_hash_string(struct astrodb_table *table, int map)
 	}
 }
 
-static void build_hash_int(struct astrodb_table *table, int map)
+static void build_hash_int(struct adb_table *table, int map)
 {
 	const void *object = table->objects;
 	const void *field;
@@ -155,7 +155,7 @@ static void build_hash_int(struct astrodb_table *table, int map)
 	}
 }
 
-int hash_build_table(struct astrodb_table *table, int map)
+int hash_build_table(struct adb_table *table, int map)
 {
 	struct hash_object **hash_object;
 

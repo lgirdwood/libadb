@@ -24,9 +24,9 @@
 #define RM_BYTE_LABEL_SIZE		16
 #define RM_BYTE_EXP_SIZE			128
 
-struct astrodb_db;
+struct adb_db;
 
-/*! \struct astrodb_table_column_info
+/*! \struct adb_table_column_info
  * \brief Dataset byte description.
  *
  * Describes a field from a CDS dataset.
@@ -53,7 +53,7 @@ struct cds_byte_desc {
 #define RM_FILE_TITLE_SIZE		80
 #define RM_FILE_MAX_DESC		128
 
-/*! \struct astrodb_table_info
+/*! \struct adb_table_info
  * \brief Dataset information.
  *
  * Describes a dataset from a CDS catalog ReadMe file_name.
@@ -105,18 +105,18 @@ struct readme {
 	int explain_offset;
 };
 
-struct readme *readme_parse(struct astrodb_db *db, char* file);
+struct readme *readme_parse(struct adb_db *db, char* file);
 void readme_free(struct readme* info);
 
-int cds_get_readme(struct astrodb_db *db, int table_id);
+int cds_get_readme(struct adb_db *db, int table_id);
 
-int cds_get_split_dataset(struct astrodb_db *db, struct astrodb_table *table);
+int cds_get_split_dataset(struct adb_db *db, struct adb_table *table);
 
-int cds_get_dataset(struct astrodb_db *db, struct astrodb_table *table);
+int cds_get_dataset(struct adb_db *db, struct adb_table *table);
 
-int cds_prepare_files(struct astrodb_db *db, struct astrodb_table *table,
+int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	const char *ext);
 
-int table_parse_readme(struct astrodb_db *db, int table_id);
+int table_parse_readme(struct adb_db *db, int table_id);
 
 #endif

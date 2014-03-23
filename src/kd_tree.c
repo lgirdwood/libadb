@@ -53,7 +53,7 @@ struct kd_base_elem {
 	int bid;
 	int used;
 	struct kd_vertex v;
-	struct astrodb_object *object;
+	struct adb_object *object;
 };
 
 struct kd_elem {
@@ -69,8 +69,8 @@ struct kd_base {
 };
 
 struct kd_init {
-	struct astrodb_db *db;
-	struct astrodb_table *table;
+	struct adb_db *db;
+	struct adb_table *table;
 	struct kd_base *kbase;
 	int table_id;
 	int iid;
@@ -449,7 +449,7 @@ static enum kd_pivot pivot_next(enum kd_pivot pivot)
 
 /* copy base elems into ra and dec arrays with a pointer back to their base elem */
 static void elem_create_xyz(struct kd_base_elem *base,
-	struct astrodb_table *table)
+	struct adb_table *table)
 {
 	struct kd_elem *x_base, *y_base, *z_base;
 	int i;
@@ -468,7 +468,7 @@ static void elem_create_xyz(struct kd_base_elem *base,
 
 static void insert_elem_object(struct kd_init *init, struct htm_trixel *trixel)
 {
-	struct astrodb_object *object;
+	struct adb_object *object;
 	struct kd_base_elem *base = &init->kbase->base[init->iid];
 
 	if (!trixel)
@@ -498,8 +498,8 @@ children:
 	insert_elem_object(init, &trixel->child[3]);
 }
 
-static void insert_elem_objects(struct astrodb_db *db,
-	struct astrodb_table *table, struct kd_base *mbase, int table_id)
+static void insert_elem_objects(struct adb_db *db,
+	struct adb_table *table, struct kd_base *mbase, int table_id)
 {
 	struct htm *htm = db->htm;
 	struct kd_init init;
@@ -521,7 +521,7 @@ static void insert_elem_objects(struct astrodb_db *db,
 	insert_elem_object(&init, &htm->S[3]);
 }
 
-static void update_objects(struct kd_base_elem *base, struct astrodb_table *table,
+static void update_objects(struct kd_base_elem *base, struct adb_table *table,
 	struct kd_base_elem *root)
 {
 	int i;
@@ -536,7 +536,7 @@ static void update_objects(struct kd_base_elem *base, struct astrodb_table *tabl
 	table->import.kd_root = root->bid;
 }
 
-int import_build_kdtree(struct astrodb_db *db, struct astrodb_table *table, 
+int import_build_kdtree(struct adb_db *db, struct adb_table *table, 
 	int table_id)
 {
 	struct kd_base mbase;
@@ -616,9 +616,9 @@ static double get_distance(double ra1, double dec1, struct kd_vertex *v)
 }
 
 struct kd_get_data {
-	struct astrodb_table *table;
-	const struct astrodb_object *closest;
-	const struct astrodb_object *exclude;
+	struct adb_table *table;
+	const struct adb_object *closest;
+	const struct adb_object *exclude;
 	double distance;
 	struct kd_vertex target;
 	double ra;
@@ -627,8 +627,8 @@ struct kd_get_data {
 
 int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 {
-	struct astrodb_table *table = kd->table;
-	const struct astrodb_object *current =
+	struct adb_table *table = kd->table;
+	const struct adb_object *current =
 		(const void *)table->objects + node * table->object.bytes;
 	struct kd_vertex plane_vertex, current_vertex;
 	double d;
@@ -717,10 +717,10 @@ int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 }
 
 #if CHECK_KD_TREE
-static void check_search(struct astrodb_table *table, double ra, double dec, double distance,
-	const struct astrodb_object *object)
+static void check_search(struct adb_table *table, double ra, double dec, double distance,
+	const struct adb_object *object)
 {
-	const struct astrodb_object *current;
+	const struct adb_object *current;
 	struct kd_vertex current_v, pos_v;
 	double d;
 	int i;
@@ -746,10 +746,10 @@ static void check_search(struct astrodb_table *table, double ra, double dec, dou
 }
 #endif
 
-const struct astrodb_object *astrodb_table_set_get_nearest_on_pos(
-	struct astrodb_object_set *set, double ra, double dec)
+const struct adb_object *adb_table_set_get_nearest_on_pos(
+	struct adb_object_set *set, double ra, double dec)
 {
-	struct astrodb_table *table = set->table;
+	struct adb_table *table = set->table;
 	struct kd_get_data kd;
 
 	/* get xyz for object */
@@ -769,10 +769,10 @@ const struct astrodb_object *astrodb_table_set_get_nearest_on_pos(
 	return kd.closest;
 }
 
-const struct astrodb_object *astrodb_table_set_get_nearest_on_object(
-	struct astrodb_object_set *set, const struct astrodb_object *object)
+const struct adb_object *adb_table_set_get_nearest_on_object(
+	struct adb_object_set *set, const struct adb_object *object)
 {
-	struct astrodb_table *table = set->table;
+	struct adb_table *table = set->table;
 	struct kd_get_data kd;
 
 	/* get xyz for object */

@@ -58,13 +58,13 @@ struct table_path {
  *  - IX/number 		High Energy Catalogues
  */
 
-/*! \typedef struct astrodb_library
+/*! \typedef struct adb_library
  * \brief Local CDS catalog repository
  * \ingroup library
  *
  * The library container.
  */
-struct astrodb_library {
+struct adb_library {
 	char *local;	/*!< local repository and cache */
 	char *remote;	/*!< remote repository */
 	char *host;
@@ -77,20 +77,20 @@ struct astrodb_library {
  */
 
 
-/*! \typedef struct astrodb_db
+/*! \typedef struct adb_db
  *
  */
 
-struct astrodb_db {
+struct adb_db {
 
-	struct astrodb_library *lib;	/*!< catalog parent library n:1 */
+	struct adb_library *lib;	/*!< catalog parent library n:1 */
 
 	int table_count;      		/*!< Number of catalog data sets */
 
-	struct astrodb_table table[ADB_MAX_TABLES];   /*!< Catalog datasets */
+	struct adb_table table[ADB_MAX_TABLES];   /*!< Catalog datasets */
 	struct htm *htm;
 
-	enum astrodb_msg_level msg_level;
+	enum adb_msg_level msg_level;
 	int msg_flags;
 
 	int dbg_trixels_count[8];

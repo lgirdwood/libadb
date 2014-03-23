@@ -105,7 +105,7 @@ static void htm_debug_printf(struct htm_trixel *t, int depth, int id)
 	htm_debug_printf(&t->child[3], depth - 1, 3);
 }
 
-static void dump_trixels(struct astrodb_db *db,
+static void dump_trixels(struct adb_db *db,
 	struct htm_trixel *trixel, int depth, int level)
 {
 	if (depth >= level)
@@ -125,7 +125,7 @@ children:
 	dump_trixels(db, &trixel->child[3], depth + 1, level);
 }
 
-static void dump_htm_data(struct astrodb_db *db)
+static void dump_htm_data(struct adb_db *db)
 {
 	int i;
 

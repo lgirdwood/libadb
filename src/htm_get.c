@@ -278,7 +278,7 @@ int vertex_get_trixels_depth(struct htm *htm, struct htm_vertex *v,
 /* get trixel neighbour trixels,
  * i.e. trixels that share verticies with this trixel */
 static int trixel_get_neighbours(struct htm *htm, struct htm_trixel *t,
-		int depth, struct astrodb_object_set *set)
+		int depth, struct adb_object_set *set)
 {
 	int neighbours;
 
@@ -329,7 +329,7 @@ static int trixel_add_parent(struct htm *htm,
 	return 0;
 }
 
-static int trixel_get_parents(struct htm *htm, struct astrodb_object_set *set,
+static int trixel_get_parents(struct htm *htm, struct adb_object_set *set,
 	int buf_size, int current_depth,
 	int buffer_start, int buffer_end, int parents)
 {
@@ -358,7 +358,7 @@ static int trixel_get_parents(struct htm *htm, struct astrodb_object_set *set,
 		buffer_end, buffer_end + new, parents + new);
 }
 
-static int trixel_get_children(struct htm *htm, struct astrodb_object_set *set,
+static int trixel_get_children(struct htm *htm, struct adb_object_set *set,
 	struct htm_trixel *parent, int buf_size, int current_depth,
 	int buf_pos)
 {
@@ -399,11 +399,11 @@ static int trixel_get_children(struct htm *htm, struct astrodb_object_set *set,
 	return buf_pos;
 }
 
-int htm_clip(struct htm *htm, struct astrodb_object_set *set,
+int htm_clip(struct htm *htm, struct adb_object_set *set,
 	float ra, float dec, float fov, float min_depth, float max_depth)
 {
 	struct htm_vertex vertex;
-	struct astrodb_table *table = set->table;
+	struct adb_table *table = set->table;
 
 	set->min_depth = table_get_object_depth_min(table, min_depth);
 	set->max_depth = table_get_object_depth_max(table, max_depth);
@@ -456,7 +456,7 @@ int htm_unclip(struct htm *htm)
 }
 #endif
 
-int htm_get_trixels(struct htm *htm, struct astrodb_object_set *set)
+int htm_get_trixels(struct htm *htm, struct adb_object_set *set)
 {
 	int trixels, parents, neighbours, i;
 
@@ -506,7 +506,7 @@ int htm_get_trixels(struct htm *htm, struct astrodb_object_set *set)
 	return trixels;
 }
 
-int htm_get_clipped_objects(struct astrodb_object_set *set)
+int htm_get_clipped_objects(struct adb_object_set *set)
 {
 	struct htm *htm = set->db->htm;
 	int trixel_count = 0, populated_trixels = 0;
@@ -562,16 +562,16 @@ int htm_get_clipped_objects(struct astrodb_object_set *set)
 }
 
 
-/*! \fn void astrodb_table_clip.on_fov (astrodb_table* table, double ra, double dec, double radius,
+/*! \fn void adb_table_clip.on_fov (adb_table* table, double ra, double dec, double radius,
  double faint_mag, double bright_mag);
  * \brief Set dataset clipping area based on field of view
  * \ingroup dataset
  */
-struct astrodb_object_set *astrodb_table_set_new(struct astrodb_db *db,
+struct adb_object_set *adb_table_set_new(struct adb_db *db,
 	int table_id)
 {
-	struct astrodb_table *table;
-	struct astrodb_object_set *set;
+	struct adb_table *table;
+	struct adb_object_set *set;
 
 	if (table_id < 0 || table_id >= db->table_count)
 		return NULL;
@@ -590,7 +590,7 @@ struct astrodb_object_set *astrodb_table_set_new(struct astrodb_db *db,
 	}
 
 	set->object_heads =
-		calloc(1, db->htm->trixel_count * sizeof(struct astrodb_object_head));
+		calloc(1, db->htm->trixel_count * sizeof(struct adb_object_head));
 	if (set->object_heads == NULL) {
 		free(set->trixels);
 		free(set);
@@ -611,7 +611,7 @@ struct astrodb_object_set *astrodb_table_set_new(struct astrodb_db *db,
 	return set;
 }
 
-int astrodb_table_set_constraints(struct astrodb_object_set *set,
+int adb_table_set_constraints(struct adb_object_set *set,
 				double ra, double dec, 
 				double fov, double start,
 				double end)
@@ -624,19 +624,19 @@ int astrodb_table_set_constraints(struct astrodb_object_set *set,
 		set->centre_dec, set->fov, start, end);
 }
 
-/*! \fn void astrodb_table_unclip (astrodb_table* table)
+/*! \fn void adb_table_unclip (adb_table* table)
  * \param table dataset
  *
  * Unclip the dataset to it's full boundaries
  */
-void astrodb_table_set_free(struct astrodb_object_set *set)
+void adb_table_set_free(struct adb_object_set *set)
 {
 	free(set->object_heads);
 	free(set->trixels);
 	free(set);
 }
 
-/*! int astrodb_table_get_objects (astrodb_table* table, astrodb_progress progress, astrodb_slist **result, unsigned int src)
+/*! int adb_table_get_objects (adb_table* table, adb_progress progress, adb_slist **result, unsigned int src)
  * \param table dataset
  * \param progress Progress callback
  * \param results dataset objects
@@ -644,9 +644,9 @@ void astrodb_table_set_free(struct astrodb_object_set *set)
  * \return number of objects, or negative for failed
  *
  * Get objects from dataset based on clipping area. Results must be released
- * with astrodb_table_put_objects() after use.
+ * with adb_table_put_objects() after use.
  */
-int astrodb_table_set_get_objects(struct astrodb_object_set *set)
+int adb_table_set_get_objects(struct adb_object_set *set)
 {
 	/* check for previous "get" since trixels will still be valid */
 	if (set->valid_trixels) {
@@ -660,17 +660,17 @@ int astrodb_table_set_get_objects(struct astrodb_object_set *set)
 	return htm_get_clipped_objects(set);
 }
 
-struct astrodb_object_head *adb_set_get_head(struct astrodb_object_set *set)
+struct adb_object_head *adb_set_get_head(struct adb_object_set *set)
 {
 	return set->object_heads;
 }
 
-int adb_set_get_count(struct astrodb_object_set *set)
+int adb_set_get_count(struct adb_object_set *set)
 {
 	return set->count;
 }
 
-/*! \fn void* astrodb_table_get_object (astrodb_table* table, char* id, char* field);
+/*! \fn void* adb_table_get_object (adb_table* table, char* id, char* field);
  * \param table dataset
  * \param id object id
  * \param field dataset field
@@ -678,12 +678,12 @@ int adb_set_get_count(struct astrodb_object_set *set)
  *
  * Get an object based on it' ID
  */
-int astrodb_table_set_get_object(struct astrodb_object_set *set,
-	const void *id, const char *field, const struct astrodb_object **object)
+int adb_table_set_get_object(struct adb_object_set *set,
+	const void *id, const char *field, const struct adb_object **object)
 {
-	struct astrodb_table *table = set->table;
-	struct astrodb_db *db = set->db;
-	astrodb_ctype ctype;
+	struct adb_table *table = set->table;
+	struct adb_db *db = set->db;
+	adb_ctype ctype;
 	int map, index, i, offset;
 
 	*object = NULL;
@@ -693,12 +693,12 @@ int astrodb_table_set_get_object(struct astrodb_object_set *set,
 	if (map < 0)
 		return map;
 
-	offset = astrodb_table_get_field_offset(db, table->id, field);
+	offset = adb_table_get_field_offset(db, table->id, field);
 	if (offset < 0)
 		return offset;
 
 	/* get hash index */
-	ctype = astrodb_table_get_field_type(db, table->id, field);
+	ctype = adb_table_get_field_type(db, table->id, field);
 	switch (ctype) {
 	case ADB_CTYPE_STRING:
 		index = hash_string((const char*)id, strlen((const char *)id), table->object.count);
@@ -709,7 +709,7 @@ int astrodb_table_set_get_object(struct astrodb_object_set *set,
 
 		/* search through hashes for exact match */
 		for (i = 0; i < table->hash.map[map].index[index]->count; i++) {
-			const struct astrodb_object *o = table->hash.map[map].index[index]->object[i];
+			const struct adb_object *o = table->hash.map[map].index[index]->object[i];
 			char *_id = ((char *)o) + offset;
 
 			if (!strstr(_id, id))

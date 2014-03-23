@@ -33,8 +33,8 @@
  * lowest (brightest) -> highest (faintest)
  */
 static inline void htm_insert_object_ascending(struct htm *htm,
-	struct astrodb_table *table, struct htm_trixel *trixel,
-	struct astrodb_object *new_object, unsigned int object_count)
+	struct adb_table *table, struct htm_trixel *trixel,
+	struct adb_object *new_object, unsigned int object_count)
 {
 	int table_id = table->id;
 
@@ -46,9 +46,9 @@ static inline void htm_insert_object_ascending(struct htm *htm,
 /* import object into trixel in size order -
  * largest -> smallest */
 static inline void htm_insert_object_descending(struct htm *htm,
-	struct htm_trixel *trixel, struct astrodb_object *new_object, int table_id)
+	struct htm_trixel *trixel, struct adb_object *new_object, int table_id)
 {
-	struct astrodb_object *head;
+	struct adb_object *head;
 
 	head = trixel->data[table_id].objects;
 
@@ -69,8 +69,8 @@ static inline void htm_insert_object_descending(struct htm *htm,
 #endif
 
 /* used by file reader */
-int htm_table_insert_object(struct htm *htm, struct astrodb_table *table,
-	struct astrodb_object *object, unsigned int object_count, 
+int htm_table_insert_object(struct htm *htm, struct adb_table *table,
+	struct adb_object *object, unsigned int object_count, 
 	unsigned int trixel_id)
 {
 	struct htm_trixel *trixel;
@@ -94,12 +94,12 @@ int htm_table_insert_object(struct htm *htm, struct astrodb_table *table,
 
 #if 0
 /* from client */
-int table_insert_object(struct astrodb_db *db, int table_id,
-		struct astrodb_object *object)
+int table_insert_object(struct adb_db *db, int table_id,
+		struct adb_object *object)
 {
 	struct htm_vertex vertex;
 	struct htm_trixel *trixel;
-	struct astrodb_table *table;
+	struct adb_table *table;
 	struct htm *htm = db->htm;
 	int depth;
 

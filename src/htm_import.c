@@ -31,14 +31,14 @@
 struct kd_elem {
 	uint32_t id;
 	uint32_t child[2];
-	struct astrodb_object *object;
+	struct adb_object *object;
 };
 
-void htm_import_object_ascending(struct astrodb_db *db,
-	struct htm_trixel *trixel, struct astrodb_object *new_object,
-	struct astrodb_table *table)
+void htm_import_object_ascending(struct adb_db *db,
+	struct htm_trixel *trixel, struct adb_object *new_object,
+	struct adb_table *table)
 {
-	struct astrodb_object *last, *current, *head;
+	struct adb_object *last, *current, *head;
 	int table_id = table->id;
 
 	head = trixel->data[table_id].objects;
@@ -88,11 +88,11 @@ out:
 		trixel->position, trixel->data[table_id].num_objects);
 }
 
-void htm_import_object_descending(struct astrodb_db *db,
-	struct htm_trixel *trixel, struct astrodb_object *new_object,
-	struct astrodb_table *table)
+void htm_import_object_descending(struct adb_db *db,
+	struct htm_trixel *trixel, struct adb_object *new_object,
+	struct adb_table *table)
 {
-	struct astrodb_object *last, *current, *head;
+	struct adb_object *last, *current, *head;
 	int table_id = table->id;
 
 	head = trixel->data[table_id].objects;

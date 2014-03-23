@@ -28,11 +28,11 @@
 #define ADB_TABLE_MAX_FIELDS		128	/* max number of indexes */
 #define ADB_TABLE_MAX_ALT_FIELDS		16	/* max number of alternate indexes */
 
-struct astrodb_db;
+struct adb_db;
 
 struct alt_field {
-	struct astrodb_schema_field key_field;     /* primary field index */
-	struct astrodb_schema_field alt_field;     /* alternate field index */
+	struct adb_schema_field key_field;     /* primary field index */
+	struct adb_schema_field alt_field;     /* alternate field index */
 	adb_field_import2 import; /*!< alt field importer */
 };
 
@@ -48,13 +48,13 @@ struct cds_importer {
 	struct cds_byte_desc *byte_desc;
 	struct cds_file_info *file_info;
 
-	struct astrodb_schema_field field[ADB_TABLE_MAX_FIELDS];	/*!< key and custom field descriptors */
+	struct adb_schema_field field[ADB_TABLE_MAX_FIELDS];	/*!< key and custom field descriptors */
 	struct alt_field alt_field[ADB_TABLE_MAX_ALT_FIELDS];    /*!< alt src data */
 	int text_length;                /*!< length in chars of each record */
 	int text_buffer_bytes;		/*!< largest import record text size */
 
 	/* Histogram field and alt field */
-	struct astrodb_schema_field *histogram_key;
+	struct adb_schema_field *histogram_key;
 	struct alt_field *histogram_alt_key;
 	const char *depth_field;
 
@@ -62,7 +62,7 @@ struct cds_importer {
 	int kd_root;
 };
 
-typedef int (*object_import) (struct astrodb_db *, struct astrodb_object *, struct astrodb_table *);
+typedef int (*object_import) (struct adb_db *, struct adb_object *, struct adb_table *);
 
 struct table_object {
 	int bytes;				/*!< Object size (bytes) */
@@ -73,25 +73,25 @@ struct table_object {
 	int new;
 	float min_value;
 	float max_value;
-	astrodb_otype otype;
+	adb_otype otype;
 };
 
 /* init row insertion function */
-void table_init_object_import(struct astrodb_db *db, int table_id);
+void table_init_object_import(struct adb_db *db, int table_id);
 
-adb_field_import2 table_get_alt_key_import(struct astrodb_db *db,
-	astrodb_ctype type);
+adb_field_import2 table_get_alt_key_import(struct adb_db *db,
+	adb_ctype type);
 
-adb_field_import1 table_get_column_import(struct astrodb_db *db,
-	astrodb_ctype type);
+adb_field_import1 table_get_column_import(struct adb_db *db,
+	adb_ctype type);
 
-int table_write_trixels(struct astrodb_db *db, struct astrodb_table *table, 
+int table_write_trixels(struct adb_db *db, struct adb_table *table, 
 	int table_id);
 
-int import_build_kdtree(struct astrodb_db *db, struct astrodb_table *table, 
+int import_build_kdtree(struct adb_db *db, struct adb_table *table, 
 	int table_id);
 
-int import_get_object_depth_max(struct astrodb_table *table, float value);
-int import_get_object_depth_min(struct astrodb_table *table, float value);
+int import_get_object_depth_max(struct adb_table *table, float value);
+int import_get_object_depth_min(struct adb_table *table, float value);
 
 #endif

@@ -36,8 +36,8 @@ struct trixel_hdr {
 	u_int32_t num_objects;
 };
 
-static int read_trixel(struct astrodb_db *db, struct astrodb_table *table,
-	struct astrodb_object *objects, FILE *f, struct trixel_hdr *hdr)
+static int read_trixel(struct adb_db *db, struct adb_table *table,
+	struct adb_object *objects, FILE *f, struct trixel_hdr *hdr)
 {
 	size_t size;
 
@@ -53,7 +53,7 @@ static int read_trixel(struct astrodb_db *db, struct astrodb_table *table,
 	return hdr->num_objects;
 }
 
-static int read_trixels(struct astrodb_db *db, struct astrodb_table *table,
+static int read_trixels(struct adb_db *db, struct adb_table *table,
 	void *objects, FILE *f)
 {
 	struct trixel_hdr hdr;
@@ -97,10 +97,10 @@ static int read_trixels(struct astrodb_db *db, struct astrodb_table *table,
 	return count;
 }
 
-static int write_trixel(struct astrodb_db *db, struct astrodb_table *table,
+static int write_trixel(struct adb_db *db, struct adb_table *table,
 		struct htm_trixel *trixel, FILE *file, int table_id)
 {
-	struct astrodb_object *object, *object_next;
+	struct adb_object *object, *object_next;
 	struct adb_kd_tree *kd;
 	struct trixel_hdr hdr;
 	int count = 0, _count;
@@ -175,10 +175,10 @@ children:
 	return count;
 }
 
-int table_read_trixels(struct astrodb_db *db, struct astrodb_table *table, 
+int table_read_trixels(struct adb_db *db, struct adb_table *table, 
 	int table_id)
 {
-	struct astrodb_object *objects;
+	struct adb_object *objects;
 	int count, i;
 	char file[ADB_PATH_SIZE];
 	FILE *f;
@@ -228,7 +228,7 @@ int table_read_trixels(struct astrodb_db *db, struct astrodb_table *table,
 	return count;
 }
 
-int table_write_trixels(struct astrodb_db *db, struct astrodb_table *table, 
+int table_write_trixels(struct adb_db *db, struct adb_table *table, 
 	int table_id)
 {
 	struct htm *htm = db->htm;

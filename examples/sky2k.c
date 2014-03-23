@@ -34,7 +34,7 @@
 #define SP_NUM 180
 
 struct sky2kv4_object {
-	struct astrodb_object object;
+	struct adb_object object;
 	unsigned char type;
 	char name[11];		/* Name or AGK3 number */
 	char sp[4];		/* One dimensional SP class */
@@ -253,70 +253,70 @@ static const struct star_colour_data sp [] = {
 
 static int print = 0;
 
-int sky2kv4_sp_insert(struct astrodb_object *object, int offset, char *src);
+int sky2kv4_sp_insert(struct adb_object *object, int offset, char *src);
 
-static struct astrodb_schema_field star_fields[] = {
-	astrodb_member("Name", "Name", struct sky2kv4_object,
+static struct adb_schema_field star_fields[] = {
+	adb_member("Name", "Name", struct sky2kv4_object,
 		name, ADB_CTYPE_STRING, "", 0, NULL),
-	astrodb_member("ID", "ID", struct sky2kv4_object,
+	adb_member("ID", "ID", struct sky2kv4_object,
 		object.id, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_gmember("RA Hours", "RAh", struct sky2kv4_object, \
+	adb_gmember("RA Hours", "RAh", struct sky2kv4_object, \
 		object.posn_mag.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL),
-	astrodb_gmember("RA Minutes", "RAm", struct sky2kv4_object,
+	adb_gmember("RA Minutes", "RAm", struct sky2kv4_object,
 		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL),
-	astrodb_gmember("RA Seconds", "RAs", struct sky2kv4_object,
+	adb_gmember("RA Seconds", "RAs", struct sky2kv4_object,
 		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL),
-	astrodb_gmember("DEC Degrees", "DEd", struct sky2kv4_object, \
+	adb_gmember("DEC Degrees", "DEd", struct sky2kv4_object, \
 		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL),
-	astrodb_gmember("DEC Minutes", "DEm", struct sky2kv4_object,
+	adb_gmember("DEC Minutes", "DEm", struct sky2kv4_object,
 		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL),
-	astrodb_gmember("DEC Seconds", "DEs", struct sky2kv4_object,
+	adb_gmember("DEC Seconds", "DEs", struct sky2kv4_object,
 		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL),
-	astrodb_gmember("DEC sign", "DE-", struct sky2kv4_object,
+	adb_gmember("DEC sign", "DE-", struct sky2kv4_object,
 		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL),
-	astrodb_member("Visual Mag", "Vmag", struct sky2kv4_object,
+	adb_member("Visual Mag", "Vmag", struct sky2kv4_object,
 		object.posn_mag.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL),
-	astrodb_member("sp", "Sp", struct sky2kv4_object,
+	adb_member("sp", "Sp", struct sky2kv4_object,
 		sp, ADB_CTYPE_STRING, "", 0, sky2kv4_sp_insert),
-	astrodb_member("HD", "HD", struct sky2kv4_object,
+	adb_member("HD", "HD", struct sky2kv4_object,
 		HD, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_member("SAO", "SAO", struct sky2kv4_object,
+	adb_member("SAO", "SAO", struct sky2kv4_object,
 		SAO, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_member("PPM", "PPM", struct sky2kv4_object,
+	adb_member("PPM", "PPM", struct sky2kv4_object,
 		PPM, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_member("pmRA", "pmRA", struct sky2kv4_object,
+	adb_member("pmRA", "pmRA", struct sky2kv4_object,
 		pmRA, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("pmDEC", "pmDEC", struct sky2kv4_object,
+	adb_member("pmDEC", "pmDEC", struct sky2kv4_object,
 		pmDEC, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("Radial Vel", "RV", struct sky2kv4_object,
+	adb_member("Radial Vel", "RV", struct sky2kv4_object,
 		RV, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("Binary sep", "sep", struct sky2kv4_object,
+	adb_member("Binary sep", "sep", struct sky2kv4_object,
 		sep, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("Dmag", "Dmag", struct sky2kv4_object,
+	adb_member("Dmag", "Dmag", struct sky2kv4_object,
 		Dmag, ADB_CTYPE_FLOAT, "", 0, NULL),
-	astrodb_member("Orb Per", "orbPer", struct sky2kv4_object,
+	adb_member("Orb Per", "orbPer", struct sky2kv4_object,
 		orbPer, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("Pos Angle", "PA", struct sky2kv4_object,
+	adb_member("Pos Angle", "PA", struct sky2kv4_object,
 		PA, ADB_CTYPE_SHORT, "", 0, NULL),
-	astrodb_member("Obs Date", "date", struct sky2kv4_object,
+	adb_member("Obs Date", "date", struct sky2kv4_object,
 		date, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("ID_A", "ID_A", struct sky2kv4_object,
+	adb_member("ID_A", "ID_A", struct sky2kv4_object,
 		ID_A, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_member("ID_B", "ID_B", struct sky2kv4_object,
+	adb_member("ID_B", "ID_B", struct sky2kv4_object,
 		ID_B, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_member("ID_C", "ID_C", struct sky2kv4_object,
+	adb_member("ID_C", "ID_C", struct sky2kv4_object,
 		ID_C, ADB_CTYPE_INT, "", 0, NULL),
-	astrodb_member("Var max mag", "magMax", struct sky2kv4_object,
+	adb_member("Var max mag", "magMax", struct sky2kv4_object,
 		magMax, ADB_CTYPE_FLOAT, "", 0, NULL),
-	astrodb_member("Var min mag", "magMin", struct sky2kv4_object,
+	adb_member("Var min mag", "magMin", struct sky2kv4_object,
 		magMin, ADB_CTYPE_FLOAT, "", 0, NULL),
-	astrodb_member("Var Amp", "varAmp", struct sky2kv4_object,
+	adb_member("Var Amp", "varAmp", struct sky2kv4_object,
 		varAmp, ADB_CTYPE_FLOAT, "", 0, NULL),
-	astrodb_member("Var Period", "varPer", struct sky2kv4_object,
+	adb_member("Var Period", "varPer", struct sky2kv4_object,
 		varPer, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("Var Epoch", "varEpo", struct sky2kv4_object,
+	adb_member("Var Epoch", "varEpo", struct sky2kv4_object,
 		varEpo, ADB_CTYPE_DOUBLE, "", 0, NULL),
-	astrodb_member("Var Type", "varType", struct sky2kv4_object,
+	adb_member("Var Type", "varType", struct sky2kv4_object,
 		varType, ADB_CTYPE_SHORT, "", 0, NULL),
 };
 
@@ -333,7 +333,7 @@ static void sky2kv4_get_sp_index(struct sky2kv4_object *object, char *spect,
 	}
 }
 
-int sky2kv4_sp_insert(struct astrodb_object *object, int offset, char *src)
+int sky2kv4_sp_insert(struct adb_object *object, int offset, char *src)
 {
 	struct sky2kv4_object *so = (struct sky2kv4_object*)object;
 	char *dest = (char*)object + offset;
@@ -366,7 +366,7 @@ static void end_timer(int objects, int bytes)
 			secs * 1000.0, objects / secs);
 }
 
-static void search_print(const struct astrodb_object *_objects[], int count)
+static void search_print(const struct adb_object *_objects[], int count)
 {
 	const struct sky2kv4_object **objects =
 		(const struct sky2kv4_object **) _objects;
@@ -394,62 +394,62 @@ static void search_print(const struct astrodb_object *_objects[], int count)
  *
  * Uses Reverse Polish Notation to define search parameters
  */
-static int search1(struct astrodb_db *db, int table_id)
+static int search1(struct adb_db *db, int table_id)
 {
-	const struct astrodb_object **object;
-	struct astrodb_search *search;
-	struct astrodb_object_set *set;
+	const struct adb_object **object;
+	struct adb_search *search;
+	struct adb_object_set *set;
 	int err;
 
 	fprintf(stdout, "Searching for high PM or RV objects\n");
 
-	search = astrodb_search_new(db, table_id);
+	search = adb_search_new(db, table_id);
 	if (!search)
 		return -ENOMEM;
 
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
-	if (astrodb_search_add_comparator(search, "pmRA", ADB_COMP_LT, "0.4"))
+	if (adb_search_add_comparator(search, "pmRA", ADB_COMP_LT, "0.4"))
 		fprintf(stderr, "failed to add comp pmRA\n");
-	if (astrodb_search_add_comparator(search, "pmRA", ADB_COMP_GT, "0.01"))
+	if (adb_search_add_comparator(search, "pmRA", ADB_COMP_GT, "0.01"))
 		fprintf(stderr, "failed to add comp pmRA\n");
-	if (astrodb_search_add_operator(search, ADB_OP_AND))
+	if (adb_search_add_operator(search, ADB_OP_AND))
 		fprintf(stderr, "failed to add op and\n");
 
-	if (astrodb_search_add_comparator(search, "pmDEC", ADB_COMP_LT, "0.4"))
+	if (adb_search_add_comparator(search, "pmDEC", ADB_COMP_LT, "0.4"))
 		fprintf(stderr, "failed to add comp pmDEC\n");
-	if (astrodb_search_add_comparator(search, "pmDEC", ADB_COMP_GT, "0.01"))
+	if (adb_search_add_comparator(search, "pmDEC", ADB_COMP_GT, "0.01"))
 		fprintf(stderr, "failed to add comp pmDEC\n");
-	if (astrodb_search_add_operator(search, ADB_OP_AND))
+	if (adb_search_add_operator(search, ADB_OP_AND))
 		fprintf(stderr, "failed to add op and\n");
 
-	if (astrodb_search_add_comparator(search, "RV", ADB_COMP_LT, "40"))
+	if (adb_search_add_comparator(search, "RV", ADB_COMP_LT, "40"))
 		fprintf(stderr, "failed to add comp RV\n");
-	if (astrodb_search_add_comparator(search, "RV", ADB_COMP_GT, "25"))
+	if (adb_search_add_comparator(search, "RV", ADB_COMP_GT, "25"))
 		fprintf(stderr, "failed to add comp RV\n");
-	if (astrodb_search_add_operator(search, ADB_OP_AND))
+	if (adb_search_add_operator(search, ADB_OP_AND))
 		fprintf(stderr, "failed to add op and\n");
-	if (astrodb_search_add_operator(search, ADB_OP_AND))
+	if (adb_search_add_operator(search, ADB_OP_AND))
 		fprintf(stderr, "failed to add op or\n");
 
 	start_timer();
-	if ((err = astrodb_search_get_results(search, set, &object)) < 0) {
+	if ((err = adb_search_get_results(search, set, &object)) < 0) {
 		fprintf(stderr, "Search init failed %d\n", err);
-		astrodb_search_free(search);
+		adb_search_free(search);
 		return err;
 	}
-	end_timer(astrodb_search_get_tests(search), 0);
+	end_timer(adb_search_get_tests(search), 0);
 
 	fprintf(stdout, "   Search got %d objects out of %d tests\n\n",
-		astrodb_search_get_hits(search),
-		astrodb_search_get_tests(search));
+		adb_search_get_hits(search),
+		adb_search_get_tests(search));
 
-	search_print(object, astrodb_search_get_hits(search));
+	search_print(object, adb_search_get_hits(search));
 
-	astrodb_search_free(search);
-	astrodb_table_set_free(set);
+	adb_search_free(search);
+	adb_table_set_free(set);
 	return 0;
 }
 
@@ -457,44 +457,44 @@ static int search1(struct astrodb_db *db, int table_id)
  * Search for all G type stars
  * Uses Wildcard "G5*" to match with Sp
  */
-static int search2(struct astrodb_db *db, int table_id)
+static int search2(struct adb_db *db, int table_id)
 {
-	const struct astrodb_object **object;
-	struct astrodb_search *search;
-	struct astrodb_object_set *set;
+	const struct adb_object **object;
+	struct adb_search *search;
+	struct adb_object_set *set;
 	int err;
 
-	search = astrodb_search_new(db, table_id);
+	search = adb_search_new(db, table_id);
 	if (!search)
 		return -ENOMEM;
 
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
 	fprintf(stdout, "Searching for G5 class objects\n");
-	if (astrodb_search_add_comparator(search, "Sp", ADB_COMP_EQ, "G5*"))
+	if (adb_search_add_comparator(search, "Sp", ADB_COMP_EQ, "G5*"))
 		fprintf(stderr, "failed to add comp G5*\n");
-	if (astrodb_search_add_operator(search, ADB_OP_OR))
+	if (adb_search_add_operator(search, ADB_OP_OR))
 		fprintf(stderr, "failed to add op or\n");
 
 	start_timer();
-	err = astrodb_search_get_results(search, set, &object);
+	err = adb_search_get_results(search, set, &object);
 	if (err < 0) {
 		fprintf(stderr, "Search init failed %d\n", err);
-		astrodb_search_free(search);
+		adb_search_free(search);
 		return err;
 	}
 
-	end_timer(astrodb_search_get_tests(search), 0);
+	end_timer(adb_search_get_tests(search), 0);
 	fprintf(stdout, "   Search found %d objects out of %d tests\n\n",
-		astrodb_search_get_hits(search),
-		astrodb_search_get_tests(search));
+		adb_search_get_hits(search),
+		adb_search_get_tests(search));
 
-	search_print(object, astrodb_search_get_hits(search));
+	search_print(object, adb_search_get_hits(search));
 
-	astrodb_search_free(search);
-	astrodb_table_set_free(set);
+	adb_search_free(search);
+	adb_table_set_free(set);
 	return 0;
 }
 
@@ -502,50 +502,50 @@ static int search2(struct astrodb_db *db, int table_id)
  * Search for all M1 type stars
  * Uses Wildcard "M1" to match with Sp
  */
-static int search3(struct astrodb_db *db, int table_id)
+static int search3(struct adb_db *db, int table_id)
 {
-	const struct astrodb_object **object;
-	struct astrodb_search *search;
-	struct astrodb_object_set *set;
+	const struct adb_object **object;
+	struct adb_search *search;
+	struct adb_object_set *set;
 	int err;
 
-	search = astrodb_search_new(db, table_id);
+	search = adb_search_new(db, table_id);
 	if (!search)
 		return -ENOMEM;
 
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
 	fprintf(stdout, "Searching for M1 class objects\n");
 
-	if (astrodb_search_add_comparator(search, "Sp", ADB_COMP_EQ, "M1"))
+	if (adb_search_add_comparator(search, "Sp", ADB_COMP_EQ, "M1"))
 		fprintf(stderr, "failed to add comp M1*\n");
-	if (astrodb_search_add_operator(search, ADB_OP_OR))
+	if (adb_search_add_operator(search, ADB_OP_OR))
 		fprintf(stderr, "failed to add op or\n");
 
 	start_timer();
-	err = astrodb_search_get_results(search, set, &object);
+	err = adb_search_get_results(search, set, &object);
 
 	if (err < 0) {
 		fprintf(stderr, "Search init failed %d\n", err);
-		astrodb_search_free(search);
+		adb_search_free(search);
 		return err;
 	}
 
-	end_timer(astrodb_search_get_tests(search), 0);
+	end_timer(adb_search_get_tests(search), 0);
 	fprintf(stdout, "   Found %d objects out of %d tests\n\n",
-		astrodb_search_get_hits(search),
-		astrodb_search_get_tests(search));
+		adb_search_get_hits(search),
+		adb_search_get_tests(search));
 
-	search_print(object, astrodb_search_get_hits(search));
+	search_print(object, adb_search_get_hits(search));
 
-	astrodb_search_free(search);
-	astrodb_table_set_free(set);
+	adb_search_free(search);
+	adb_table_set_free(set);
 	return 0;
 }
 
-static void get_printf(const struct astrodb_object_head *object_head, int heads)
+static void get_printf(const struct adb_object_head *object_head, int heads)
 {
 	const struct sky2kv4_object *obj;
 	int i, j;
@@ -567,7 +567,7 @@ static void get_printf(const struct astrodb_object_head *object_head, int heads)
 	}
 }
 
-static void object_printf(const struct astrodb_object *object)
+static void object_printf(const struct adb_object *object)
 {
 	const struct sky2kv4_object *obj = (const struct sky2kv4_object *)object;
 
@@ -580,39 +580,39 @@ static void object_printf(const struct astrodb_object *object)
 /*
  * Get all the objects in the dataset.
  */
-static int get1(struct astrodb_db *db, int table_id)
+static int get1(struct adb_db *db, int table_id)
 {
-	struct astrodb_object_set *set;
+	struct adb_object_set *set;
 	int count, heads;
 
 	fprintf(stdout, "Get all objects\n");
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
-	astrodb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 16.0);
+	adb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 16.0);
 
-	heads = astrodb_table_set_get_objects(set);
+	heads = adb_table_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
 	get_printf(adb_set_get_head(set), heads);
 
-	astrodb_table_set_free(set);
+	adb_table_set_free(set);
 	return 0;
 }
 
 /*
  * Get all the objects brighter than mag 3 in the dataset.
  */
-static int get2(struct astrodb_db *db, int table_id)
+static int get2(struct adb_db *db, int table_id)
 {
-	struct astrodb_object_set *set;
+	struct adb_object_set *set;
 	int count, heads;
 
 	fprintf(stdout, "Get all objects < mag 2\n");
 
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
@@ -621,29 +621,29 @@ static int get2(struct astrodb_db *db, int table_id)
 	 * we may get some objects fainter than mag 3 depending on the mag clip
 	 * boundary. This is not a problem for rendering sky views.
 	 */
-	astrodb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 2.0);
+	adb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 2.0);
 
-	heads = astrodb_table_set_get_objects(set);
+	heads = adb_table_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
 	get_printf(adb_set_get_head(set), heads);
 
-	astrodb_table_set_free(set);
+	adb_table_set_free(set);
 	return 0;
 }
 
 /*
  * Get all the objects brighter than mag 3 in the dataset.
  */
-static int get3(struct astrodb_db *db, int table_id)
+static int get3(struct adb_db *db, int table_id)
 {
-	struct astrodb_object_set *set;
+	struct adb_object_set *set;
 	int count, heads;
 
 	fprintf(stdout, "Get all objects < mag 2, in radius 30 deg around 0,0\n");
 
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
@@ -652,80 +652,80 @@ static int get3(struct astrodb_db *db, int table_id)
 	 * we may get some objects fainter than mag 3 depending on the mag clip
 	 * boundary. This is not a problem for rendering sky views.
 	 */
-	astrodb_table_set_constraints(set, 0.0, 0.0, 30.0, -2.0, 2.0);
+	adb_table_set_constraints(set, 0.0, 0.0, 30.0, -2.0, 2.0);
 
-	heads = astrodb_table_set_get_objects(set);
+	heads = adb_table_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
 	get_printf(adb_set_get_head(set), heads);
 
-	astrodb_table_set_free(set);
+	adb_table_set_free(set);
 	return 0;
 }
 
-static int get4(struct astrodb_db *db, int table_id)
+static int get4(struct adb_db *db, int table_id)
 {
-	const struct astrodb_object *object, *objectn;
-	struct astrodb_object_set *set;
+	const struct adb_object *object, *objectn;
+	struct adb_object_set *set;
 	int found, id = 58977;
 
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		return -ENOMEM;
 
 	fprintf(stdout, "Get object HD 58977 \n");
-	found = astrodb_table_set_get_object(set, &id, "HD", &object);
+	found = adb_table_set_get_object(set, &id, "HD", &object);
 	if (found)
 		object_printf(object);
 
 	fprintf(stdout, "Get object 21alp Sc\n");
-	found = astrodb_table_set_get_object(set, "21alp Sc", "Name", &object);
+	found = adb_table_set_get_object(set, "21alp Sc", "Name", &object);
 	if (found)
 		object_printf(object);
 
 	fprintf(stdout, "Get nearest object in db to 21alp Sc\n");
-	objectn = astrodb_table_set_get_nearest_on_object(set, object);
+	objectn = adb_table_set_get_nearest_on_object(set, object);
 	if (objectn)
 		object_printf(objectn);
 
 	fprintf(stdout, "Get nearest object in db to north pole\n");
-	objectn = astrodb_table_set_get_nearest_on_pos(set, 0.0 * D2R, 90.0 * D2R);
+	objectn = adb_table_set_get_nearest_on_pos(set, 0.0 * D2R, 90.0 * D2R);
 	if (objectn)
 		object_printf(objectn);
 
-	objectn = astrodb_table_set_get_nearest_on_pos(set, 181.0 * D2R, 90.0 * D2R);
+	objectn = adb_table_set_get_nearest_on_pos(set, 181.0 * D2R, 90.0 * D2R);
 	if (objectn)
 		object_printf(objectn);
 
-	astrodb_table_set_free(set);
+	adb_table_set_free(set);
 	return 0;
 }
 
 static int sky2k_import(char *lib_dir)
 {
-	struct astrodb_library *lib;
-	struct astrodb_db *db;
+	struct adb_library *lib;
+	struct adb_db *db;
 	int ret, table_id;
 
 	/* set the remote CDS server and initialise local repository/cache */
-	lib = astrodb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
+	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
 	if (lib == NULL) {
 		fprintf(stderr, "failed to open library\n");
 		return -ENOMEM;
 	}
 
-	db = astrodb_create_db(lib, 7, 1);
+	db = adb_create_db(lib, 7, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	astrodb_set_msg_level(db, ADB_MSG_DEBUG);
-	astrodb_set_log_level(db, ADB_LOG_ALL);
+	adb_set_msg_level(db, ADB_MSG_DEBUG);
+	adb_set_log_level(db, ADB_LOG_ALL);
 
-	table_id = astrodb_table_import_new(db, "V", "109", "sky2kv4",
+	table_id = adb_table_import_new(db, "V", "109", "sky2kv4",
 			"Vmag", -2.0, 14.0, ADB_OTYPE_STAR);
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create import table\n");
@@ -733,8 +733,8 @@ static int sky2k_import(char *lib_dir)
 		goto out;
 	}
 
-	ret = astrodb_table_import_schema(db, table_id, star_fields,
-		astrodb_size(star_fields), sizeof(struct sky2kv4_object));
+	ret = adb_table_import_schema(db, table_id, star_fields,
+		adb_size(star_fields), sizeof(struct sky2kv4_object));
 	if (ret < 0) {
 		fprintf(stderr, "%s: failed to register object type\n", __func__);
 		goto out;
@@ -743,47 +743,47 @@ static int sky2k_import(char *lib_dir)
 	/* Vmag is blank in some records in the dataset, so we use can Vder
 	 * as an alternate field.
 	 */
-	ret = astrodb_table_import_field(db, table_id, "Vmag", "Vder", 0);
+	ret = adb_table_import_field(db, table_id, "Vmag", "Vder", 0);
 	if (ret < 0) {
 		fprintf(stderr, "failed to add alt index\n");
 		goto out;
 	}
 
-	ret = astrodb_table_import(db, table_id);
+	ret = adb_table_import(db, table_id);
 	if (ret < 0)
 		fprintf(stderr, "failed to import\n");
 
 out:
-	astrodb_db_free(db);
-	astrodb_close_library(lib);
+	adb_db_free(db);
+	adb_close_library(lib);
 	return ret;
 }
 
 static int sky2k_query(char *lib_dir)
 {
-	struct astrodb_library *lib;
-	struct astrodb_db *db;
+	struct adb_library *lib;
+	struct adb_db *db;
 	int ret = 0, table_id;
 
 	/* set the remote CDS server and initialise local repository/cache */
-	lib = astrodb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
+	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
 	if (lib == NULL) {
 		fprintf(stderr, "failed to open library\n");
 		return -ENOMEM;
 	}
 
-	db = astrodb_create_db(lib, 7, 1);
+	db = adb_create_db(lib, 7, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
 		goto lib_err;
 	}
 
-	astrodb_set_msg_level(db, ADB_MSG_DEBUG);
-	astrodb_set_log_level(db, ADB_LOG_ALL);
+	adb_set_msg_level(db, ADB_MSG_DEBUG);
+	adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use CDS catalog class V, #109, dataset skykv4 */
-	table_id = astrodb_table_open(db, "V", "109", "sky2kv4");
+	table_id = adb_table_open(db, "V", "109", "sky2kv4");
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create table\n");
 		ret = table_id;
@@ -791,8 +791,8 @@ static int sky2k_query(char *lib_dir)
 	}
 
 	/* create a fast lookup hash on object HD number and name */
-	astrodb_table_hash_key(db, table_id, "HD");
-	astrodb_table_hash_key(db, table_id, "Name");
+	adb_table_hash_key(db, table_id, "HD");
+	adb_table_hash_key(db, table_id, "Name");
 
 	/* we can now perform operations on the dbalog data !!! */
 	get1(db, table_id);
@@ -805,17 +805,17 @@ static int sky2k_query(char *lib_dir)
 
 	/* were done with the db */
 table_err:
-	astrodb_table_close(db, table_id);
-	astrodb_db_free(db);
+	adb_table_close(db, table_id);
+	adb_db_free(db);
 
 lib_err:
 	/* were now done with library */
-	astrodb_close_library(lib);
+	adb_close_library(lib);
 	return ret;
 }
 
 /* Pleiades M45 plate objects */
-static struct astrodb_pobject pobject[] = {
+static struct adb_pobject pobject[] = {
 	//{513, 434, 408725},  /* Alcyone 25 - RA 3h47m29s DEC 24d06m18s Mag 2.86 */
 	{141, 545, 123643},  /* 1 Atlas 27  - RA 3h49m09s DEC 24d03m12s Mag 3.62 */
 	{1049, 197, 128424}, /* P Electra 17 - RA 3h44m52s DEC 24d06m48s Mag 3.70 */
@@ -826,34 +826,34 @@ static struct astrodb_pobject pobject[] = {
 
 static int sky2k_solve(char *lib_dir)
 {
-	struct astrodb_library *lib;
-	struct astrodb_db *db;
-	struct astrodb_solve *solve;
-	struct astrodb_object_set *set;
-	struct astrodb_solve_objects *solve_objects;
-	const struct astrodb_object *object;
-	struct astrodb_object unknown;
+	struct adb_library *lib;
+	struct adb_db *db;
+	struct adb_solve *solve;
+	struct adb_object_set *set;
+	struct adb_solve_objects *solve_objects;
+	const struct adb_object *object;
+	struct adb_object unknown;
 	int ret = 0, table_id, found, i;
 
 	/* set the remote CDS server and initialise local repository/cache */
-	lib = astrodb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
+	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
 	if (lib == NULL) {
 		fprintf(stderr, "failed to open library\n");
 		return -ENOMEM;
 	}
 
-	db = astrodb_create_db(lib, 7, 1);
+	db = adb_create_db(lib, 7, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
 		goto lib_err;
 	}
 
-	astrodb_set_msg_level(db, ADB_MSG_DEBUG);
-	astrodb_set_log_level(db, ADB_LOG_ALL);
+	adb_set_msg_level(db, ADB_MSG_DEBUG);
+	adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use CDS catalog class V, #109, dataset skykv4 */
-	table_id = astrodb_table_open(db, "V", "109", "sky2kv4");
+	table_id = adb_table_open(db, "V", "109", "sky2kv4");
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create table\n");
 		ret = table_id;
@@ -861,62 +861,62 @@ static int sky2k_solve(char *lib_dir)
 	}
 
 	/* create a new set for solver */
-	set = astrodb_table_set_new(db, table_id);
+	set = adb_table_set_new(db, table_id);
 	if (!set)
 		goto set_err;
 
 	/* set sky area constraints for solver */
-	astrodb_table_set_constraints(set, 60.0, 30.0, 90.0, -2.0, 5.0);
+	adb_table_set_constraints(set, 60.0, 30.0, 90.0, -2.0, 5.0);
 
 	/* we can now solve images */
-	solve = astrodb_solve_new(db, table_id);
+	solve = adb_solve_new(db, table_id);
 
 	/* set magnitude and distance constraints */
-	astrodb_solve_constraint(solve, ADB_CONSTRAINT_MAG, 6.0, -2.0);
-	astrodb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1, 2.0);
+	adb_solve_constraint(solve, ADB_CONSTRAINT_MAG, 6.0, -2.0);
+	adb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1, 2.0);
 
 	/* add plate/ccd objects */
-	astrodb_solve_add_plate_object(solve, &pobject[0]);
-	astrodb_solve_add_plate_object(solve, &pobject[1]);
-	astrodb_solve_add_plate_object(solve, &pobject[2]);
-	astrodb_solve_add_plate_object(solve, &pobject[3]);
+	adb_solve_add_plate_object(solve, &pobject[0]);
+	adb_solve_add_plate_object(solve, &pobject[1]);
+	adb_solve_add_plate_object(solve, &pobject[2]);
+	adb_solve_add_plate_object(solve, &pobject[3]);
 
 	/* set image tolerances */
-	astrodb_solve_set_magnitude_delta(solve, 0.25);
-	astrodb_solve_set_distance_delta(solve, 4.0);
-	astrodb_solve_set_pa_delta(solve, 2.0);
+	adb_solve_set_magnitude_delta(solve, 0.25);
+	adb_solve_set_distance_delta(solve, 4.0);
+	adb_solve_set_pa_delta(solve, 2.0);
 
 	start_timer();
-	found = astrodb_solve(solve, set, ADB_FIND_FIRST);
+	found = adb_solve(solve, set, ADB_FIND_FIRST);
 	end_timer(found, 0);
 	fprintf(stdout, "found %d prospects\n", found);
 
 	/* dump first set of objects */
-	astrodb_solve_get_solutions(solve, 0, &solve_objects);
+	adb_solve_get_solutions(solve, 0, &solve_objects);
 	for (i = 0; i < 4; i++)
 		object_printf(solve_objects->object[i]);
 
 	/* set FoV and mag limits for single object searches */
-	astrodb_solve_prep_solution(solve, 0, 2.0, 8.0);
+	adb_solve_prep_solution(solve, 0, 2.0, 8.0);
 
 	/* get subsequent objects */
-	astrodb_solve_get_object(solve, solve_objects, &pobject[4],
+	adb_solve_get_object(solve, solve_objects, &pobject[4],
 			&object, &unknown);
 	object_printf(object);
 
 	/* were done with the db */
-	astrodb_solve_free(solve);
+	adb_solve_free(solve);
 
-	astrodb_table_set_free(set);
+	adb_table_set_free(set);
 
 set_err:
-	astrodb_table_close(db, table_id);
+	adb_table_close(db, table_id);
 table_err:
-	astrodb_db_free(db);
+	adb_db_free(db);
 
 lib_err:
 	/* were now done with library */
-	astrodb_close_library(lib);
+	adb_close_library(lib);
 	return ret;
 }
 
@@ -933,7 +933,7 @@ int main(int argc, char *argv[])
 {
 	int i;
 
-	fprintf(stdout, "%s using libastrodb %s\n\n", argv[0], astrodb_get_version());
+	fprintf(stdout, "%s using libastrodb %s\n\n", argv[0], adb_get_version());
 
 	if (argc < 3)
 		usage(argv[0]);

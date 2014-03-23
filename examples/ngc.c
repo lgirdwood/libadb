@@ -30,32 +30,32 @@
 static struct timeval start, end;
 
 struct ngc_object {
-	struct astrodb_object object;
+	struct adb_object object;
 	unsigned char type[4];
 	char desc[51];		/* description */
 	float size;
 };
 
-static struct astrodb_schema_field star_fields[] = {
-	astrodb_member("Name", "Name", struct ngc_object,
+static struct adb_schema_field star_fields[] = {
+	adb_member("Name", "Name", struct ngc_object,
 		object.designation, ADB_CTYPE_STRING, "", 0, NULL),
-	astrodb_member("Type", "Type", struct ngc_object,
+	adb_member("Type", "Type", struct ngc_object,
 		type, ADB_CTYPE_STRING, "", 0, NULL),
-	astrodb_gmember("RA Hours", "RAh", struct ngc_object, \
+	adb_gmember("RA Hours", "RAh", struct ngc_object, \
 		object.posn_mag.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 1, NULL),
-	astrodb_gmember("RA Minutes", "RAm", struct ngc_object,
+	adb_gmember("RA Minutes", "RAm", struct ngc_object,
 		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 0, NULL),
-	astrodb_gmember("DEC Degrees", "DEd", struct ngc_object, \
+	adb_gmember("DEC Degrees", "DEd", struct ngc_object, \
 		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 2, NULL),
-	astrodb_gmember("DEC Minutes", "DEm", struct ngc_object,
+	adb_gmember("DEC Minutes", "DEm", struct ngc_object,
 		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 1, NULL),
-	astrodb_gmember("DEC sign", "DE-", struct ngc_object,
+	adb_gmember("DEC sign", "DE-", struct ngc_object,
 		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL),
-	astrodb_member("Integrated Mag", "mag", struct ngc_object,
+	adb_member("Integrated Mag", "mag", struct ngc_object,
 		object.posn_mag.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL),
-	astrodb_member("Description", "Desc", struct ngc_object,
+	adb_member("Description", "Desc", struct ngc_object,
 		desc, ADB_CTYPE_STRING, "", 0, NULL),
-	astrodb_gmember("Largest Dimension", "size", struct ngc_object, \
+	adb_gmember("Largest Dimension", "size", struct ngc_object, \
 		size,  ADB_CTYPE_FLOAT, "arcmin", 0, NULL),
 };
 
@@ -83,15 +83,15 @@ static void end_timer(int objects, int bytes)
 /* 
  * Get all the objects in the dataset.
  */
-static int get_all(struct astrodb_db *db, int table_id)
+static int get_all(struct adb_db *db, int table_id)
 {
 	int count, heads;
-	struct astrodb_object **object;
+	struct adb_object **object;
 
 	fprintf(stdout,"Get all dataset objects\n");
-	astrodb_table_unclip(db, table_id);
-	astrodb_table_clip_on_fov(db, table_id, 0.0, 0.0, 360.0, -2.0, 16.0);
-	heads = astrodb_table_get_objects(db, table_id, &object, &count);
+	adb_table_unclip(db, table_id);
+	adb_table_clip_on_fov(db, table_id, 0.0, 0.0, 360.0, -2.0, 16.0);
+	heads = adb_table_get_objects(db, table_id, &object, &count);
 	fprintf(stdout,"   found %d object list heads %d objects\n\n", heads, count);
 
 	return 0;
@@ -99,61 +99,61 @@ static int get_all(struct astrodb_db *db, int table_id)
 
 int main(int argc, char *argv[])
 {
-	struct astrodb_db *db;
-	struct astrodb_library *lib;
+	struct adb_db *db;
+	struct adb_library *lib;
 	int table_id, table_size, object_size;
 
-	fprintf(stdout,"%s using libastrodb %s\n\n", argv[0], astrodb_get_version());
+	fprintf(stdout,"%s using libastrodb %s\n\n", argv[0], adb_get_version());
 	
 	/* set the remote db and initialise local repository/cache */
-	lib = astrodb_open_library("cdsarc.u-strasbg.fr", "/pub/cats",  argv[1]);
+	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats",  argv[1]);
 	if (lib == NULL) {
 		fprintf(stderr,"failed to open library\n");
 		return -1;
 	}
 
-	db = astrodb_create_db(lib, 1.0 * D2R, 1);
+	db = adb_create_db(lib, 1.0 * D2R, 1);
 	if (db == NULL) {
 		fprintf(stderr,"failed to create db\n");
 		return -1;
 	}
-	//astrodb_set_msg_level(db, ADB_MSG_DEBUG);
-	//astrodb_set_log_level(db, ADB_LOG_ALL);
+	//adb_set_msg_level(db, ADB_MSG_DEBUG);
+	//adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use the first dataset in this example */
-	table_id = astrodb_table_create(db, "VII", "118", "ngc2000.dat",
+	table_id = adb_table_create(db, "VII", "118", "ngc2000.dat",
 			ADB_POSITION_MAG, -2.0, 18.0, 1.0);
 	if (table_id < 0) {
 		fprintf(stderr,"failed to create table\n");
 		return -1;
 	}
 
-	if (astrodb_table_register_schema(db, table_id, star_fields,
-		astrodb_size(star_fields), sizeof(struct ngc_object)) < 0)
+	if (adb_table_register_schema(db, table_id, star_fields,
+		adb_size(star_fields), sizeof(struct ngc_object)) < 0)
 		fprintf(stderr,"%s: failed to register object type\n", __func__);
 
-	astrodb_table_hash_key(db, table_id, "Name");
+	adb_table_hash_key(db, table_id, "Name");
 
 	/* Import the dataset from remote/local repo into memory/disk cache */
 	start_timer();
-	if (astrodb_table_open(db, table_id, 0) < 0) {
+	if (adb_table_open(db, table_id, 0) < 0) {
 		fprintf(stderr,"failed to open table\n");
 		return -1;
 	}
 
-	table_size = astrodb_table_get_size(db, table_id);
-	object_size = astrodb_table_get_object_size(db, table_id);
+	table_size = adb_table_get_size(db, table_id);
+	object_size = adb_table_get_object_size(db, table_id);
 	end_timer(table_size / object_size, table_size);
 
 	/* we can now perform operations on the dbalog data !!! */
 	get_all(db, table_id);
 
 	/* were done with the dataset */
-	astrodb_table_close(db, table_id);
+	adb_table_close(db, table_id);
 
 	/* were now done with dbalog */
-	astrodb_db_free(db);
-	astrodb_close_library(lib);
+	adb_db_free(db);
+	adb_close_library(lib);
 
 	return 0;
 }

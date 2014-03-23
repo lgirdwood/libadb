@@ -167,7 +167,7 @@ static int get_description(struct readme *info, FILE *fp)
 #define FILE_EXPLANATION_OFFSET		31
 
 /* read all table files from readMe */
-static int get_files(struct astrodb_db *db, struct readme *readme, FILE *fp)
+static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 {
 	char line[README_LINE_SIZE], *end;
 	struct cds_file_info *file_info;
@@ -223,7 +223,7 @@ static int get_files(struct astrodb_db *db, struct readme *readme, FILE *fp)
 /*
  * Format, Label  and Explanation line offsets vary between files.
  */
-static int get_byte_desc_offset(struct astrodb_db *db,
+static int get_byte_desc_offset(struct adb_db *db,
 	struct readme *readme, int file_id,  FILE *fp)
 {
 	char line[README_LINE_SIZE], * end, *offset;
@@ -252,7 +252,7 @@ static int get_byte_desc_offset(struct astrodb_db *db,
 }
 
 /* Parse a single byte by byte description */
-static int get_byte_desc(struct astrodb_db *db, struct readme *readme,
+static int get_byte_desc(struct adb_db *db, struct readme *readme,
 	int file_id,  FILE *fp)
 {
 	char line[README_LINE_SIZE], cont[README_LINE_SIZE], *end;
@@ -346,7 +346,7 @@ static inline int get_file_id(struct readme *readme, char *table_name)
 }
 
 /* parse all ReadMe byte-by-byte descriptions */
-static int get_byte_description(struct astrodb_db *db, struct readme *readme, FILE *fp)
+static int get_byte_description(struct adb_db *db, struct readme *readme, FILE *fp)
 {
 	struct cds_file_info *file_info;
 	char table_name[README_LINE_SIZE];
@@ -396,7 +396,7 @@ static int get_byte_description(struct astrodb_db *db, struct readme *readme, FI
 	return 0;
 }
 
-struct readme *readme_parse(struct astrodb_db *db, char *file)
+struct readme *readme_parse(struct adb_db *db, char *file)
 {
 	struct readme *readme;
 	FILE *fp;
@@ -441,9 +441,9 @@ void readme_free(struct readme *readme)
 	free(readme);
 }
 
-int table_parse_readme(struct astrodb_db *db, int table_id)
+int table_parse_readme(struct adb_db *db, int table_id)
 {
-	struct astrodb_table *table = &db->table[table_id];
+	struct adb_table *table = &db->table[table_id];
 	char file[ADB_PATH_SIZE];
 
 	snprintf(file, ADB_PATH_SIZE, "%s%s", table->path.local, "ReadMe");

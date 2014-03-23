@@ -56,7 +56,7 @@ static int create_lib_local_dirs(const char *location)
 	}
 
 	/* create sub dirs */
-	for (i = 0; i < astrodb_size(dirs); i++) {
+	for (i = 0; i < adb_size(dirs); i++) {
 		snprintf(dir, ADB_PATH_SIZE, "%s%s", location, dirs[i]);
 		if (stat(dir, &stat_info) < 0) {
 			if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
@@ -68,26 +68,26 @@ static int create_lib_local_dirs(const char *location)
 	return ret;
 }
 
-/*! \fn astrodb_library* astrodb_open_library(char* remote, char* local)
+/*! \fn adb_library* adb_open_library(char* remote, char* local)
  * \param local Local library repository location
  * \param remote Remote repository location
- * \returns A astrodb_library object or NULL on failure
+ * \returns A adb_library object or NULL on failure
  *
  * Initialises a CDS library structure on disk at location specified.
  *
  * This typically only needs to be called once per program.
  */
 
-struct astrodb_library *astrodb_open_library(const char *host,
+struct adb_library *adb_open_library(const char *host,
 	const char *remote, const char *local)
 {
-	struct astrodb_library *lib;
+	struct adb_library *lib;
 	int err;
 
 	if (local == NULL)
 		return NULL;
 
-	lib = calloc(1, sizeof(struct astrodb_library));
+	lib = calloc(1, sizeof(struct adb_library));
 	if (lib == NULL)
 		return NULL;
 #if 0
@@ -121,12 +121,12 @@ err:
 }
 
 
-/*! \fn void astrodb_close_library(astrodb_library* lib)
+/*! \fn void adb_close_library(adb_library* lib)
  * \param lib Library to free
  *
  * Free's all library resources.
  */
-void astrodb_close_library(struct astrodb_library * lib)
+void adb_close_library(struct adb_library * lib)
 {
 	//astrolib_info(lib, ADB_LOG_CDS_DBDB, "Closed local CDS library\n");
 	free(lib->remote);
@@ -134,27 +134,27 @@ void astrodb_close_library(struct astrodb_library * lib)
 	free(lib);
 }
 
-void astrodb_set_msg_level(struct astrodb_db *db, enum astrodb_msg_level level)
+void adb_set_msg_level(struct adb_db *db, enum adb_msg_level level)
 {
 	db->msg_level = level;
 	db->htm->msg_level = level;
 }
 
-void astrodb_set_log_level(struct astrodb_db *db, unsigned int log)
+void adb_set_log_level(struct adb_db *db, unsigned int log)
 {
 	db->msg_flags = log;
 	db->htm->msg_flags = log;
 }
 
-/*! \fn astrodb_db* astrodb_create_db(struct astrodb_library* lib, 
+/*! \fn adb_db* adb_create_db(struct adb_library* lib, 
  *
  */
-struct astrodb_db *astrodb_create_db(struct astrodb_library *lib,
+struct adb_db *adb_create_db(struct adb_library *lib,
  		int depth, int tables)
 {
-	struct astrodb_db *db;
+	struct adb_db *db;
 
-	db = (struct astrodb_db *) calloc(1, sizeof(struct astrodb_db));
+	db = (struct adb_db *) calloc(1, sizeof(struct adb_db));
 	if (db == NULL)
 		return NULL;
 	db->lib = lib;
@@ -181,24 +181,24 @@ struct astrodb_db *astrodb_create_db(struct astrodb_library *lib,
 	return db;
 }
 
-/*! \fn void astrodb_db_free (astrodb_db *db)
+/*! \fn void adb_db_free (adb_db *db)
  * \param db Catalog
  * 
  * Free's all catalog resources
  */
-void astrodb_db_free(struct astrodb_db *db)
+void adb_db_free(struct adb_db *db)
 {
 	// TODO: free tables and htm
 	htm_free(db->htm);
 	free(db);
 }
 
-/*! \fn const char* astrodb_get_version(void);
+/*! \fn const char* adb_get_version(void);
  * \return libastrodb version
  *
  * Get the libastrodb version number.
  */
-const char *astrodb_get_version(void)
+const char *adb_get_version(void)
 {
 	return VERSION;
 }

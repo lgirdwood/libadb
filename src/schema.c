@@ -24,7 +24,7 @@
 #include <libastrodb/readme.h>
 #include <libastrodb/adbstdio.h>
 
-static int schema_is_field(struct astrodb_table *table, char *field)
+static int schema_is_field(struct adb_table *table, char *field)
 {
 	int i;
 
@@ -41,7 +41,7 @@ static int schema_is_field(struct astrodb_table *table, char *field)
 	return 0;
 }
 
-int schema_get_field(struct astrodb_db *db, struct astrodb_table *table,
+int schema_get_field(struct adb_db *db, struct adb_table *table,
 	const char *field)
 {
 	int i;
@@ -55,7 +55,7 @@ int schema_get_field(struct astrodb_db *db, struct astrodb_table *table,
 	return -EINVAL;
 }
 
-int schema_get_alt_field(struct astrodb_db *db, struct astrodb_table *table,
+int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
 	const char *field)
 {
 	int i;
@@ -73,11 +73,11 @@ int schema_get_alt_field(struct astrodb_db *db, struct astrodb_table *table,
  * Add an alternative field to the dataset. Move it's primary out
  * of the field and into the alt field.
  */
-int schema_add_alternative_field(struct astrodb_db *db,
-	struct astrodb_table *table, const char *field, int pri_idx)
+int schema_add_alternative_field(struct adb_db *db,
+	struct adb_table *table, const char *field, int pri_idx)
 {
 	struct cds_file_info *file_info = table->import.file_info;
-	struct astrodb_schema_field *sec =
+	struct adb_schema_field *sec =
 		&table->import.alt_field[table->object.num_alt_fields].alt_field;
 	int desc;
 
@@ -101,13 +101,13 @@ int schema_add_alternative_field(struct astrodb_db *db,
 			/* move primary field index and insert */
 			memcpy(&table->import.alt_field[table->object.num_alt_fields].key_field,
 			       &table->import.field[pri_idx],
-			       sizeof(struct astrodb_schema_field));
+			       sizeof(struct adb_schema_field));
 			adb_info(db, ADB_LOG_CDS_SCHEMA, "Object fields %d\n", table->object.field_count);
 
 			if (table->object.field_count > pri_idx){
 				memmove(&table->import.field[pri_idx],
 					&table->import.field[pri_idx+1],
-					sizeof(struct astrodb_schema_field) *
+					sizeof(struct adb_schema_field) *
 					(table->object.field_count - pri_idx));
 			}
 
@@ -120,7 +120,7 @@ int schema_add_alternative_field(struct astrodb_db *db,
 	return 0;
 }
 
-static void schema_dump(struct astrodb_db *db, struct astrodb_table *table)
+static void schema_dump(struct adb_db *db, struct adb_table *table)
 {
 	int i;
 
@@ -158,12 +158,12 @@ static void schema_dump(struct astrodb_db *db, struct astrodb_table *table)
 	}
 }
 
-int schema_order_import_index(struct astrodb_db *db, struct astrodb_table *table)
+int schema_order_import_index(struct adb_db *db, struct adb_table *table)
 {
 	int i, j, lowest_src, src = 0, group, fields = 0;
-	struct astrodb_schema_field *idx, *idx_start;
+	struct adb_schema_field *idx, *idx_start;
 
-	idx_start = idx = calloc(1, sizeof(struct astrodb_schema_field) *
+	idx_start = idx = calloc(1, sizeof(struct adb_schema_field) *
 		table->object.field_count);
 	if (idx == NULL)
 		return -ENOMEM;
@@ -197,7 +197,7 @@ int schema_order_import_index(struct astrodb_db *db, struct astrodb_table *table
 
 		/* do copy */
 		memcpy(idx, &table->import.field[src],
-			sizeof(struct astrodb_schema_field));
+			sizeof(struct adb_schema_field));
 		table->import.field[src].struct_bytes = 0;
 		idx++;
 		fields++;
@@ -205,18 +205,18 @@ int schema_order_import_index(struct astrodb_db *db, struct astrodb_table *table
 
 	/* copy back to table */
 	memcpy(table->import.field, idx_start,
-		sizeof(struct astrodb_schema_field) * table->object.field_count);
+		sizeof(struct adb_schema_field) * table->object.field_count);
 	free(idx_start);
 
 	schema_dump(db, table);
 	return 0;
 }
 
-static int schema_add_field_file(struct astrodb_db *db, struct astrodb_table *table,
-	struct astrodb_schema_field *new_schema_object)
+static int schema_add_field_file(struct adb_db *db, struct adb_table *table,
+	struct adb_schema_field *new_schema_object)
 {
 	struct cds_file_info *file_info = table->import.file_info;
-	struct astrodb_schema_field *didx;
+	struct adb_schema_field *didx;
 	int desc;
 
 	for (desc = 0; desc < file_info->num_desc; desc++) {
@@ -227,7 +227,7 @@ static int schema_add_field_file(struct astrodb_db *db, struct astrodb_table *ta
 		if (!strncmp(new_schema_object->symbol, byte_desc->label, strlen(byte_desc->label)) &&
 		    !schema_is_field(table, byte_desc->label)) {
 
-			memcpy(didx, new_schema_object, sizeof(struct astrodb_schema_field));
+			memcpy(didx, new_schema_object, sizeof(struct adb_schema_field));
 			didx->text_offset = byte_desc->start;
 			didx->text_size = byte_desc->end - byte_desc->start + 1;
 
@@ -254,14 +254,14 @@ static int schema_add_field_file(struct astrodb_db *db, struct astrodb_table *ta
 	return -EINVAL;
 }
 
-static int schema_add_field_nofile(struct astrodb_db *db, struct astrodb_table *table,
-	struct astrodb_schema_field *new_schema_object)
+static int schema_add_field_nofile(struct adb_db *db, struct adb_table *table,
+	struct adb_schema_field *new_schema_object)
 {
-	struct astrodb_schema_field *didx;
+	struct adb_schema_field *didx;
 
 	didx = &table->import.field[table->object.field_count];
 
-	memcpy(didx, new_schema_object, sizeof(struct astrodb_schema_field));
+	memcpy(didx, new_schema_object, sizeof(struct adb_schema_field));
 	didx->text_offset = 0;
 	didx->text_size = 0;
 
@@ -283,15 +283,15 @@ static int schema_add_field_nofile(struct astrodb_db *db, struct astrodb_table *
 	return 0;
 }
 
-/*! \fn int schema_add_field(astrodb_table * table, astrodb_schema_object* field)
+/*! \fn int schema_add_field(adb_table * table, adb_schema_object* field)
  * \param table dataset
  * \param field Field name to add
  * \return 0 on success
  *
  * Add a custom struct field to a dataset for import.
  */
-int schema_add_field(struct astrodb_db *db, struct astrodb_table *table,
-	struct astrodb_schema_field *new_schema_object)
+int schema_add_field(struct adb_db *db, struct adb_table *table,
+	struct adb_schema_field *new_schema_object)
 {
 	struct cds_file_info *file_info = table->import.file_info;
 
@@ -302,7 +302,7 @@ int schema_add_field(struct astrodb_db *db, struct astrodb_table *table,
 		return schema_add_field_nofile(db, table, new_schema_object);
 }
 
-int schema_write(struct astrodb_db *db, struct astrodb_table *table)
+int schema_write(struct adb_db *db, struct adb_table *table)
 {
 	struct table_file_index *hdr = &table->file_index;
 	FILE *f;
@@ -352,7 +352,7 @@ int schema_write(struct astrodb_db *db, struct astrodb_table *table)
 
 	/* write schema row descriptors */
 	size = fwrite((char *) table->import.field,
-		sizeof(struct astrodb_schema_field), table->object.field_count, f);
+		sizeof(struct adb_schema_field), table->object.field_count, f);
 	if (size == 0) {
 		adb_error(db, "Error failed to write %d fields for schema %s\n",
 			table->object.field_count, file);
@@ -363,7 +363,7 @@ int schema_write(struct astrodb_db *db, struct astrodb_table *table)
 	/* write alt fields */
 	for (i = 0; i < table->object.num_alt_fields; i++) {
 		size = fwrite((char *) &table->import.alt_field[i].key_field,
-			sizeof(struct astrodb_schema_field), 1, f);
+			sizeof(struct adb_schema_field), 1, f);
 		if (size == 0) {
 			adb_error(db, "Error failed to write alternate fields for schema %s\n",
 				file);
@@ -377,10 +377,10 @@ out:
 }
 
 
-/*! \fn int table_load_hdr(astrodb_table * table)
+/*! \fn int table_load_hdr(adb_table * table)
  * Load a dataset header from disk
  */
-int schema_read(struct astrodb_db *db, struct astrodb_table *table)
+int schema_read(struct adb_db *db, struct adb_table *table)
 {
 	struct table_file_index *hdr = &table->file_index;
 	FILE *f;
@@ -415,7 +415,7 @@ int schema_read(struct astrodb_db *db, struct astrodb_table *table)
 
 	/* read schema row descriptors */
 	size = fread((char *) table->import.field,
-			sizeof(struct astrodb_schema_field), hdr->field_count, f);
+			sizeof(struct adb_schema_field), hdr->field_count, f);
 	if (size == 0) {
 		adb_error(db, "Error failed to read schema %s rows %d\n", file);
 		ret = -EIO;

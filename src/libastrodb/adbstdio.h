@@ -24,7 +24,7 @@
 #include <execinfo.h>
 #include "db.h"
 
-static inline void adbout_(struct astrodb_db *db, const char *level,
+static inline void adbout_(struct adb_db *db, const char *level,
 	const char *file, const char *func, int line, const char *fmt, ...)
 {
 	va_list va;
@@ -34,7 +34,7 @@ static inline void adbout_(struct astrodb_db *db, const char *level,
 	va_end(va);
 }
 
-static inline void adberr_(struct astrodb_db *db, const char *level,
+static inline void adberr_(struct adb_db *db, const char *level,
 	const char *file, const char *func, int line, const char *fmt, ...)
 {
 	int j, nptrs;
@@ -126,7 +126,7 @@ static inline void htmerr_(struct htm *htm, const char *level,
 	if (unlikely(htm->msg_level >= ADB_MSG_VDEBUG) && type & htm->msg_flags) \
 		htmout_(htm, "   D", __FILE__, __func__, __LINE__, format, ## arg)
 
-static inline void adboutl_(struct astrodb_library *lib, const char *level,
+static inline void adboutl_(struct adb_library *lib, const char *level,
 	const char *file, const char *func, int line, const char *fmt, ...)
 {
 	va_list va;
@@ -136,7 +136,7 @@ static inline void adboutl_(struct astrodb_library *lib, const char *level,
 	va_end(va);
 }
 
-static inline void adberrl_(struct astrodb_library *lib, const char *level,
+static inline void adberrl_(struct adb_library *lib, const char *level,
 	const char *file, const char *func, int line, const char *fmt, ...)
 {
 	int j, nptrs;

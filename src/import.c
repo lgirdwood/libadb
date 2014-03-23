@@ -33,7 +33,7 @@
 #include <libastrodb/private.h>
 
 /* table type import's */
-static int int_import(struct astrodb_object *object, int offset, char *src)
+static int int_import(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -44,7 +44,7 @@ static int int_import(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int short_import(struct astrodb_object *object, int offset, char *src)
+static int short_import(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -55,7 +55,7 @@ static int short_import(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int float_import(struct astrodb_object *object, int offset, char *src)
+static int float_import(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -68,7 +68,7 @@ static int float_import(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_import(struct astrodb_object *object, int offset, char *src)
+static int double_import(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -80,7 +80,7 @@ static int double_import(struct astrodb_object *object, int offset, char *src)
 	}
 	return 0;
 }
-static int str_import(struct astrodb_object *object, int offset, char *src)
+static int str_import(struct adb_object *object, int offset, char *src)
 {
 	char *dest = (char*)object + offset;
 
@@ -89,7 +89,7 @@ static int str_import(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_dms_degs(struct astrodb_object *object, int offset, char *src)
+static int double_dms_degs(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -102,7 +102,7 @@ static int double_dms_degs(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_dms_mins(struct astrodb_object *object, int offset, char *src)
+static int double_dms_mins(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -113,7 +113,7 @@ static int double_dms_mins(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_dms_secs(struct astrodb_object *object, int offset, char *src)
+static int double_dms_secs(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -124,7 +124,7 @@ static int double_dms_secs(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int sign_import(struct astrodb_object *object, int offset, char *src)
+static int sign_import(struct adb_object *object, int offset, char *src)
 {
 	char *dest = (char*)object + offset;
 
@@ -133,7 +133,7 @@ static int sign_import(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_hms_hrs(struct astrodb_object *object, int offset, char *src)
+static int double_hms_hrs(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -144,7 +144,7 @@ static int double_hms_hrs(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_hms_mins(struct astrodb_object *object, int offset, char *src)
+static int double_hms_mins(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -155,7 +155,7 @@ static int double_hms_mins(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int double_hms_secs(struct astrodb_object *object, int offset, char *src)
+static int double_hms_secs(struct adb_object *object, int offset, char *src)
 {
 	char *ptr, *dest = (char*)object + offset;
 
@@ -166,7 +166,7 @@ static int double_hms_secs(struct astrodb_object *object, int offset, char *src)
 	return 0;
 }
 
-static int float_alt_import(struct astrodb_object *object, int offset,
+static int float_alt_import(struct adb_object *object, int offset,
 	char *src, char *src2)
 {
 	char *ptr, *dest = (char*)object + offset;
@@ -184,7 +184,7 @@ static int float_alt_import(struct astrodb_object *object, int offset,
 	return 0;
 }
 
-static int double_alt_import(struct astrodb_object *object, int offset,
+static int double_alt_import(struct adb_object *object, int offset,
 	char *src, char *src2)
 {
 	char *ptr, *dest = (char*)object + offset;
@@ -202,10 +202,10 @@ static int double_alt_import(struct astrodb_object *object, int offset,
 	return 0;
 }
 
-/*! \fn astrodb_ctype table_get_ctype(char *type)
+/*! \fn adb_ctype table_get_ctype(char *type)
  * \brief Get C type from ASCII type
  */
-astrodb_ctype table_get_column_ctype(char *type)
+adb_ctype table_get_column_ctype(char *type)
 {
 	if (*type == 'I')
 		return ADB_CTYPE_INT;
@@ -238,11 +238,11 @@ int table_get_column_csize(char *type)
 	return 0;
 }
 
-/*! \fn void *table_get_key_import(astrodb_ctype type)
+/*! \fn void *table_get_key_import(adb_ctype type)
  * Get dataset type import
  */
-adb_field_import1 table_get_column_import(struct astrodb_db *db,
-	astrodb_ctype type)
+adb_field_import1 table_get_column_import(struct adb_db *db,
+	adb_ctype type)
 {
 	switch (type) {
 	case ADB_CTYPE_DOUBLE:
@@ -277,11 +277,11 @@ adb_field_import1 table_get_column_import(struct astrodb_db *db,
 	return NULL;
 }
 
-/*! \fn void *table_get_alt_key_import(astrodb_ctype type)
+/*! \fn void *table_get_alt_key_import(adb_ctype type)
  * Get dataset type import
  */
-adb_field_import2 table_get_alt_key_import(struct astrodb_db *db,
-	astrodb_ctype type)
+adb_field_import2 table_get_alt_key_import(struct adb_db *db,
+	adb_ctype type)
 {
 	switch (type) {
 	case ADB_CTYPE_DOUBLE:
@@ -306,7 +306,7 @@ adb_field_import2 table_get_alt_key_import(struct astrodb_db *db,
 	return NULL;
 }
 
-int import_get_object_depth_min(struct astrodb_table *table, float value)
+int import_get_object_depth_min(struct adb_table *table, float value)
 {
 	int depth;
 
@@ -323,7 +323,7 @@ int import_get_object_depth_min(struct astrodb_table *table, float value)
 	return -EINVAL;
 }
 
-int import_get_object_depth_max(struct astrodb_table *table, float value)
+int import_get_object_depth_max(struct adb_table *table, float value)
 {
 	int depth;
 
@@ -341,8 +341,8 @@ int import_get_object_depth_max(struct astrodb_table *table, float value)
 	return -EINVAL;
 }
 
-static void get_import_buffer_size(struct astrodb_db *db,
-	struct astrodb_table *table)
+static void get_import_buffer_size(struct adb_db *db,
+	struct adb_table *table)
 {
 	int i;
 
@@ -356,7 +356,7 @@ static void get_import_buffer_size(struct astrodb_db *db,
 		table->import.text_buffer_bytes);
 }
 
-static int get_histogram_keys(struct astrodb_db *db, struct astrodb_table *table)
+static int get_histogram_keys(struct adb_db *db, struct adb_table *table)
 {
 	int key_idx, alt_key_idx;
 
@@ -375,8 +375,8 @@ static int get_histogram_keys(struct astrodb_db *db, struct astrodb_table *table
 	return -EINVAL;	
 }
 
-static void histo_depth_calc(struct astrodb_db *db,
-	struct astrodb_table *table, float histo)
+static void histo_depth_calc(struct adb_db *db,
+	struct adb_table *table, float histo)
 {
 	int i, j, start, end, count;
 
@@ -409,11 +409,11 @@ static void histo_depth_calc(struct astrodb_db *db,
 			table->file_index.histo[i]);
 }
 
-static int table_histogram_import(struct astrodb_db *db,
-	struct astrodb_table *table, FILE *f)
+static int table_histogram_import(struct adb_db *db,
+	struct adb_table *table, FILE *f)
 {
-	struct astrodb_object object;
-	struct astrodb_schema_field *key = table->import.histogram_key;
+	struct adb_object object;
+	struct adb_schema_field *key = table->import.histogram_key;
 	int j, rsize, import, used = 0, hindex, oor = 0;
 	char *line;
 	char buf[ADB_IMPORT_LINE_SIZE];
@@ -483,10 +483,10 @@ out:
 	return 0;
 }
 
-static int table_histogram_alt_import(struct astrodb_db *db,
-	struct astrodb_table *table, FILE *f)
+static int table_histogram_alt_import(struct adb_db *db,
+	struct adb_table *table, FILE *f)
 {
-	struct astrodb_object object;
+	struct adb_object object;
 	struct alt_field *key = table->import.histogram_alt_key;
 	int j, rsize, import, used = 0, hindex, oor = 0;
 	char *line;
@@ -558,8 +558,8 @@ out:
 	return 0;
 }
 
-static int import_object_ascending(struct astrodb_db *db,
-	struct astrodb_object *object, struct astrodb_table *table)
+static int import_object_ascending(struct adb_db *db,
+	struct adb_object *object, struct adb_table *table)
 {
 	struct htm_trixel *trixel;
 	struct htm_vertex vertex;
@@ -583,8 +583,8 @@ static int import_object_ascending(struct astrodb_db *db,
 	return 1;
 }
 
-static int import_object_descending(struct astrodb_db *db,
-	struct astrodb_object *object, struct astrodb_table *table)
+static int import_object_descending(struct adb_db *db,
+	struct adb_object *object, struct adb_table *table)
 {
 	struct htm_trixel *trixel;
 	struct htm_vertex vertex;
@@ -608,10 +608,10 @@ static int import_object_descending(struct astrodb_db *db,
 	return 1;
 }
 
-static int import_rows(struct astrodb_db *db, int table_id, FILE *f)
+static int import_rows(struct adb_db *db, int table_id, FILE *f)
 {
-	struct astrodb_table *table;
-	struct astrodb_object *object;
+	struct adb_table *table;
+	struct adb_object *object;
 	int i, j, count = 0, short_records = 0, import, warn, line_count = 0;
 	char *line, buf[ADB_IMPORT_LINE_SIZE];
 	size_t size;
@@ -701,14 +701,14 @@ out:
 	return count;
 }
 
-static int import_rows_with_alternatives(struct astrodb_db *db,
+static int import_rows_with_alternatives(struct adb_db *db,
 		int table_id, FILE *f)
 {
-	struct astrodb_table *table;
+	struct adb_table *table;
 	int i, j, k, count = 0, short_records = 0, warn, import, line_count = 0;
 	char *line;
 	char buf[ADB_IMPORT_LINE_SIZE], buf2[ADB_IMPORT_LINE_SIZE];
-	struct astrodb_object *object;
+	struct adb_object *object;
 	size_t size;
 	ssize_t rsize;
 
@@ -816,12 +816,12 @@ out:
 	return count;
 }
 
-/*! \fn int table_import(astrodb_table * table, char *file_name, astrodb_progress progress)
+/*! \fn int table_import(adb_table * table, char *file_name, adb_progress progress)
  * \brief Import an ASCII dataset into table tile array
  */
-int table_import(struct astrodb_db *db, int table_id, char *file)
+int table_import(struct adb_db *db, int table_id, char *file)
 {
-	struct astrodb_table *table;
+	struct adb_table *table;
 	FILE *f;
 	char file_path[ADB_PATH_SIZE];
 	int ret;
@@ -869,7 +869,7 @@ int table_import(struct astrodb_db *db, int table_id, char *file)
 	return ret;
 }
 
-/*! \fn int astrodb_table_alt_field(astrodb_table* table, char* field, char* alt, int flags)
+/*! \fn int adb_table_alt_field(adb_table* table, char* field, char* alt, int flags)
  * \param table dataset
  * \param field Primary field
  * \param alt Alternative field
@@ -877,10 +877,10 @@ int table_import(struct astrodb_db *db, int table_id, char *file)
  *
  * Set an alternative import field if the primary field is blank.
  */
-int astrodb_table_import_field(struct astrodb_db *db, int table_id,
+int adb_table_import_field(struct adb_db *db, int table_id,
 	const char *field, const char *alt, int flags)
 {
-	struct astrodb_table *table;
+	struct adb_table *table;
 	int idx, err;
 
 	if (table_id < 0 || table_id > db->table_count)
@@ -907,7 +907,7 @@ int astrodb_table_import_field(struct astrodb_db *db, int table_id,
 	return 0;
 }
 
-/*! \fn int astrodb_table_register_schema(astrodb_table* table, astrodb_schema_object* field, int idx_size);
+/*! \fn int adb_table_register_schema(adb_table* table, adb_schema_object* field, int idx_size);
  * \param table dataset
  * \param field Object field index
  * \param idx_size Number of fields in index
@@ -915,11 +915,11 @@ int astrodb_table_import_field(struct astrodb_db *db, int table_id,
  *
  * Register a new custom object type
  */
-int astrodb_table_import_schema(struct astrodb_db *db, int table_id,
-					struct astrodb_schema_field *schema,
+int adb_table_import_schema(struct adb_db *db, int table_id,
+					struct adb_schema_field *schema,
 					int num_schema_fields, int object_size)
 {
-	struct astrodb_table *table;
+	struct adb_table *table;
 	int n, i;
 
 	if (table_id < 0 || table_id > db->table_count)
@@ -946,21 +946,21 @@ add_fields:
 	return n;
 }
 
-/*! \fn astrodb_table *astrodb_table_create(astrodb_db *db, char *table_name, unsigned int flags)
+/*! \fn adb_table *adb_table_create(adb_db *db, char *table_name, unsigned int flags)
  * \param db Catalog
  * \param table_name Dataset name (dataset file_name name in ReadMe)
  * \param flags Dataset creation flags.
- * \return A astrodb_table* for success or NULL on error
+ * \return A adb_table* for success or NULL on error
  *
  * Creates a dataset object.
  */
-int astrodb_table_import_new(struct astrodb_db *db,
+int adb_table_import_new(struct adb_db *db,
 		const char *cat_class, const char *cat_id, const char *table_name,
 		const char *depth_field, float min_limit, float max_limit,
-		astrodb_otype otype)
+		adb_otype otype)
 {
 	struct readme *readme;
-	struct astrodb_table *table;
+	struct adb_table *table;
 	int files, table_id, err = -EINVAL;
 	struct stat stat_info;
 	char local[ADB_PATH_SIZE];
@@ -1084,9 +1084,9 @@ err:
 	return err;
 }
 
-int astrodb_table_import(struct astrodb_db *db, int table_id)
+int adb_table_import(struct adb_db *db, int table_id)
 {
-	struct astrodb_table *table = &db->table[table_id];
+	struct adb_table *table = &db->table[table_id];
 	int ret = -EINVAL, num_files;
 
 	/* no schema exists locally, so do the ASCII data files exist locally ?  */
