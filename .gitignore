@@ -11,6 +11,7 @@
 *.db
 *.schema
 *.dat*
+*.out
 
 .cproject
 .project
@@ -39,6 +40,7 @@ aclocal.m4
 depcomp
 
 examples/*/*/ReadMe
+examples/sky2k
 
 lntest/libnovaconfig
 lntest/lntest
