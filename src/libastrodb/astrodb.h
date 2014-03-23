@@ -13,63 +13,59 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010 Liam Girdwood
+ *  Copyright (C) 2005 - 2014 Liam Girdwood
  */
 
-/*! \mainpage libastrodb
+/*! \mainpage libadb
 * <A>General Purpose Astronomical Database</A>
 *
 * \section intro Introduction
-* Libncat is a general purpose astronomical database designed to give very fast
-* access to <A href="http://cdsweb.u-strasbg.fr/">CDS</A> catalog data. It is designed to be independent of any underlying
-* catalog data formatting and will import most data records providing the
-* catalog ships with a "ReadMe" file that follows the CDS <A href="http://vizier.u-strasbg.fr/doc/catstd.htx">formatting specifications</A>.
-* Libncat provides a simple database backend and exposes a C API for catalog access.
+* Astrodb is a general purpose astronomical database designed to give very fast
+* access to <A href="http://cdsweb.u-strasbg.fr/">CDS</A> astronomical catalog
+* data. It is designed to be independent of any underlying catalog data formats
+* and will import most CDS data records providing the catalog ships with a
+* "ReadMe" file that follows the CDS <A href="http://vizier.u-strasbg.fr/doc/catstd.htx">formatting specifications</A>.
+* Astrodb provides a simple C API for catalog access.
 *
-* The intended audience of libastrodb is C / C++ programmers, astronomers and anyone working with large astronomical catalogs.
-*
-* Libncat will be the database backend used by the <A href="http://nova.sf.net">Nova</A>
-* project and most importantly, is free software.
+* The intended audience of libastrodb is C / C++ programmers, astronomers and
+* anyone working with large astronomical catalogs.
 *
 * \section features Features
-* The current release of libastrodb supports:-
+* Libastrodb currently supports :-
 *
-* - Parsing of important fields in CDS ReadMe files
-* - Downloading catalog data from CDS to a local library
-* - Importing selected catalog object data and object fields into machine formats.
-* - Fast access to catalog data based on :-
-* 		- position
-*		- position and magnitude
-*		- hashed object ID's
-*		- distance (near sky catalogs)
-* - Progress feedback.
-* - Powerfull catalog searching on any combinations of fields.
+* - Import and download CDS catalog object data.
+* - Objects stored in hierarchical triangular mesh (HTM) and a K-D tree for
+*   fast access.
+* - Objects can be queried based on :-
+* 		- position.
+*		- position and magnitude.
+*		- hashed object ID's.
+*		- proximity to other objects.
+* - Search queries can be constructed using RPN to search the catalog data with
+*   multiple conditions on multiple object fields.
+* - Image solver that can return catalog objects found in images.
 *
 * \section docs Documentation
-* API documentation for libastrodb is included in the source. It can also be found in this website and an offline tarball is available <A href="http://libnovacat.sf.net/libastrodbdocs.tar.gz">here</A>.
-*
-* \section download Download
-* The latest release is 0.1 and is available <A href="http://sourceforge.net/project/showfiles.php?group_id=133878">here.</A>
-*
-* \section cvs CVS
-* The latest CVS version of libastrodb is available via CVS <A href="http://sf.net/cvs/?group_id=133878">here.</A>
+* API documentation for libastrodb is included in the source.
 *
 * \section licence Licence
 * libastrodb is released under the <A href="http://www.gnu.org">GNU</A> LGPL.
 *
 * \section authors Authors
-* libastrodb is maintained by <A href="mailto:liam@gnova.org">Liam Girdwood</A>
+* libastrodb is maintained by <A href="mailto:lgirdwood@gmail.com">Liam Girdwood</A>
 *
 */
 
-#ifndef __LIBNCAT_H
-#define __LIBNCAT_H
+#ifndef __LIBADB_H
+#define __LIBADB_H
 
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define ADB_OBJECT_NAME_SIZE	16
 
 #define adb_offset(x,y) (long)(&((x*)0)->y) 		/* offset in struct */
 #define adb_sizeof(x,y) sizeof(((x*)0)->y) 		/* size in struct */
@@ -79,6 +75,7 @@ struct adb_library;
 struct adb_db;
 struct adb_table;
 struct adb_search;
+struct adb_object;
 
 /*
  * libastrodb interface version
@@ -108,10 +105,6 @@ struct adb_size_type {
 	double major_size;
 	uint32_t type;
 };
-
-struct adb_object;
-
-#define ADB_OBJECT_NAME_SIZE	16
 
 struct adb_kd_tree {
 	/* KD tree - indexs */
@@ -185,7 +178,8 @@ enum adb_msg_level {
 #define ADB_LOG_SEARCH		(1 << 11)
 #define ADB_LOG_SOLVE		(1 << 12)
 
-#define ADB_LOG_ALL		(ADB_LOG_HTM_ALL | ADB_LOG_CDS_ALL | ADB_LOG_SEARCH | ADB_LOG_SOLVE)
+#define ADB_LOG_ALL		\
+	(ADB_LOG_HTM_ALL | ADB_LOG_CDS_ALL | ADB_LOG_SEARCH | ADB_LOG_SOLVE)
 
 /*! \fn adb_library* adb_open_library(char *remote, char* local);
  * \brief Create a library
