@@ -236,6 +236,9 @@ static double get_plate_mag_diff(struct astrodb_pobject *primary,
 	return -2.5 * log10(s_adu / p_adu);
 }
 
+/* calculate the average difference between plate ADU values and solution
+ * objects. Use this as basis for calculating magnitudes based on plate ADU.
+ */
 static float get_plate_magnitude(struct astrodb_solve *solve,
 	struct astrodb_solve_objects *solve_objects,
 	struct astrodb_pobject *primary)
@@ -310,6 +313,75 @@ static double get_equ_pa(const struct astrodb_object *o1,
 	y = k * (cos_pdec * sin_dec - sin_pdec * cos_dec * cos_ra_delta);
 
 	return atan2(y, x);
+}
+
+static void plate_to_equ(struct astrodb_solve_objects *solve_objects,
+	const struct astrodb_object *o1, const struct astrodb_object *o2,
+	struct astrodb_pobject *p1, struct astrodb_pobject *p2,
+	struct astrodb_pobject *ptarget, double *ra_, double *dec_)
+{
+	double plate_pa, equ_pa, delta_pa;
+	double plate_dist, equ_dist;
+	double rad_per_pixel, target_pa, target_dist;
+	double ra, dec, mid_dec;
+
+	/* delta PA between plate and equ */
+	plate_pa = get_plate_pa(p1, p2);
+	equ_pa = get_equ_pa(o1, o2);
+	delta_pa = plate_pa + equ_pa;
+
+	/* delta distance between plate and equ */
+	plate_dist = get_plate_distance(p1, p2);
+	equ_dist = get_equ_distance(o1, o2);
+	rad_per_pixel = equ_dist / plate_dist;
+
+	/* EQU PA between object1 and target */
+	target_pa = get_plate_pa(p1, ptarget);
+	target_pa -= delta_pa;
+
+	/* EQU dist between object1 and target */
+	target_dist = get_plate_distance(p1, ptarget);
+	target_dist *= rad_per_pixel;
+
+	/* middle declination of line */
+	mid_dec = o1->posn_mag.dec + ((o2->posn_mag.dec - o1->posn_mag.dec) / 2.0);
+
+	/* Add line to object o1, reverse RA since RHS of plate increases X and
+	 * RHS of sky is decreasing in RA.
+	 */
+	ra = -cos(target_pa) * target_dist / cos(mid_dec);
+	dec = sin(target_pa) * target_dist;
+	*ra_ = ra + o1->posn_mag.ra;
+	*dec_ = dec + o1->posn_mag.dec;
+}
+
+/* calculate the average difference between plate position values and solution
+ * objects. Use this as basis for calculating RA,DEC based on plate x,y.
+ */
+static void get_plate_position(struct astrodb_solve *solve,
+	struct astrodb_solve_objects *solve_objects,
+	struct astrodb_pobject *primary, double *ra_, double *dec_)
+{
+	double ra[4], dec[4];
+
+	plate_to_equ(solve_objects, solve_objects->object[0],
+		solve_objects->object[1], &solve->pobject[0], &solve->pobject[1],
+		primary, &ra[0], &dec[0]);
+
+	plate_to_equ(solve_objects, solve_objects->object[1],
+		solve_objects->object[2], &solve->pobject[1], &solve->pobject[2],
+		primary, &ra[1], &dec[1]);
+
+	plate_to_equ(solve_objects, solve_objects->object[2],
+		solve_objects->object[3], &solve->pobject[2], &solve->pobject[3],
+		primary, &ra[2], &dec[2]);
+
+	plate_to_equ(solve_objects, solve_objects->object[3],
+		solve_objects->object[0], &solve->pobject[3], &solve->pobject[0],
+		primary, &ra[3], &dec[3]);
+
+	*ra_ =  quad_avg(ra[0], ra[1], ra[2], ra[3]);
+	*dec_ =  quad_avg(dec[0], dec[1], dec[2], dec[3]);
 }
 
 /* calculate object pattern variables to match against source objects */
@@ -1057,11 +1129,6 @@ static void calc_cluster_divergence(struct solve_runtime *runtime)
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
 			runtime->pot_pa[i].delta_distance * DELTA_DIST_COEFF +
 			runtime->pot_pa[i].delta_pa * DELTA_PA_COEFF;
-		printf("** cluster div %f mag %f dist %9.9f pa %f\n",
-			runtime->pot_pa[i].divergance,
-			runtime->pot_pa[i].delta_magnitude,
-			runtime->pot_pa[i].delta_distance,
-			runtime->pot_pa[i].delta_pa);
 	}
 }
 
@@ -1081,11 +1148,6 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
 			runtime->pot_pa[i].delta_distance * DELTA_DIST_COEFF +
 			runtime->pot_pa[i].delta_pa * DELTA_PA_COEFF;
-		printf("** object div %f mag %f dist %9.9f pa %f\n",
-			runtime->pot_pa[i].divergance,
-			runtime->pot_pa[i].delta_magnitude,
-			runtime->pot_pa[i].delta_distance,
-			runtime->pot_pa[i].delta_pa);
 	}
 }
 
@@ -1440,7 +1502,8 @@ int astrodb_solve_prep_solution(struct astrodb_solve *solve,
 
 int astrodb_solve_get_object(struct astrodb_solve *solve,
 	struct astrodb_solve_objects *solve_objects,
-	struct astrodb_pobject *pobject, const struct astrodb_object **object)
+	struct astrodb_pobject *pobject, const struct astrodb_object **object,
+	struct astrodb_object *o)
 {
 	struct solve_runtime runtime;
 	int count = 0;
@@ -1470,8 +1533,15 @@ int astrodb_solve_get_object(struct astrodb_solve *solve,
 	/* At this point we have a list of objects that match on magnitude and
 	 * distance, so we finally check the objects for PA alignment*/
 	count = solve_single_object_on_pa(&runtime, solve_objects);
-	if (!count)
+	if (!count && o != NULL) {
+
+		/* nothing found so return object magnitude and position */
+		o->posn_mag.Vmag = get_plate_magnitude(solve, solve_objects,
+				pobject);
+		get_plate_position(solve, solve_objects, pobject,
+			&o->posn_mag.ra, &o->posn_mag.dec);
 		return 0;
+	}
 
 	calc_object_divergence(&runtime, solve_objects, pobject);
 

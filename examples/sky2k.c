@@ -832,7 +832,8 @@ static int sky2k_solve(char *lib_dir)
 	struct astrodb_object_set *set;
 	struct astrodb_solve_objects *solve_objects;
 	const struct astrodb_object *object;
-	int ret = 0, table_id, found, i, solutions;
+	struct astrodb_object unknown;
+	int ret = 0, table_id, found, i;
 
 	/* set the remote CDS server and initialise local repository/cache */
 	lib = astrodb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
@@ -899,7 +900,8 @@ static int sky2k_solve(char *lib_dir)
 	astrodb_solve_prep_solution(solve, 0, 2.0, 8.0);
 
 	/* get subsequent objects */
-	astrodb_solve_get_object(solve, solve_objects, &pobject[4], &object);
+	astrodb_solve_get_object(solve, solve_objects, &pobject[4],
+			&object, &unknown);
 	object_printf(object);
 
 	/* were done with the db */

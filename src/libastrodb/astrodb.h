@@ -546,8 +546,8 @@ int astrodb_search_get_tests(struct astrodb_search *search);
  * \ingroup solve
  */
 struct astrodb_pobject {
-	unsigned int x;
-	unsigned int y;
+	int x;
+	int y;
 	unsigned int adu;
 };
 
@@ -649,7 +649,8 @@ int astrodb_solve_get_solutions(struct astrodb_solve *solve,
  */
 int astrodb_solve_get_object(struct astrodb_solve *solve,
 	struct astrodb_solve_objects *solve_objects,
-	struct astrodb_pobject *pobject, const struct astrodb_object **object);
+	struct astrodb_pobject *pobject, const struct astrodb_object **object,
+	struct astrodb_object *o);
 
 int astrodb_solve_prep_solution(struct astrodb_solve *solve,
 		unsigned int solution, double fov, double mag_limit);
