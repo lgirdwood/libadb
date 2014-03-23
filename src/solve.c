@@ -269,7 +269,15 @@ static double get_plate_pa(struct astrodb_pobject *primary,
 static inline int not_within_fov_fast(struct astrodb_solve *solve,
 		const struct astrodb_object *p, const struct astrodb_object *s)
 {
-	if (fabs(p->posn_mag.ra - s->posn_mag.ra) > solve->constraint.max_fov)
+	double ra_diff = fabs(p->posn_mag.ra - s->posn_mag.ra);
+	double dec_diff = s->posn_mag.dec +
+			((p->posn_mag.dec - s->posn_mag.dec) / 2.0);
+
+	/* check for large angles near 0 and 2.0 * M_PI */
+	if (ra_diff > M_PI)
+		ra_diff -= 2.0 * M_PI;
+
+	if (cos(dec_diff) * ra_diff > solve->constraint.max_fov)
 		return 1;
 	if (fabs(p->posn_mag.dec - s->posn_mag.dec) > solve->constraint.max_fov)
 		return 1;
