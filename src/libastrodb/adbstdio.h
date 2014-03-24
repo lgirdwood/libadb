@@ -12,8 +12,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #ifndef __ADB_ERROR_H
@@ -23,6 +23,8 @@
 #include <stdarg.h>
 #include <execinfo.h>
 #include "db.h"
+
+#define DEBUG_BUFFER	1024
 
 static inline void adbout_(struct adb_db *db, const char *level,
 	const char *file, const char *func, int line, const char *fmt, ...)
@@ -39,7 +41,7 @@ static inline void adberr_(struct adb_db *db, const char *level,
 {
 	int j, nptrs;
 	va_list va;
-	void *buffer[1024];
+	void *buffer[DEBUG_BUFFER];
 	char **str;
 
 	va_start(va, fmt);
@@ -47,7 +49,7 @@ static inline void adberr_(struct adb_db *db, const char *level,
 	vfprintf(stderr, fmt, va);
 	va_end(va);
 
-	nptrs = backtrace(buffer, 1024);
+	nptrs = backtrace(buffer, DEBUG_BUFFER);
 	str = backtrace_symbols(buffer, nptrs);
 
 	for (j = 0; j < nptrs; j++)
@@ -66,7 +68,7 @@ static inline void adberr_(struct adb_db *db, const char *level,
 #define adb_warn(db, type, format, arg...) \
 	if (db->msg_level >= ADB_MSG_WARN && type & db->msg_flags) \
 		adbout_(db, " W", __FILE__, __func__, __LINE__, format, ## arg)
-		
+
 #define adb_debug(db, type, format, arg...) \
 	if (unlikely(db->msg_level >= ADB_MSG_DEBUG) && type & db->msg_flags) \
 		adbout_(db, "   D", __FILE__, __func__, __LINE__, format, ## arg)
@@ -90,7 +92,7 @@ static inline void htmerr_(struct htm *htm, const char *level,
 {
 	int j, nptrs;
 	va_list va;
-	void *buffer[1024];
+	void *buffer[DEBUG_BUFFER];
 	char **str;
 
 	va_start(va, fmt);
@@ -98,7 +100,7 @@ static inline void htmerr_(struct htm *htm, const char *level,
 	vfprintf(stderr, fmt, va);
 	va_end(va);
 
-	nptrs = backtrace(buffer, 1024);
+	nptrs = backtrace(buffer, DEBUG_BUFFER);
 	str = backtrace_symbols(buffer, nptrs);
 
 	for (j = 0; j < nptrs; j++)
@@ -117,7 +119,7 @@ static inline void htmerr_(struct htm *htm, const char *level,
 #define adb_htm_warn(htm, type, format, arg...) \
 	if (htm->msg_level >= ADB_MSG_WARN && type & htm->msg_flags) \
 		htmout_(htm, " W", __FILE__, __func__, __LINE__, format, ## arg)
-		
+
 #define adb_htm_debug(htm, type, format, arg...) \
 	if (unlikely(htm->msg_level >= ADB_MSG_DEBUG) && type & htm->msg_flags) \
 		htmout_(htm, "   D", __FILE__, __func__, __LINE__, format, ## arg)
@@ -141,7 +143,7 @@ static inline void adberrl_(struct adb_library *lib, const char *level,
 {
 	int j, nptrs;
 	va_list va;
-	void *buffer[1024];
+	void *buffer[DEBUG_BUFFER];
 	char **str;
 
 	va_start(va, fmt);
@@ -149,7 +151,7 @@ static inline void adberrl_(struct adb_library *lib, const char *level,
 	vfprintf(stderr, fmt, va);
 	va_end(va);
 
-	nptrs = backtrace(buffer, 1024);
+	nptrs = backtrace(buffer, DEBUG_BUFFER);
 	str = backtrace_symbols(buffer, nptrs);
 
 	for (j = 0; j < nptrs; j++)

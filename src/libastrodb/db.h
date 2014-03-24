@@ -13,55 +13,18 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2005 Liam Girdwood
+ *  Copyright (C) 2005 - 2014 Liam Girdwood
  */
 
 #ifndef __ADB_DB_H
 #define __ADB_DB_H
 
-struct table_cds {
-	char *class;			/*!< catalog class */
-	char *index;			/*!< catalog number (in repo) */
-	char *host;						/*!< remote host */
-	char *name;						/*!< table CDS file name */
-};
-
-struct table_path {
-	/* file paths */
-	char *local;   			/*!< local catalog path */
-	char *remote;  		/*!< remote catalog path */
-	char *file;         		/*!< table local filename */
-};
-
+#include <libastrodb/cds.h>
 #include <libastrodb/table.h>
 #include <libastrodb/import.h>
 #include <libastrodb/private.h>
 
-/*! \defgroup library Library
- *
- * An object representing a local catalog repository.
- *
- * A local library is a mirror of a remote CDS mirror in
- * structure. Catalogs can then be downloaded in part or in whole
- * on a need by need basis to populate the library.
- *
- * CDS directory structure mirrored:-
- *
- *  - I/number  		Astrometric Catalogues
- *  - II/number 		Photometric Catalogues (except Radio)
- *  - III/number	 	Spectroscopic Catalogues
- *  - IV/number 		Cross-Identifications
- *  - V/number 			Combined Data
- *  - VI/number 		Miscellaneous Catalogues
- *  - VII/number 		Non-stellar Objects
- *  - VIII/number 		Radio Catalogues
- *  - IX/number 		High Energy Catalogues
- */
-
-/*! \typedef struct adb_library
- * \brief Local CDS catalog repository
- * \ingroup library
- *
+/*
  * The library container.
  */
 struct adb_library {
@@ -71,29 +34,21 @@ struct adb_library {
 	unsigned int err; /*!< last error */
 };
 
-/*! \defgroup catalog Catalog
- *
- * CDS Catalog. This object represents a single CDS catalog.
+/*
+ * HTM Database with N tables.
  */
-
-
-/*! \typedef struct adb_db
- *
- */
-
 struct adb_db {
 
 	struct adb_library *lib;	/*!< catalog parent library n:1 */
-
-	int table_count;      		/*!< Number of catalog data sets */
-
-	struct adb_table table[ADB_MAX_TABLES];   /*!< Catalog datasets */
 	struct htm *htm;
 
+	/* tables */
+	int table_count;      		/*!< Number of catalog data sets */
+	struct adb_table table[ADB_MAX_TABLES];   /*!< Catalog datasets */
+
+	/* logging */
 	enum adb_msg_level msg_level;
 	int msg_flags;
-
-	int dbg_trixels_count[8];
 };
 
 #endif

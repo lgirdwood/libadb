@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -34,7 +34,7 @@
 struct trixel_hdr {
 	u_int32_t id;
 	u_int32_t num_objects;
-};
+} __attribute__((packed));
 
 static int read_trixel(struct adb_db *db, struct adb_table *table,
 	struct adb_object *objects, FILE *f, struct trixel_hdr *hdr)
@@ -49,7 +49,8 @@ static int read_trixel(struct adb_db *db, struct adb_table *table,
 	}
 
 	/* insert objects into HTM */
-	htm_table_insert_object(db->htm, table, objects, hdr->num_objects, hdr->id);
+	htm_table_insert_object(db->htm, table, objects,
+			hdr->num_objects, hdr->id);
 	return hdr->num_objects;
 }
 
@@ -58,7 +59,7 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 {
 	struct trixel_hdr hdr;
 	size_t size;
-	int ret, quadrant, count = 0;
+	int ret, count = 0;
 
 	/* read in trixel hdr */
 	size = fread(&hdr, sizeof(hdr), 1, f);
@@ -76,11 +77,6 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 			return -EINVAL;
 		}
 
-		if (htm_trixel_north(hdr.id))
-			quadrant = htm_trixel_quadrant(hdr.id);
-		else
-			quadrant = htm_trixel_quadrant(hdr.id) + 4;
-
 		ret = read_trixel(db, table, objects, f, &hdr);
 		if (ret < 0) {
 			adb_error(db, "failed to read trixel %x\n", hdr.id);
@@ -88,7 +84,6 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 		}
 
 		count += ret;
-		db->dbg_trixels_count[quadrant] += hdr.num_objects;
 		objects += hdr.num_objects * table->object.bytes;
 
 		size = fread(&hdr, sizeof(hdr), 1, f);
@@ -147,7 +142,7 @@ static int write_trixel(struct adb_db *db, struct adb_table *table,
 
 	if (count != trixel->data[table_id].num_objects) {
 		adb_error(db, "wrote %d expected %d ", count,
-			trixel->data[table_id].num_objects);  
+			trixel->data[table_id].num_objects);
 		adb_error(db, "for trixel %x\n", hdr.id);
 		return -EINVAL;
 	}
@@ -175,16 +170,13 @@ children:
 	return count;
 }
 
-int table_read_trixels(struct adb_db *db, struct adb_table *table, 
+int table_read_trixels(struct adb_db *db, struct adb_table *table,
 	int table_id)
 {
 	struct adb_object *objects;
-	int count, i;
+	int count;
 	char file[ADB_PATH_SIZE];
 	FILE *f;
-
-	for (i = 0; i < 8; i++)
-		db->dbg_trixels_count[i] = 0;
 
 	if (table->object.bytes <= 0) {
 		adb_error(db, "Error invalid object size\n", table->object.bytes);
@@ -214,21 +206,12 @@ int table_read_trixels(struct adb_db *db, struct adb_table *table,
 	count = read_trixels(db, table, objects, f);
 	fclose(f);
 
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d N0 objects\n", db->dbg_trixels_count[0]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d N1 objects\n", db->dbg_trixels_count[1]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d N2 objects\n", db->dbg_trixels_count[2]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d N3 objects\n", db->dbg_trixels_count[3]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d S0 objects\n", db->dbg_trixels_count[4]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d S1 objects\n", db->dbg_trixels_count[5]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d S2 objects\n", db->dbg_trixels_count[6]);
-	adb_info(db, ADB_LOG_HTM_FILE, " read %d S3 objects\n", db->dbg_trixels_count[7]);
-
 	adb_info(db, ADB_LOG_HTM_FILE, "Read and inserted %d objects\n", count);
 	table->objects = objects;
 	return count;
 }
 
-int table_write_trixels(struct adb_db *db, struct adb_table *table, 
+int table_write_trixels(struct adb_db *db, struct adb_table *table,
 	int table_id)
 {
 	struct htm *htm = db->htm;
@@ -285,7 +268,7 @@ int table_write_trixels(struct adb_db *db, struct adb_table *table,
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d S3 objects\n", count_);
 	count += count_;
-	
+
 	if (count != table->object.count)
 		adb_error(db, "Error wrote %d objects, expected %d\n",
 					count, table->object.count);

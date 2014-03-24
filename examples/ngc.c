@@ -52,7 +52,7 @@ static struct adb_schema_field star_fields[] = {
 	adb_gmember("DEC sign", "DE-", struct ngc_object,
 		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL),
 	adb_member("Integrated Mag", "mag", struct ngc_object,
-		object.posn_mag.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL),
+		object.posn_mag.key, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("Description", "Desc", struct ngc_object,
 		desc, ADB_CTYPE_STRING, "", 0, NULL),
 	adb_gmember("Largest Dimension", "size", struct ngc_object, \

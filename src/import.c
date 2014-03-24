@@ -365,14 +365,14 @@ static int get_histogram_keys(struct adb_db *db, struct adb_table *table)
 		table->import.histogram_key = &table->import.field[key_idx];
 		return 0;
 	}
-	
+
 	alt_key_idx = schema_get_alt_field(db, table, table->import.depth_field);
 	if (alt_key_idx >= 0) {
 		table->import.histogram_alt_key = &table->import.alt_field[alt_key_idx];
 		return 0;
 	}
 
-	return -EINVAL;	
+	return -EINVAL;
 }
 
 static void histo_depth_calc(struct adb_db *db,
@@ -386,7 +386,7 @@ static void histo_depth_calc(struct adb_db *db,
 	end = count +  ADB_TABLE_HISTOGRAM_DIVS % (db->htm->depth + 1);
 
 	for (j = 0; j < db->htm->depth; j++) {
-	
+
 		table->depth_map[j].min_value = table->object.min_value + start * histo;
 		table->depth_map[j].max_value = table->object.min_value + end * histo;
 
@@ -396,7 +396,7 @@ static void histo_depth_calc(struct adb_db *db,
 		adb_info(db, ADB_LOG_CDS_IMPORT, "depth %d %3.3f <-> %3.3f\n", j,
 			table->depth_map[j].min_value, table->depth_map[j].max_value);
 	}
-	table->depth_map[j].min_value = table->depth_map[j - 1].max_value;  
+	table->depth_map[j].min_value = table->depth_map[j - 1].max_value;
 	table->depth_map[j].max_value = table->object.max_value;
 
 	adb_info(db, ADB_LOG_CDS_IMPORT, "depth %d %3.3f <-> %3.3f\n", j,
@@ -456,16 +456,16 @@ static int table_histogram_import(struct adb_db *db,
 			continue;
 		}
 
-		if (object.posn_mag.Vmag < table->object.min_value ||
-			object.posn_mag.Vmag > table->object.max_value) {
+		if (object.posn_mag.key < table->object.min_value ||
+			object.posn_mag.key > table->object.max_value) {
 			oor++;
 			continue;
 		}
 
-		hindex = (object.posn_mag.Vmag - table->object.min_value) / histo;
+		hindex = (object.posn_mag.key - table->object.min_value) / histo;
 		if (hindex >= ADB_TABLE_HISTOGRAM_DIVS || hindex < 0) {
 			adb_error(db, "hash index out of range %d for %s have val %f\n",
-				hindex, buf, object.posn_mag.Vmag);
+				hindex, buf, object.posn_mag.key);
 			oor++;
 			continue;
 		}
@@ -531,16 +531,16 @@ static int table_histogram_alt_import(struct adb_db *db,
 			continue;
 		}
 
-		if (object.posn_mag.Vmag < table->object.min_value ||
-			object.posn_mag.Vmag > table->object.max_value) {
+		if (object.posn_mag.key < table->object.min_value ||
+			object.posn_mag.key > table->object.max_value) {
 			oor++;
 			continue;
 		}
 
-		hindex = (object.posn_mag.Vmag - table->object.min_value) / histo;
+		hindex = (object.posn_mag.key - table->object.min_value) / histo;
 		if (hindex >= ADB_TABLE_HISTOGRAM_DIVS || hindex < 0) {
 			adb_error(db, "hash index out of range %d for %s (%s) have val %f\n",
-				hindex, buf, buf2, object.posn_mag.Vmag);
+				hindex, buf, buf2, object.posn_mag.key);
 			oor++;
 			continue;
 		}
@@ -566,7 +566,7 @@ static int import_object_ascending(struct adb_db *db,
 	struct htm *htm = db->htm;
 	int depth;
 
-	depth = import_get_object_depth_min(table, adb_object_vmag(object));
+	depth = import_get_object_depth_min(table, adb_object_keyval(object));
 	if (depth < 0)
 		return 0;
 
@@ -591,7 +591,7 @@ static int import_object_descending(struct adb_db *db,
 	struct htm *htm = db->htm;
 	int depth;
 
-	depth = import_get_object_depth_max(table, adb_object_size(object));
+	depth = import_get_object_depth_max(table, adb_object_keyval(object));
 	if (depth < 0)
 		return 0;
 
@@ -685,7 +685,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 			count += import;
 
 		if (warn) {
-			adb_vdebug(db, ADB_LOG_CDS_IMPORT, 
+			adb_vdebug(db, ADB_LOG_CDS_IMPORT,
 				"At line %d with length %d :-\n",
 				line_count, strlen(line));
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT, "line %s\n\n", line);
@@ -767,7 +767,7 @@ static int import_rows_with_alternatives(struct adb_db *db,
 				object, table->import.field[i].struct_offset, buf);
 
 			if (import < 0)
-				adb_vdebug(db, ADB_LOG_CDS_IMPORT, 
+				adb_vdebug(db, ADB_LOG_CDS_IMPORT,
 					" blank field %s\n",
 					table->import.field[i].symbol);
 		}
@@ -800,7 +800,7 @@ static int import_rows_with_alternatives(struct adb_db *db,
 			count += import;
 
 		if (warn) {
-			adb_vdebug(db, ADB_LOG_CDS_IMPORT, 
+			adb_vdebug(db, ADB_LOG_CDS_IMPORT,
 				"At line %d with length %d :-\n",
 				line_count, strlen(line));
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT, "line %s\n\n", line);

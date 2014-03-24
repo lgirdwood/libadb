@@ -16,8 +16,8 @@
  *  Copyright (C) 2005 Liam Girdwood
  */
 
-#ifndef __LNC_README_H
-#define __LNC_README_H
+#ifndef __ADB_README_H
+#define __ADB_README_H
 
 #define RM_BYTE_TYPE_SIZE		8
 #define RM_BYTE_UNIT_SIZE		8

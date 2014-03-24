@@ -85,25 +85,7 @@ struct adb_object;
 struct adb_posn_mag {
 	double ra;
 	double dec;
-	float Vmag;
-};
-
-struct adb_posn_size {
-	double ra;
-	double dec;
-	float size;
-};
-
-struct adb_posn_type {
-	double ra;
-	double dec;
-	uint32_t type;
-};
-
-struct adb_size_type {
-	double minor_size;
-	double major_size;
-	uint32_t type;
+	float key;
 };
 
 struct adb_kd_tree {
@@ -114,7 +96,6 @@ struct adb_kd_tree {
 struct adb_import {
 	/* next object (in Vmag or size) or NULL */
 	struct adb_object *next;
-
 	struct adb_kd_tree *kd;
 };
 
@@ -125,12 +106,7 @@ struct adb_object {
 		char designation[ADB_OBJECT_NAME_SIZE];
 	};
 	/* primary keys for object attribute based access */
-	union {
-		struct adb_posn_mag posn_mag;
-		struct adb_posn_size posn_size;
-		struct adb_posn_type posn_type;
-		struct adb_size_type size_type;
-	};
+	struct adb_posn_mag posn_mag;
 
 	union {
 		struct adb_import import; /* only used for importing */
@@ -412,12 +388,7 @@ void adb_table_set_free(struct adb_object_set *set);
 
 #define adb_object_ra(object) object->posn_mag.ra
 #define adb_object_dec(object) object->posn_mag.dec
-#define adb_object_keyval(object) object->posn_mag.Vmag
-#define adb_object_vmag(object) object->posn_mag.Vmag
-#define adb_object_size(object) object->posn_size.size
-#define adb_object_type(object) object->posn_type.type
-#define adb_object_min_size(object) object->size_type.minor_size
-#define adb_object_maj_size(object) object->size_type.major_size
+#define adb_object_keyval(object) object->posn_mag.key
 
 struct adb_object_head {
 	const void *objects;

@@ -187,9 +187,9 @@ static int object_cmp(const void *o1, const void *o2)
 	const struct adb_object *p1 = *(const struct adb_object **)o1,
 		*p2 = *(const struct adb_object **)o2;
 
-	if (p1->posn_mag.Vmag < p2->posn_mag.Vmag)
+	if (p1->posn_mag.key < p2->posn_mag.key)
 		return -1;
-	else if (p1->posn_mag.Vmag > p2->posn_mag.Vmag)
+	else if (p1->posn_mag.key > p2->posn_mag.key)
 		return 1;
 	else
 		return 0;
@@ -245,13 +245,13 @@ static float get_plate_magnitude(struct adb_solve *solve,
 {
 	float delta[4];
 
-	delta[0] = solve_objects->object[0]->posn_mag.Vmag +
+	delta[0] = solve_objects->object[0]->posn_mag.key +
 		get_plate_mag_diff(&solve->pobject[0], primary);
-	delta[1] = solve_objects->object[0]->posn_mag.Vmag +
+	delta[1] = solve_objects->object[0]->posn_mag.key +
 		get_plate_mag_diff(&solve->pobject[1], primary);
-	delta[2] = solve_objects->object[0]->posn_mag.Vmag +
+	delta[2] = solve_objects->object[0]->posn_mag.key +
 		get_plate_mag_diff(&solve->pobject[2], primary);
-	delta[3] = solve_objects->object[0]->posn_mag.Vmag +
+	delta[3] = solve_objects->object[0]->posn_mag.key +
 		get_plate_mag_diff(&solve->pobject[3], primary);
 
 	return quad_avg(delta[0], delta[1], delta[2], delta[3]);
@@ -632,10 +632,10 @@ static int bsearch_head(const struct adb_object **adb_source_objects,
 		return idx;
 
 	/* narrow search */
-	if (object->posn_mag.Vmag > value)
+	if (object->posn_mag.key > value)
 		return bsearch_head(adb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
-	else if (object->posn_mag.Vmag < value)
+	else if (object->posn_mag.key < value)
 		return bsearch_head(adb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
@@ -655,13 +655,13 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 	object = source->objects[idx];
 
 	/* make sure the object is first in the array amongst equals */
-	if (object->posn_mag.Vmag < vmag) {
+	if (object->posn_mag.key < vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx++; idx < source->num_objects; idx++) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.Vmag >= vmag)
+			if (object->posn_mag.key >= vmag)
 				return idx - 1;
 		}
 	} else {
@@ -669,7 +669,7 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 		for (idx--; idx > start_idx; idx--) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.Vmag < vmag)
+			if (object->posn_mag.key < vmag)
 				return idx + 1;
 		}
 	}
@@ -689,10 +689,10 @@ static int bsearch_tail(const struct adb_object **adb_source_objects,
 		return idx;
 
 	/* narrow search */
-	if (object->posn_mag.Vmag > value)
+	if (object->posn_mag.key > value)
 		return bsearch_tail(adb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
-	else if (object->posn_mag.Vmag < value)
+	else if (object->posn_mag.key < value)
 		return bsearch_tail(adb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
@@ -712,13 +712,13 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 	object = source->objects[idx];
 
 	/* make sure the object is last in the array amongst equals */
-	if (object->posn_mag.Vmag > vmag) {
+	if (object->posn_mag.key > vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx--; idx > start_idx; idx--) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.Vmag <= vmag)
+			if (object->posn_mag.key <= vmag)
 				return idx + 1;
 		}
 	} else {
@@ -726,7 +726,7 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 		for (idx++; idx < source->num_objects; idx++) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.Vmag > vmag)
+			if (object->posn_mag.key > vmag)
 				return idx - 1;
 		}
 	}
@@ -747,13 +747,13 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 
 	/* get search start position */
 	pos = object_get_first_on_mag(source,
-		primary->posn_mag.Vmag - solve->mag_delta, 0);
+		primary->posn_mag.key - solve->mag_delta, 0);
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
-		t->mag.pattern_min + primary->posn_mag.Vmag, pos);
+		t->mag.pattern_min + primary->posn_mag.key, pos);
 	end = object_get_last_with_mag(source,
-		t->mag.pattern_max + primary->posn_mag.Vmag, pos);
+		t->mag.pattern_max + primary->posn_mag.key, pos);
 
 	/* both out of range */
 	if (start == end)
@@ -1108,8 +1108,8 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime,
 	plate_diff = get_plate_mag_diff(&solve->pobject[idx],
 			&solve->pobject[idx + 1]);
 
-	db_diff = s->object[idx]->posn_mag.Vmag -
-			s->object[idx + 1]->posn_mag.Vmag;
+	db_diff = s->object[idx]->posn_mag.key -
+			s->object[idx + 1]->posn_mag.key;
 
 	return plate_diff - db_diff;
 }
@@ -1142,7 +1142,7 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		runtime->pot_pa[i].delta_magnitude =
 			fabs(get_plate_magnitude(runtime->solve, solve_objects, pobject) -
-			runtime->pot_pa[0].object[0]->posn_mag.Vmag);
+			runtime->pot_pa[0].object[0]->posn_mag.key);
 
 		runtime->pot_pa[i].divergance =
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
@@ -1536,7 +1536,7 @@ int adb_solve_get_object(struct adb_solve *solve,
 	if (!count && o != NULL) {
 
 		/* nothing found so return object magnitude and position */
-		o->posn_mag.Vmag = get_plate_magnitude(solve, solve_objects,
+		o->posn_mag.key = get_plate_magnitude(solve, solve_objects,
 				pobject);
 		get_plate_position(solve, solve_objects, pobject,
 			&o->posn_mag.ra, &o->posn_mag.dec);

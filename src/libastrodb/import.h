@@ -16,8 +16,8 @@
  *  Copyright (C) 2008, 2012 Liam Girdwood
  */
 
-#ifndef __LNC_IMPORT_H
-#define __LNC_IMPORT_H
+#ifndef __ADB_IMPORT_H
+#define __ADB_IMPORT_H
 
 #include <stdlib.h>
 #include <math.h>

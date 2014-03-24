@@ -16,8 +16,8 @@
  *  Copyright (C) 2010, 2012 Liam Girdwood
  */
 
-#ifndef __LNC_TABLE_HTM_H
-#define __LNC_TABLE_HTM_H
+#ifndef __ADB_TABLE_HTM_H
+#define __ADB_TABLE_HTM_H
 
 #include <stdlib.h>
 #include <math.h>

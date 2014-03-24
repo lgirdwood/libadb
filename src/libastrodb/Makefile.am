@@ -6,7 +6,8 @@ noinst_HEADERS = \
 	adbstdio.h \
 	private.h \
 	htm.h \
-	schema.h
+	schema.h \
+	cds.h
 
 include_HEADERS = \
 	astrodb.h

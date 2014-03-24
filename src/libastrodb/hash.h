@@ -16,8 +16,8 @@
  *  Copyright (C) 2008, 2012 Liam Girdwood
  */
 
-#ifndef __LNC_HASH_H
-#define __LNC_HASH_H
+#ifndef __ADB_HASH_H
+#define __ADB_HASH_H
 
 #include <stdlib.h>
 #include <math.h>
@@ -26,6 +26,8 @@
 #include <libastrodb/astrodb.h>
 
 #define ADB_MAX_HASH_MAPS		16	/* number of hash maps */
+
+struct adb_table;
 
 /* points to array of objects that match hash number */
 struct hash_object {
@@ -52,15 +54,9 @@ struct table_hash {
 	int num;
 };
 
-struct adb_table;
-
 int hash_string(const char *data, int len, int mod);
 int hash_int(int val, int mod);
 void hash_free_maps(struct adb_table *table);
-
-int table_get_hashmap(struct adb_db *db, int table_id, const char *key);
-
 int hash_build_table(struct adb_table *table, int map);
-
 
 #endif

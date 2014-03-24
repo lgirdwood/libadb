@@ -16,8 +16,8 @@
  *  Copyright (C) 2008, 2012 Liam Girdwood
  */
 
-#ifndef __LNC_TABLE_H
-#define __LNC_TABLE_H
+#ifndef __ADB_TABLE_H
+#define __ADB_TABLE_H
 
 #include <stdlib.h>
 #include <math.h>
@@ -54,7 +54,7 @@ struct adb_object_set {
 	struct adb_table *table;
 	struct adb_object_head *object_heads;	/*!< clipped objects */
 	struct htm_trixel *centre, **trixels;
-	
+
 	float fov;						/*!< Clipping radius in degrees */
 	float centre_ra;				/*!< Clipping centre RA (circular) */
 	float centre_dec;			/*!< Clipping centre DEC (circular) */
@@ -111,14 +111,12 @@ struct adb_table {
 
 adb_ctype table_get_column_ctype(char *type);
 int table_get_column_csize(char *type);
-
-int table_read_trixels(struct adb_db *db, struct adb_table *table, 
+int table_read_trixels(struct adb_db *db, struct adb_table *table,
 	int table_id);
-
 int table_insert_object(struct adb_db *db, int table_id,
 		struct adb_object *object);
-
 int table_get_object_depth_max(struct adb_table *table, float value);
 int table_get_object_depth_min(struct adb_table *table, float value);
+int table_get_hashmap(struct adb_db *db, int table_id, const char *key);
 
 #endif

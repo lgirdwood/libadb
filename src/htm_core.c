@@ -65,77 +65,6 @@ static const float htm_resolution[] = {
 		M_PI_2 / 2048.0,
 };
 
-static inline void vertex_debug_printf(struct htm_vertex *v, const char *s)
-{
-	fdebug("%s: ptr %p equ %3.3f:%3.3f cart %3.3f:%3.3f:%3.3f\n", s, v,
-		v->ra * R2D, v->dec * R2D, v->x, v->y, v->z);
-}
-
-static inline void trixel_debug_printf(struct htm_trixel *t, const char *s)
-{
-	fdebug("%s:t %p\n a %p %3.3f:%3.3f\n b %p %3.3f:%3.3f\n c %p %3.3f:%3.3f\n", s, t,
-		t->a, t->a->ra * R2D, t->a->dec * R2D,
-		t->b, t->b->ra * R2D, t->b->dec * R2D,
-		t->c, t->c->ra * R2D, t->c->dec * R2D);
-}
-
-static inline void trixel_debug_printf1(struct htm_trixel *t, int i)
-{
-	printf("%d:t %p @ %d\n a %p %3.3f:%3.3f\n b %p %3.3f:%3.3f\n c %p %3.3f:%3.3f\n", i, t, t->depth,
-		t->a, t->a->ra * R2D, t->a->dec * R2D,
-		t->b, t->b->ra * R2D, t->b->dec * R2D,
-		t->c, t->c->ra * R2D, t->c->dec * R2D);
-}
-
-#if 0
-static void htm_debug_printf(struct htm_trixel *t, int depth, int id)
-{
-	if (depth == 0)
-		return;
-
-	printf("depth %d id %d\n", depth, id);
-	printf(" a %3.3f:%3.3f b %3.3f:%3.3f c %3.3f:%3.3f\n",
-		t->a->ra * R2D, t->a->dec * R2D,
-		t->b->ra * R2D, t->b->dec * R2D,
-		t->c->ra * R2D, t->c->dec * R2D);
-
-	htm_debug_printf(&t->child[0], depth - 1, 0);
-	htm_debug_printf(&t->child[1], depth - 1, 1);
-	htm_debug_printf(&t->child[2], depth - 1, 2);
-	htm_debug_printf(&t->child[3], depth - 1, 3);
-}
-
-static void dump_trixels(struct adb_db *db,
-	struct htm_trixel *trixel, int depth, int level)
-{
-	if (depth >= level)
-		return;
-
-	if (!trixel->data[0].num_objects)
-		goto children;
-
-	adb_debug(db, ADB_LOG_HTM_CORE, "trixel %p obj %d %x %x %x %x\n", trixel,
-		trixel->data[0].num_objects, trixel->hemisphere,
-		trixel->quadrant, trixel->depth, trixel->position);
-
-children:
-	dump_trixels(db, &trixel->child[0], depth + 1, level);
-	dump_trixels(db, &trixel->child[1], depth + 1, level);
-	dump_trixels(db, &trixel->child[2], depth + 1, level);
-	dump_trixels(db, &trixel->child[3], depth + 1, level);
-}
-
-static void dump_htm_data(struct adb_db *db)
-{
-	int i;
-
-	for (i = 0; i < 4; i++)
-		dump_trixels(db, &db->htm->N[i], 0, 7);
-	for (i = 0; i < 4; i++)
-		dump_trixels(db, &db->htm->S[i], 0, 7);
-}
-#endif
-
 static struct htm_trixel *trixel_get_from_id_(struct htm *htm,
 	unsigned int id, struct htm_trixel *t, int depth)
 {
@@ -143,6 +72,7 @@ static struct htm_trixel *trixel_get_from_id_(struct htm *htm,
 
 	if (++depth > htm_trixel_depth(id))
 		return t;
+
 	if (depth >= HTM_MAX_DEPTH)
 		return NULL;
 
@@ -457,7 +387,7 @@ static inline void trixel_1_parent_up(struct htm *htm,
 }
 
 /* t2 is bottom left */
-static inline void trixel_2_parent_up(struct htm *htm, 
+static inline void trixel_2_parent_up(struct htm *htm,
 	struct htm_trixel *parent,
 	struct htm_trixel *t2, struct htm_vertex *a, struct htm_vertex *b,
 	struct htm_vertex *c, int level)
@@ -503,7 +433,7 @@ static inline void trixel_0_parent_down(struct htm *htm,
 	vertex_assoc_trixel_c(htm, t0, c, level);
 }
 
-static inline void trixel_1_parent_down(struct htm *htm, 
+static inline void trixel_1_parent_down(struct htm *htm,
 	struct htm_trixel *parent,
 	struct htm_trixel *t1, struct htm_vertex *a, struct htm_vertex *b,
 	struct htm_vertex *c, int level)
@@ -518,7 +448,7 @@ static inline void trixel_1_parent_down(struct htm *htm,
 	vertex_assoc_trixel_c(htm, t1, c, level);
 }
 
-static inline void trixel_2_parent_down(struct htm *htm, 
+static inline void trixel_2_parent_down(struct htm *htm,
 	struct htm_trixel *parent,
 	struct htm_trixel *t2, struct htm_vertex *a, struct htm_vertex *b,
 	struct htm_vertex *c, int level)
@@ -533,7 +463,7 @@ static inline void trixel_2_parent_down(struct htm *htm,
 	vertex_assoc_trixel_c(htm, t2, a, level);
 }
 
-static inline void trixel_3_parent_down(struct htm *htm, 
+static inline void trixel_3_parent_down(struct htm *htm,
 	struct htm_trixel *parent,
 	struct htm_trixel *t3, struct htm_vertex *a, struct htm_vertex *b,
 	struct htm_vertex *c, int level)
