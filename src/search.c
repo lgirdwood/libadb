@@ -12,7 +12,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  *  Copyright (C) 2008, 2012 Liam Girdwood
  */
 
@@ -20,11 +20,11 @@
 #include <string.h>
 #include <errno.h>
 
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/astrodb.h>
-#include <libastrodb/table.h>
-#include <libastrodb/db.h>
-#include <libastrodb/readme.h>
+#include <libastrodb/object.h>
+#include <libastrodb/search.h>
+#include "readme.h"
+#include "debug.h"
+#include "table.h"
 
 #define MAX_PARAMS			128
 #define PARAM_OPER			0
@@ -39,7 +39,7 @@
  *
  * Searching
  *
- * Reverse Polish Notation is used to define the search parameters. 
+ * Reverse Polish Notation is used to define the search parameters.
  */
 
 struct adb_search_branch;
@@ -155,7 +155,7 @@ static int string_lt_comp(void *data, void *value)
 }
 
 static int string_gt_comp(void *data, void *value)
-{	
+{
 	return (strcmp(data, value) < 0);
 }
 
@@ -174,7 +174,7 @@ static int string_eq_wildcard_comp(void *data, void *value)
 {
 	int i = 0;
 	char *ptr = value;
-	
+
 	while (*ptr != '*') {
 		i++;
 		ptr++;
@@ -219,7 +219,7 @@ static int test_AND_oper(const struct adb_object *object,
 	struct adb_search_branch *test = branch->branch[--num];
 
 	if (num > 0)
-		return test->operator(object, test, test->test_count) && 
+		return test->operator(object, test, test->test_count) &&
 			test_AND_oper(object, branch, num);
 
 	/* last one */
@@ -371,14 +371,14 @@ int adb_search_add_operator(struct adb_search *search,
 {
 	struct adb_search_branch *branch;
 	int i;
-	
+
 	/* cannot have lone operator_t */
-	if (search->root == NULL && 
+	if (search->root == NULL &&
 		search->branch_orphan_count == 0 &&
 		search->test_orphan_count == 0) {
 		return -EINVAL;
 	}
-	
+
 	branch = calloc(1, sizeof(struct adb_search_branch));
 	if (branch == NULL)
 		return -ENOMEM;
@@ -388,12 +388,12 @@ int adb_search_add_operator(struct adb_search *search,
 		search->test_orphan_count, search->branch_orphan_count);
 
 	/* we either have a parent of a compare or op
-	 * or a sibling of an op 
+	 * or a sibling of an op
 	 *
 	 * comparator_t parent = test_orphan != NULL, branch_orphan = NULL
 	 * operator_t parent = test_orphan = NULL, branch_orphan != NULL
 	 */
-	
+
 	if (search->test_orphan_count > 0) {
 		/* comparator_t parent */
 		switch (op) {
@@ -436,14 +436,14 @@ int adb_search_add_operator(struct adb_search *search,
 		search->branch_orphan_count = 0;
 		branch->type = OP_OP;
 	}
-	
+
 	for (i = search->search_test_count; i > 0; i--)
 		search->branch_orphan[i] = search->branch_orphan[i - 1];
 
 	/* we are an orphan ourselves */
 	search->branch_orphan[0] = branch;
 	search->start_branch = branch;
-	search->branch_orphan_count++; 
+	search->branch_orphan_count++;
 	adb_debug(search->db, ADB_LOG_SEARCH, "added %s branch as root index, total %d\n",
 		search->branch_orphan[0]->operator == test_AND_oper ? "AND" : "OR",
 		search->search_test_count);
@@ -465,7 +465,7 @@ int adb_search_add_comparator(struct adb_search *search,
 	adb_ctype ctype;
 	struct adb_search_branch *test;
 	comparator_t search_comp;
-	
+
 	ctype = adb_table_get_field_type(search->db, search->table->id, field);
 	if (ctype == ADB_CTYPE_NULL) {
 		adb_error(search->db, "invalid C type for field %s\n", field);
@@ -481,7 +481,7 @@ int adb_search_add_comparator(struct adb_search *search,
 
 	if (strstr(value, "*"))
 		search_comp = string_eq_wildcard_comp;
-	
+
 	test = calloc(1, sizeof(struct adb_search_branch));
 	if (test == NULL)
 		return -ENOMEM;
@@ -558,7 +558,7 @@ static inline int check_object(struct adb_search_branch *branch,
 	return branch->operator(object, branch, branch->test_count);
 }
 
-/*! \fn int adb_search_get_results(adb_search* search, adb_progress progress, adb_slist **result, unsigned int src) 
+/*! \fn int adb_search_get_results(adb_search* search, adb_progress progress, adb_slist **result, unsigned int src)
  * \param search Search
  * \param progress Progress callback
  * \param result Search results

@@ -12,7 +12,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  *  Copyright (C) 2008,2012 Liam Girdwood
  */
 
@@ -29,9 +29,8 @@
 #include <zlib.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/private.h>
+#include "debug.h"
+#include "private.h"
 
 #define GZ_CHUNK 16384
 #define CHUNK_SIZE (1024 * 32)
@@ -95,7 +94,7 @@ static int ftp_get_file(struct adb_table *table, const char *file)
 
 	adb_info(db, ADB_LOG_CDS_FTP, "ftp %s to %s\n", src, dest);
 	FtpInit();
-	
+
 	/* for some reason Ftplib return 0 for errors */
 	ret = FtpConnect(table->cds.host, &nbuf);
 	if (ret == 0) {
@@ -136,28 +135,28 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 	static char *ftp_dir[CHUNK_SIZE];
 	char *file;
 	int ret, count = 0;
-	
+
 	snprintf(src, ADB_PATH_SIZE, "%s", table->path.remote);
 
 	adb_info(db, ADB_LOG_CDS_FTP, "FTP files %s pattern %s\n",
 		src, pattern);
 
 	FtpInit();
-	
+
 	ret = FtpConnect(table->cds.host, &nbuf);
 	if (ret == 0) {
 		adb_error(db, "FTP connect to %s failed\n",
 		table->cds.host);
 		return -EIO;
 	}
-	
+
 	ret = FtpLogin("anonymous", "lgirdwood@gmail.com", nbuf);
 	if (ret == 0) {
 		adb_error(db, "FTP could not login\n");
 		ret = -EIO;
 		goto out;
 	}
-	
+
 	/* open directory */
 	ret = FtpAccess(src, FTPLIB_DIR, FTPLIB_ASCII, nbuf, &nbuf_dir);
 	if (ret == 0) {
@@ -169,7 +168,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 	/* read entire directory, file by file */
 	do {
 		char *space;
-		
+
 		/* read the directory */
 		ret = FtpRead(dir, ADB_PATH_SIZE, nbuf_dir);
 		if (ret == -1) {
@@ -181,12 +180,12 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 
 		/* copy file name */
 		space = ftp_dir[count] = strdup(dir);
-		
+
 		/* strip any CR/LF */
 		while (!isspace(*space))
 			space++;
 		*space = 0;
-		
+
 		count ++;
 	} while (ret > 0);
 	FtpClose(nbuf_dir);
@@ -198,17 +197,17 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 		file = strstr(ftp_dir[count], pattern);
 		if (file) {
 			int err;
-			
+
 			strncpy(dest, table->path.local, ADB_PATH_SIZE);
 			strncat(dest, file, ADB_PATH_SIZE - strlen(file) - 1);
-			
+
 			/* download file by file*/
 			adb_info(db, ADB_LOG_CDS_FTP, "FTP downloading %s\n",
 				ftp_dir[count]);
 			err = FtpGet(dest, ftp_dir[count], FTPLIB_IMAGE, nbuf);
 			if (err == 0) {
-				adb_error(db, "FTP could not get %s to %s\n", 
-					      ftp_dir[count], dest);
+				adb_error(db, "FTP could not get %s to %s\n",
+					ftp_dir[count], dest);
 				ret = -EIO;
 				goto out;
 			}

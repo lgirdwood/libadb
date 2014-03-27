@@ -21,6 +21,14 @@ libastrodb_la_SOURCES = \
 	hash.c \
 	solve.c
 
+noinst_HEADERS = \
+	readme.h \
+	debug.h \
+	private.h \
+	htm.h \
+	schema.h \
+	cds.h
+
 libastrodb_la_LDFLAGS = \
 	-version-info $(LT_VERSION) \
 	-release $(LT_RELEASE) 

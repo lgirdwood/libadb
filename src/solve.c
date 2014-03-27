@@ -26,8 +26,10 @@
 #include <pthread.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
+#include <libastrodb/solve.h>
+#include <libastrodb/object.h>
+#include "table.h"
+#include "debug.h"
 
 #define MIN_PLATE_OBJECTS	4
 #define MAX_POTENTAL_MATCHES	256

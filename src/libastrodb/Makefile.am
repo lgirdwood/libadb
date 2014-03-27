@@ -1,13 +1,9 @@
 includedir = $(prefix)/include/libastrodb
 
-noinst_HEADERS = \
-	db.h \
-	readme.h \
-	adbstdio.h \
-	private.h \
-	htm.h \
-	schema.h \
-	cds.h
-
 include_HEADERS = \
-	astrodb.h
+	astrodb.h \
+	solve.h \
+	search.h \
+	db.h \
+	db-import.h \
+	object.h

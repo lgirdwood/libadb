@@ -26,11 +26,12 @@
 #include <sys/stat.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/schema.h>
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/readme.h>
-#include <libastrodb/private.h>
+#include <libastrodb/object.h>
+#include "table.h"
+#include "schema.h"
+#include "readme.h"
+#include "private.h"
+#include "debug.h"
 
 /* table type import's */
 static int int_import(struct adb_object *object, int offset, char *src)
@@ -628,7 +629,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 	}
 
 	adb_info(db, ADB_LOG_CDS_IMPORT, "Starting import with objects %d size %d bytes\n",
-	      table->object.count, table->object.bytes);
+	table->object.count, table->object.bytes);
 
 	size = table->import.text_length + 10;
 
@@ -723,7 +724,7 @@ static int import_rows_with_alternatives(struct adb_db *db,
 	}
 
 	adb_info(db, ADB_LOG_CDS_IMPORT, "Starting alt import with objects %d size %d bytes\n",
-	      table->object.count, table->object.bytes);
+	table->object.count, table->object.bytes);
 	adb_info(db, ADB_LOG_CDS_IMPORT, "Importing %d alt fields\n", table->object.num_alt_fields);
 
 	size = table->import.text_length + 10;

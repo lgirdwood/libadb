@@ -21,9 +21,9 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <libastrodb/private.h>
-#include <libastrodb/htm.h>
-#include <libastrodb/astrodb.h>
+
+#include "private.h"
+#include "htm.h"
 
 #define ADB_TABLE_MAX_FIELDS		128	/* max number of indexes */
 #define ADB_TABLE_MAX_ALT_FIELDS		16	/* max number of alternate indexes */
@@ -85,10 +85,10 @@ adb_field_import2 table_get_alt_key_import(struct adb_db *db,
 adb_field_import1 table_get_column_import(struct adb_db *db,
 	adb_ctype type);
 
-int table_write_trixels(struct adb_db *db, struct adb_table *table, 
+int table_write_trixels(struct adb_db *db, struct adb_table *table,
 	int table_id);
 
-int import_build_kdtree(struct adb_db *db, struct adb_table *table, 
+int import_build_kdtree(struct adb_db *db, struct adb_table *table,
 	int table_id);
 
 int import_get_object_depth_max(struct adb_table *table, float value);

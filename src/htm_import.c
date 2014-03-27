@@ -25,8 +25,10 @@
 #include <ctype.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
+#include <libastrodb/db-import.h>
+#include <libastrodb/object.h>
+#include "table.h"
+#include "debug.h"
 
 struct kd_elem {
 	uint32_t id;
@@ -109,7 +111,7 @@ void htm_import_object_descending(struct adb_db *db,
 	while (current) {
 
 		/* is new object higher than HEAD object ? */
-  		if (adb_object_keyval(new_object) >= adb_object_keyval(current)) {
+		if (adb_object_keyval(new_object) >= adb_object_keyval(current)) {
 
 			/* is object new HEAD ?*/
 			if (current == head) {

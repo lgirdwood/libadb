@@ -12,7 +12,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  *  Copyright (C) 2005 Liam Girdwood
  */
 
@@ -25,6 +25,7 @@
 #define RM_BYTE_EXP_SIZE			128
 
 struct adb_db;
+struct adb_table;
 
 /*! \struct adb_table_column_info
  * \brief Dataset byte description.
@@ -32,7 +33,7 @@ struct adb_db;
  * Describes a field from a CDS dataset.
  *
  * <ul>
- * <li><b>  Start</b>			<i>Field start pos</i></li> 
+ * <li><b>  Start</b>			<i>Field start pos</i></li>
  * <li><b>  End</b>			<i>Field end pos</i></li>
  * <li><b>  Type</b>			<i>Field type</i></li>
  * <li><b>  Units</b>			<i>Units</i></li>
@@ -40,7 +41,7 @@ struct adb_db;
  * <li><b>  Explanation</b>	<i>Explanation</i></li>
  * </ul>
  */
-struct cds_byte_desc { 
+struct cds_byte_desc {
 	int start;        							/*!< start byte */
 	int end;          							/*!< end byte */
 	char type[RM_BYTE_TYPE_SIZE];			/*!< field type */
@@ -59,7 +60,7 @@ struct cds_byte_desc {
  * Describes a dataset from a CDS catalog ReadMe file_name.
  *
  * <ul>
- * <li><b>  Name</b>		<i>Dataset name</i></li> 
+ * <li><b>  Name</b>		<i>Dataset name</i></li>
  * <li><b>  Records</b>	<i>Number of records in dataset</i></li>
  * <li><b>  Length</b>	<i>Length of dataset records</i></li>
  * <li><b>  Title</b>		<i>Dataset title</i></li>

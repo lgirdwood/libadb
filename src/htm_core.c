@@ -29,9 +29,9 @@
 #include <assert.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/private.h>
+#include "table.h"
+#include "debug.h"
+#include "private.h"
 
 #if 1
 #define vdebug(x...) printf(x)
@@ -206,7 +206,7 @@ static void vertex_init_radec(struct htm_vertex *v)
 
 	/* calc Declination */
 	v->dec = asin(y);
-  	cos_dec = cosf(v->dec);
+	cos_dec = cosf(v->dec);
 
 	/* calc RA */
 	if (cos_dec > 1e-5 || cos_dec < -1e-5) {
@@ -220,7 +220,7 @@ static void vertex_init_radec(struct htm_vertex *v)
 			v->ra = (z < 0.0 ? M_PI : 0.0);
 		}
 	} else
-    		v->ra = 0.0;
+		v->ra = 0.0;
 }
 
 /* lookup vertex based on position from dec domain */
@@ -739,7 +739,7 @@ struct htm *htm_new(int depth, int tables)
 		htm->dec_strip_count * sizeof(struct dec_strip) / 1024);
 	adb_htm_info(htm, ADB_LOG_HTM_CORE, "HTM: %d vertices of %lu bytes total %luk\n",
 		htm->vertex_count, sizeof(struct htm_vertex),
-		 htm->vertex_count * sizeof(struct htm_vertex) / 1024);
+		htm->vertex_count * sizeof(struct htm_vertex) / 1024);
 	adb_htm_info(htm, ADB_LOG_HTM_CORE, "HTM: Footprint %luk\n",
 		htm->dec_strip_count * sizeof(struct dec_strip) +
 		htm->vertex_count, htm->vertex_count * sizeof(struct htm_vertex) +

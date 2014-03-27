@@ -25,8 +25,9 @@
 #include <ctype.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
+#include <libastrodb/object.h>
+#include "table.h"
+#include "debug.h"
 
 /* debug KD tree search for nearest */
 #define CHECK_KD_TREE	0
@@ -116,7 +117,7 @@ static inline double kd_get_z(struct kd_elem *z_base, int z_idx)
 }
 
 static int elem_x_cmp(const void *o1, const void *o2)
-{ 
+{
 	const struct kd_elem *elem1 = o1, *elem2 = o2;
 
 	if (elem1->base->v.x < elem2->base->v.x)
@@ -185,7 +186,7 @@ static inline int valid_z_elem(struct kd_elem *elem, double min, double max)
 }
 
 static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
-	int x_start, int x_end, double y_min, double y_max, 
+	int x_start, int x_end, double y_min, double y_max,
 	double z_min, double z_max)
 {
 	int size = x_end - x_start;
@@ -198,7 +199,7 @@ static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
 
 	while (i <= count) {
 		int start = index - i, end = index + i;
-		
+
 		if (valid_y_elem(&x_base[start], y_min, y_max) &&
 			valid_z_elem(&x_base[start], z_min, z_max))
 			return &x_base[start];
@@ -210,7 +211,7 @@ static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
 		i++;
 	}
 
-	/* ra end is not checked if gap is even */	
+	/* ra end is not checked if gap is even */
 	if (!(size & 0x1) == 0 &&
 		valid_y_elem(&x_base[x_end], y_min, y_max) &&
 		valid_z_elem(&x_base[x_end], z_min, z_max))
@@ -220,7 +221,7 @@ static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
 }
 
 static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
-	int y_start, int y_end, double x_min, double x_max, 
+	int y_start, int y_end, double x_min, double x_max,
 	double z_min, double z_max)
 {
 	int size = y_end - y_start;
@@ -233,7 +234,7 @@ static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
 
 	while (i <= count) {
 		int start = index - i, end = index + i;
-		
+
 		if (valid_x_elem(&y_base[start], x_min, x_max) &&
 			valid_z_elem(&y_base[start], z_min, z_max))
 			return &y_base[start];
@@ -245,7 +246,7 @@ static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
 		i++;
 	}
 
-	/* ra end is not checked if gap is even */	
+	/* ra end is not checked if gap is even */
 	if (!(size & 0x1) == 0 &&
 		valid_x_elem(&y_base[y_end], x_min, x_max) &&
 		valid_z_elem(&y_base[y_end], z_min, z_max))
@@ -255,7 +256,7 @@ static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
 }
 
 static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
-	int z_start, int z_end, double x_min, double x_max, 
+	int z_start, int z_end, double x_min, double x_max,
 	double y_min, double y_max)
 {
 	int size = z_end - z_start;
@@ -268,7 +269,7 @@ static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
 
 	while (i <= count) {
 		int start = index - i, end = index + i;
-		
+
 		if (valid_x_elem(&z_base[start], x_min, x_max) &&
 			valid_y_elem(&z_base[start], y_min, y_max))
 			return &z_base[start];
@@ -280,7 +281,7 @@ static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
 		i++;
 	}
 
-	/* ra end is not checked if gap is even */	
+	/* ra end is not checked if gap is even */
 	if (!(size & 0x1) == 0 &&
 		valid_x_elem(&z_base[z_end], x_min, x_max) &&
 		valid_y_elem(&z_base[z_end], y_min, y_max))
@@ -536,7 +537,7 @@ static void update_objects(struct kd_base_elem *base, struct adb_table *table,
 	table->import.kd_root = root->bid;
 }
 
-int import_build_kdtree(struct adb_db *db, struct adb_table *table, 
+int import_build_kdtree(struct adb_db *db, struct adb_table *table,
 	int table_id)
 {
 	struct kd_base mbase;
@@ -604,8 +605,8 @@ static double get_distance(double ra1, double dec1, struct kd_vertex *v)
 	double x,y,z;
 
 	kd_vertex_to_equ(&ra2, &dec2, v);
-	
-	x = (cos(dec1) * sin (dec2)) 
+
+	x = (cos(dec1) * sin (dec2))
 		- (sin(dec1) * cos(dec2) * cos(ra2 - ra1));
 	y = cos(dec2) * sin(ra2 - ra1);
 	z = (sin (dec1) * sin (dec2)) + (cos(dec1) * cos(dec2) * cos(ra2 - ra1));

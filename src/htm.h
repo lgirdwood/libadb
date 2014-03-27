@@ -21,7 +21,9 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <libastrodb/astrodb.h>
+
+//#include <libastrodb/db.h>
+#include "private.h"
 
 #define INSIDE_UP_LIMIT		-1.0e-5
 #define HTM_TRIXEL_UP			0
@@ -172,7 +174,7 @@ struct htm *htm_new(int depth, int tables);
 /* free HTM and resources */
 void htm_free(struct htm *htm);
 
-int htm_clip(struct htm *htm, struct adb_object_set *set, 
+int htm_clip(struct htm *htm, struct adb_object_set *set,
 	float ra, float dec, float fov,
 	float min_depth, float max_depth);
 
@@ -195,7 +197,7 @@ int htm_get_object_depth(struct htm *htm, float value);
 struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id);
 
 int htm_table_insert_object(struct htm *htm, struct adb_table *table,
-	struct adb_object *object, unsigned int object_count, 
+	struct adb_object *object, unsigned int object_count,
 	unsigned int trixel_id);
 
 void htm_import_object_ascending(struct adb_db *db,

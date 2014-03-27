@@ -27,9 +27,10 @@
 #include <sys/wait.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/htm.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
+#include <libastrodb/object.h>
+#include "htm.h"
+#include "table.h"
+#include "debug.h"
 
 struct trixel_hdr {
 	u_int32_t id;

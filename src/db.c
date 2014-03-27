@@ -12,7 +12,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  *  Copyright (C) 2010,2012 Liam Girdwood
  */
 
@@ -23,9 +23,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <libastrodb/object.h>
 #include <libastrodb/db.h>
-#include <libastrodb/adbstdio.h>
-
+#include "debug.h"
 #include "config.h"
 
 static const char *dirs[] = {
@@ -146,11 +146,11 @@ void adb_set_log_level(struct adb_db *db, unsigned int log)
 	db->htm->msg_flags = log;
 }
 
-/*! \fn adb_db* adb_create_db(struct adb_library* lib, 
+/*! \fn adb_db* adb_create_db(struct adb_library* lib,
  *
  */
 struct adb_db *adb_create_db(struct adb_library *lib,
- 		int depth, int tables)
+		int depth, int tables)
 {
 	struct adb_db *db;
 
@@ -162,16 +162,16 @@ struct adb_db *adb_create_db(struct adb_library *lib,
 	db->msg_flags = 0;
 
 	/* create HTM */
- 	//depth = htm_get_depth_from_resolution(resolution);
+	//depth = htm_get_depth_from_resolution(resolution);
 	//astrolib_info(lib, ADB_LOG_CDS_DB,
 	//	"DB depth is %d for resolution %f\n", depth, resolution * R2D);
 
- 	db->htm = htm_new(depth, tables);
- 	if (db->htm == NULL) {
- 		astrolib_error(lib, "failed to create DB with HTM depth of"
- 			"%d degrees and %d tables\n", depth, tables);
- 		free(db);
- 		return NULL;
+	db->htm = htm_new(depth, tables);
+	if (db->htm == NULL) {
+		astrolib_error(lib, "failed to create DB with HTM depth of"
+			"%d degrees and %d tables\n", depth, tables);
+		free(db);
+		return NULL;
 	}
 #if 0
 	astrolib_info(lib, ADB_LOG_CDS_DB,
@@ -183,7 +183,7 @@ struct adb_db *adb_create_db(struct adb_library *lib,
 
 /*! \fn void adb_db_free (adb_db *db)
  * \param db Catalog
- * 
+ *
  * Free's all catalog resources
  */
 void adb_db_free(struct adb_db *db)

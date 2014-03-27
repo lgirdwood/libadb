@@ -20,9 +20,9 @@
 #include <errno.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/readme.h>
-#include <libastrodb/adbstdio.h>
+#include "table.h"
+#include "readme.h"
+#include "debug.h"
 
 static int schema_is_field(struct adb_table *table, char *field)
 {
@@ -100,8 +100,8 @@ int schema_add_alternative_field(struct adb_db *db,
 
 			/* move primary field index and insert */
 			memcpy(&table->import.alt_field[table->object.num_alt_fields].key_field,
-			       &table->import.field[pri_idx],
-			       sizeof(struct adb_schema_field));
+			&table->import.field[pri_idx],
+			sizeof(struct adb_schema_field));
 			adb_info(db, ADB_LOG_CDS_SCHEMA, "Object fields %d\n", table->object.field_count);
 
 			if (table->object.field_count > pri_idx){
@@ -187,11 +187,11 @@ int schema_order_import_index(struct adb_db *db, struct adb_table *table)
 			for (i = 0; i < table->object.field_count; i++) {
 				if (table->import.field[i].group_offset ==
 					table->import.field[src].group_offset &&
-				    	group < table->import.field[i].group_posn &&
-				    	table->import.field[i].struct_bytes) {
+					group < table->import.field[i].group_posn &&
+					table->import.field[i].struct_bytes) {
 						group = table->import.field[i].group_posn;
 						src = i;
-				    }
+				}
 			}
 		}
 
@@ -225,7 +225,7 @@ static int schema_add_field_file(struct adb_db *db, struct adb_table *table,
 		didx = &table->import.field[table->object.field_count];
 
 		if (!strncmp(new_schema_object->symbol, byte_desc->label, strlen(byte_desc->label)) &&
-		    !schema_is_field(table, byte_desc->label)) {
+		!schema_is_field(table, byte_desc->label)) {
 
 			memcpy(didx, new_schema_object, sizeof(struct adb_schema_field));
 			didx->text_offset = byte_desc->start;

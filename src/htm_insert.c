@@ -25,8 +25,8 @@
 #include <ctype.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
+#include "table.h"
+#include "debug.h"
 
 
 /* import object into trixel in magnitude order -
@@ -70,7 +70,7 @@ static inline void htm_insert_object_descending(struct htm *htm,
 
 /* used by file reader */
 int htm_table_insert_object(struct htm *htm, struct adb_table *table,
-	struct adb_object *object, unsigned int object_count, 
+	struct adb_object *object, unsigned int object_count,
 	unsigned int trixel_id)
 {
 	struct htm_trixel *trixel;
@@ -113,7 +113,7 @@ int table_insert_object(struct adb_db *db, int table_id,
 
 	vertex.ra =  adb_object_ra(object);
 	vertex.dec = adb_object_dec(object);
-	adb_vdebug(db, ADB_LOG_HTM_INSERT, 
+	adb_vdebug(db, ADB_LOG_HTM_INSERT,
 		"inserting object at RA %f DEC %f at depth %d\n",
 		vertex.ra * R2D, vertex.dec *R2D, depth);
 

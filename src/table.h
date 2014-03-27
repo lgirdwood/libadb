@@ -21,16 +21,16 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <libastrodb/private.h>
-#include <libastrodb/htm.h>
-#include <libastrodb/astrodb.h>
-#include <libastrodb/hash.h>
-#include <libastrodb/schema.h>
-#include <libastrodb/import.h>
+
+#include "private.h"
+#include "htm.h"
+#include "hash.h"
+#include "schema.h"
+#include "import.h"
+#include "cds.h"
 
 #define ADB_TABLE_MAX_FIELDS		128	/* max number of indexes */
-#define ADB_TABLE_MAX_ALT_FIELDS		16	/* max number of alternate indexes */
-
+#define ADB_TABLE_MAX_ALT_FIELDS	16	/* max number of alternate indexes */
 #define ADB_TABLE_HISTOGRAM_DIVS	100
 
 struct adb_db;
@@ -42,13 +42,6 @@ struct depth_map {
 	float max_value;		/*!< maximum object primary key value at this depth */
 };
 
-
-/*! \struct struct adb_object_setper
- * \brief Database Table Clipping.
- * \ingroup table
- *
- * Describes clipping table in database.
- */
 struct adb_object_set {
 	struct adb_db *db;
 	struct adb_table *table;

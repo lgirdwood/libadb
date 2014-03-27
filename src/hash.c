@@ -29,12 +29,12 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <libastrodb/hash.h>
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/private.h>
-#include <libastrodb/readme.h>
+#include "hash.h"
+#include "table.h"
+#include "debug.h"
+#include "private.h"
+#include "readme.h"
 
 /*! \fn static inline int calc_hash(char* data, int len, int mod)
 * \brief Calculate hash based on string <data> and in range <mod>

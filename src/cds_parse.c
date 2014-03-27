@@ -12,7 +12,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
+ *
  *  Copyright (C) 2008,2012 Liam Girdwood
  */
 
@@ -23,10 +23,9 @@
 #include <errno.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/astrodb.h>
-#include <libastrodb/readme.h>
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/private.h>
+#include "readme.h"
+#include "debug.h"
+#include "private.h"
 
 #define README_LINE_SIZE		(80 + 4)
 #define FORMAT_SIZE			32
@@ -34,21 +33,21 @@
 static inline void skiplines(FILE *fp, int lines)
 {
 	char line[README_LINE_SIZE], *end;
-	
+
 	while (lines--) {
 		end = fgets(line, README_LINE_SIZE - 2, fp) ;
 		if (end == NULL)
 			break;
 	}
-} 
+}
 
 static inline int get_string_at_pos(char *src, int pos, char *dest, int len)
 {
 	/* skip to pos n*/
 	const char * _src = src + pos;
-	
+
 	/* skip white space */
-	while (*_src == ' ' ) 
+	while (*_src == ' ' )
 		_src++;
 
 	/* copy word at offset */
@@ -58,8 +57,8 @@ static inline int get_string_at_pos(char *src, int pos, char *dest, int len)
 		_src++;
 	}
 	*dest = 0;
-	
-	return 1;	
+
+	return 1;
 }
 
 static inline int get_word_at_pos(char *src, int pos, char *dest, int len)
@@ -74,9 +73,9 @@ static inline int get_word_at_pos(char *src, int pos, char *dest, int len)
 	}
 
 	/* skip white space */
-	while (*_src == ' ') 
+	while (*_src == ' ')
 		_src++;
-	
+
 	/* copy word at offset */
 	while (*_src != ' ' && len--) {
 		*dest = *_src;
@@ -84,7 +83,7 @@ static inline int get_word_at_pos(char *src, int pos, char *dest, int len)
 		_src++;
 	}
 	*dest = 0;
-	
+
 	return 1;
 }
 
@@ -95,10 +94,10 @@ static inline int get_int_at_pos(char *src, int pos, int *dest, int len)
 
 	*dest = atoi(_src);
 	return 1;
-} 
+}
 
 
- /* Find section header <num> - copy section details into hdr_data (if non NULL)  */
+/* Find section header <num> - copy section details into hdr_data (if non NULL)  */
 static int find_header(char *header, FILE *fp, char *hdr_data)
 {
 	char line[README_LINE_SIZE], *end;
@@ -109,7 +108,7 @@ static int find_header(char *header, FILE *fp, char *hdr_data)
 		if (end == NULL)
 			break;
 
-		/* is it our header */ 
+		/* is it our header */
 		if (strncmp(header, line, strlen(header)))
 			continue;
 
@@ -122,7 +121,7 @@ static int find_header(char *header, FILE *fp, char *hdr_data)
 		return 1;
 
 	} while (1);
-	
+
 	return 0;
 }
 
@@ -130,10 +129,10 @@ static int find_header(char *header, FILE *fp, char *hdr_data)
 static int get_designation(struct readme *readme, FILE *fp)
 {
 	char line[README_LINE_SIZE], *end;
-	
+
 	/* designation is always first line of ReadMe */
 	rewind(fp);
-	
+
 	end = fgets(line, README_LINE_SIZE - 2, fp) ;
 	if (end == NULL)
 		return 0;
@@ -144,20 +143,20 @@ static int get_designation(struct readme *readme, FILE *fp)
 
 static int get_titles(struct readme *info, FILE *f)
 {
-	
+
 	return 0;
 }
 
 static int get_keywords(struct readme *info, FILE *fp)
 {
-	
+
 	return 0;
 }
 
 
 static int get_description(struct readme *info, FILE *fp)
 {
-	
+
 	return 0;
 }
 
@@ -174,18 +173,18 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 	int files = 0;
 
 	rewind(fp);
-	
+
 	if (find_header("File Summary:", fp, NULL) < 0) {
 		adb_error(db, "failed to find File Summary\n");
 		return -ENODATA;
 	}
-	
+
 	/* read and skip in 3 lines of header */
 	skiplines(fp, 3);
-	
+
 	do {
-		file_info = &readme->file[files];		
-	
+		file_info = &readme->file[files];
+
 		end = fgets(line, README_LINE_SIZE - 2, fp) ;
 		if (end == NULL || *line == '-')
 			break;
@@ -258,9 +257,9 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 	char line[README_LINE_SIZE], cont[README_LINE_SIZE], *end;
 	struct cds_byte_desc *byte_desc;
 	int desc = 0,  err;
-	
+
 	cont[0] = ' ';
-	
+
 	/* read and skip in 1 lines of header */
 	skiplines(fp, 1);
 
@@ -273,12 +272,12 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 
 	do {
 		byte_desc = &readme->file[file_id].byte_desc[desc];
-			
+
 		bzero(line, sizeof(line));
 		end = fgets(line, README_LINE_SIZE - 2, fp) ;
 		if (end == NULL || *line == '-')
 			break;
-	
+
 		get_int_at_pos(line, BYTE_START_OFFSET, &byte_desc->start, sizeof(line));
 		get_int_at_pos(line, BYTE_END_OFFSET, &byte_desc->end, sizeof(line));
 
@@ -287,21 +286,21 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 			/* continuation */
 			byte_desc = &readme->file[file_id].byte_desc[--desc];
 			get_string_at_pos(line, 0, cont + 1, sizeof(cont) - 1);
-			strncat(byte_desc->explanation, cont, 
+			strncat(byte_desc->explanation, cont,
 				RM_BYTE_EXP_SIZE - strlen(byte_desc->explanation) - 1);
 
 		} else if (byte_desc->end > byte_desc->start) {
 
 			/* multiple bytes */
-			get_word_at_pos(line, BYTE_TYPE_OFFSET, 
+			get_word_at_pos(line, BYTE_TYPE_OFFSET,
 							byte_desc->type, sizeof(line));
-			get_word_at_pos(line, BYTE_UNITS_OFFSET, 
+			get_word_at_pos(line, BYTE_UNITS_OFFSET,
 							byte_desc->units, sizeof(line));
 			get_word_at_pos(line, readme->label_offset,
 							byte_desc->label, sizeof(line));
 			get_string_at_pos(line,readme->explain_offset,
 							byte_desc->explanation, sizeof(line));
-							
+
 			/* subtract 1 from start and end to align */
 			byte_desc->start --;
 			byte_desc->end --;
@@ -309,26 +308,26 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 		} else {
 
 			/* single byte */
-			get_word_at_pos(line, BYTE_TYPE_OFFSET , 
+			get_word_at_pos(line, BYTE_TYPE_OFFSET ,
 							byte_desc->type, sizeof(line));
-			get_word_at_pos(line, BYTE_UNITS_OFFSET, 
+			get_word_at_pos(line, BYTE_UNITS_OFFSET,
 							byte_desc->units, sizeof(line));
-			get_word_at_pos(line, BYTE_LABEL_OFFSET, 
+			get_word_at_pos(line, BYTE_LABEL_OFFSET,
 							byte_desc->label, sizeof(line));
-			get_string_at_pos(line, BYTE_EXPLANATION_OFFSET, 
+			get_string_at_pos(line, BYTE_EXPLANATION_OFFSET,
 							byte_desc->explanation, sizeof(line));
-			
+
 			/* align end */
 			byte_desc->end = byte_desc->start--;
 		}
-		
+
 		adb_debug(db, ADB_LOG_CDS_PARSER, " %d...%d is %s of (%s) at %s : %s",
 			byte_desc->start, byte_desc->end, byte_desc->type,
 			byte_desc->units, byte_desc->label, byte_desc->explanation);
-		
+
 		desc++;
 	} while (desc < RM_MAX_FILES);
-	
+
 	adb_debug(db, ADB_LOG_CDS_PARSER, "read %d descriptors\n", desc);
 	return desc;
 }
@@ -337,7 +336,7 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 static inline int get_file_id(struct readme *readme, char *table_name)
 {
 	int i;
-	
+
 	for (i = 0; i< readme->num_files; i++) {
 		if (strstr(table_name, readme->file[i].name))
 			return i;
@@ -351,11 +350,11 @@ static int get_byte_description(struct adb_db *db, struct readme *readme, FILE *
 	struct cds_file_info *file_info;
 	char table_name[README_LINE_SIZE];
 	int file = 0;
-	
+
 	adb_info(db, ADB_LOG_CDS_PARSER, "Parsing byte descriptions\n");
 
 	rewind(fp);
-	
+
 	do {
 
 		if (find_header("Byte-by-byte Description of file:", fp, table_name)) {
@@ -376,7 +375,7 @@ static int get_byte_description(struct adb_db *db, struct readme *readme, FILE *
 
 	rewind(fp);
 	do {
- 		if (find_header("Byte-per-byte Description of file:", fp, table_name)) {
+		if (find_header("Byte-per-byte Description of file:", fp, table_name)) {
 
 			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n", table_name);
 			file = get_file_id(readme, table_name);
@@ -409,7 +408,7 @@ struct readme *readme_parse(struct adb_db *db, char *file)
 		return NULL;
 	}
 
-	readme = (struct readme *) 
+	readme = (struct readme *)
 		calloc(1, sizeof(struct readme));
 	if (readme == NULL) {
 		fclose(fp);

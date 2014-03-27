@@ -23,10 +23,11 @@
 #include <math.h>
 #include <string.h>
 
-#include <libastrodb/astrodb.h>
+#include <libastrodb/solve.h>
+#include <libastrodb/search.h>
+#include <libastrodb/db-import.h>
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-
+#include <libastrodb/object.h>
 
 #define D2R  (1.7453292519943295769e-2)  /* deg->radian */
 #define R2D  (5.7295779513082320877e1)   /* radian->deg */
@@ -329,7 +330,7 @@ static void sky2kv4_get_sp_index(struct sky2kv4_object *object, char *spect,
 		for (object->type = 0; object->type < SP_NUM; object->type++) {
 			if (!strncmp(sp[object->type].sp, spect, m))
 				return;
-		 }
+		}
 	}
 }
 

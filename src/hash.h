@@ -21,9 +21,10 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <libastrodb/private.h>
-#include <libastrodb/htm.h>
-#include <libastrodb/astrodb.h>
+
+#include <libastrodb/db-import.h>
+#include "private.h"
+#include "htm.h"
 
 #define ADB_MAX_HASH_MAPS		16	/* number of hash maps */
 

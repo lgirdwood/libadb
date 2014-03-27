@@ -21,10 +21,11 @@
 #include <string.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/htm.h>
-#include <libastrodb/private.h>
-#include <libastrodb/adbstdio.h>
+#include <libastrodb/object.h>
+#include "table.h"
+#include "htm.h"
+#include "private.h"
+#include "debug.h"
 
 /* vertex multiplication */
 static inline float vertex_mult(struct htm_vertex *a, struct htm_vertex *b)
@@ -366,7 +367,7 @@ static int trixel_get_children(struct htm *htm, struct adb_object_set *set,
 	if (current_depth++ >= set->max_depth)
 		return buf_pos;
 
-	adb_htm_vdebug(htm, ADB_LOG_HTM_GET, 
+	adb_htm_vdebug(htm, ADB_LOG_HTM_GET,
 		"Parent %x add children at depth %d at offset %x\n",
 		htm_trixel_id(parent), current_depth, buf_pos);
 	//htm_dump_trixel(parent);
@@ -563,7 +564,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 
 
 /*! \fn void adb_table_clip.on_fov (adb_table* table, double ra, double dec, double radius,
- double faint_mag, double bright_mag);
+double faint_mag, double bright_mag);
  * \brief Set dataset clipping area based on field of view
  * \ingroup dataset
  */
@@ -612,7 +613,7 @@ struct adb_object_set *adb_table_set_new(struct adb_db *db,
 }
 
 int adb_table_set_constraints(struct adb_object_set *set,
-				double ra, double dec, 
+				double ra, double dec,
 				double fov, double start,
 				double end)
 {

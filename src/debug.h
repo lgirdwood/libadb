@@ -16,13 +16,16 @@
  *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
-#ifndef __ADB_ERROR_H
-#define __ADB_ERROR_H
+#ifndef __ADB_DEBUG_H
+#define __ADB_DEBUG_H
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <execinfo.h>
-#include "db.h"
+
+#include <libastrodb/db.h>
+#include "htm.h"
+#include "lib.h"
 
 #define DEBUG_BUFFER	1024
 

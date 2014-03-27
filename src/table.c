@@ -30,10 +30,10 @@
 #include <assert.h>
 
 #include <libastrodb/db.h>
-#include <libastrodb/table.h>
-#include <libastrodb/adbstdio.h>
-#include <libastrodb/private.h>
-#include <libastrodb/readme.h>
+#include "table.h"
+#include "debug.h"
+#include "private.h"
+#include "readme.h"
 
 static int table_open_local(struct adb_db *db, int table_id)
 {
@@ -209,7 +209,7 @@ int adb_table_get_size(struct adb_db *db, int table_id)
 		return -EINVAL;
 	table = &db->table[table_id];
 
-	adb_debug(db, ADB_LOG_CDS_TABLE, 
+	adb_debug(db, ADB_LOG_CDS_TABLE,
 		"table %d object size %d fields %d total %d\n",
 		table_id, table->object.bytes, table->object.count,
 		table->object.bytes * table->object.count);
