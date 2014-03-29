@@ -727,7 +727,7 @@ static int sky2k_import(char *lib_dir)
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	table_id = adb_table_import_new(db, "V", "109", "sky2kv4",
-			"Vmag", -2.0, 14.0, ADB_OTYPE_STAR);
+			"Vmag", -2.0, 14.0, ADB_IMPORT_INC);
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create import table\n");
 		ret = table_id;
