@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. 
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * Copyright (C) 2008 Liam Girdwood
  */
@@ -21,13 +21,14 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <stdio.h>
+#include <string.h>
 
-#include <libastrodb/astrodb.h>
+#include <libastrodb/db-import.h>
+#include <libastrodb/db.h>
+#include <libastrodb/object.h>
 
 #define D2R  (1.7453292519943295769e-2)  /* deg->radian */
 #define R2D  (5.7295779513082320877e1)   /* radian->deg */
-
-static struct timeval start, end;
 
 struct ngc_object {
 	struct adb_object object;
@@ -36,7 +37,7 @@ struct ngc_object {
 	float size;
 };
 
-static struct adb_schema_field star_fields[] = {
+static struct adb_schema_field ngc_fields[] = {
 	adb_member("Name", "Name", struct ngc_object,
 		object.designation, ADB_CTYPE_STRING, "", 0, NULL),
 	adb_member("Type", "Type", struct ngc_object,
@@ -59,101 +60,203 @@ static struct adb_schema_field star_fields[] = {
 		size,  ADB_CTYPE_FLOAT, "arcmin", 0, NULL),
 };
 
-inline static void start_timer(void)
+static int print = 0;
+
+static void get_printf(const struct adb_object_head *object_head, int heads)
 {
-	gettimeofday(&start, NULL);
+	const struct ngc_object *obj;
+	int i, j;
+
+	if (!print)
+		return;
+
+	for (i = 0; i < heads; i++) {
+		obj = object_head->objects;
+
+		for (j = 0; j < object_head->count; j++) {
+			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f size %f desc %s\n",
+				obj->object.designation, obj->object.id, obj->object.posn_mag.ra * R2D,
+				obj->object.posn_mag.dec * R2D, obj->object.posn_mag.key,
+				obj->size, obj->desc);
+			obj++;
+		}
+		object_head++;
+	}
 }
 
-static void end_timer(int objects, int bytes)
-{
-	double secs;
- 
-	gettimeofday(&end, NULL);
-	secs = ((end.tv_sec * 1000000 + end.tv_usec) - 
-		(start.tv_sec * 1000000 + start.tv_usec)) / 1000000.0;
-
-	if (bytes)
-		fprintf(stdout,"   Time %3.1f msecs @ %3.3e objects / %3.3e bytes per sec\n",
-			secs * 1000.0 , objects / secs , bytes / secs);
-	else
-		fprintf(stdout,"   Time %3.1f msecs @ %3.3e objects per sec\n",
-			secs * 1000.0, objects / secs);
-}
-
-/* 
+/*
  * Get all the objects in the dataset.
  */
 static int get_all(struct adb_db *db, int table_id)
 {
+	struct adb_object_set *set;
 	int count, heads;
-	struct adb_object **object;
 
-	fprintf(stdout,"Get all dataset objects\n");
-	adb_table_unclip(db, table_id);
-	adb_table_clip_on_fov(db, table_id, 0.0, 0.0, 360.0, -2.0, 16.0);
-	heads = adb_table_get_objects(db, table_id, &object, &count);
-	fprintf(stdout,"   found %d object list heads %d objects\n\n", heads, count);
+	fprintf(stdout, "Get all objects\n");
+	set = adb_table_set_new(db, table_id);
+	if (!set)
+		return -ENOMEM;
 
+	adb_table_set_constraints(set, 0.0, 0.0, 360.0, 0.0, 16.0);
+
+	heads = adb_table_set_get_objects(set);
+	count = adb_set_get_count(set);
+	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
+
+	get_printf(adb_set_get_head(set), heads);
+
+	adb_table_set_free(set);
 	return 0;
 }
 
-int main(int argc, char *argv[])
+int ngc_query(char *lib_dir)
 {
-	struct adb_db *db;
 	struct adb_library *lib;
-	int table_id, table_size, object_size;
+	struct adb_db *db;
+	int ret = 0, table_id;
 
-	fprintf(stdout,"%s using libastrodb %s\n\n", argv[0], adb_get_version());
-	
-	/* set the remote db and initialise local repository/cache */
-	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats",  argv[1]);
+	/* set the remote CDS server and initialise local repository/cache */
+	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
 	if (lib == NULL) {
-		fprintf(stderr,"failed to open library\n");
-		return -1;
+		fprintf(stderr, "failed to open library\n");
+		return -ENOMEM;
 	}
 
-	db = adb_create_db(lib, 1.0 * D2R, 1);
+	db = adb_create_db(lib, 5, 1);
 	if (db == NULL) {
-		fprintf(stderr,"failed to create db\n");
-		return -1;
+		fprintf(stderr, "failed to create db\n");
+		ret = -ENOMEM;
+		goto lib_err;
 	}
-	//adb_set_msg_level(db, ADB_MSG_DEBUG);
-	//adb_set_log_level(db, ADB_LOG_ALL);
 
-	/* use the first dataset in this example */
-	table_id = adb_table_create(db, "VII", "118", "ngc2000.dat",
-			ADB_POSITION_MAG, -2.0, 18.0, 1.0);
+	adb_set_msg_level(db, ADB_MSG_DEBUG);
+	adb_set_log_level(db, ADB_LOG_ALL);
+
+	/* use CDS catalog class VII, #118, dataset ngc2000 */
+	table_id = adb_table_open(db, "VII", "118", "ngc2000.dat");
 	if (table_id < 0) {
-		fprintf(stderr,"failed to create table\n");
-		return -1;
+		fprintf(stderr, "failed to create table\n");
+		ret = table_id;
+		goto table_err;
 	}
-
-	if (adb_table_register_schema(db, table_id, star_fields,
-		adb_size(star_fields), sizeof(struct ngc_object)) < 0)
-		fprintf(stderr,"%s: failed to register object type\n", __func__);
-
-	adb_table_hash_key(db, table_id, "Name");
-
-	/* Import the dataset from remote/local repo into memory/disk cache */
-	start_timer();
-	if (adb_table_open(db, table_id, 0) < 0) {
-		fprintf(stderr,"failed to open table\n");
-		return -1;
-	}
-
-	table_size = adb_table_get_size(db, table_id);
-	object_size = adb_table_get_object_size(db, table_id);
-	end_timer(table_size / object_size, table_size);
 
 	/* we can now perform operations on the dbalog data !!! */
 	get_all(db, table_id);
 
-	/* were done with the dataset */
+	/* were done with the db */
+table_err:
 	adb_table_close(db, table_id);
+	adb_db_free(db);
 
-	/* were now done with dbalog */
+lib_err:
+	/* were now done with library */
+	adb_close_library(lib);
+	return ret;
+}
+
+int ngc_import(char *lib_dir)
+{
+	struct adb_library *lib;
+	struct adb_db *db;
+	int ret, table_id;
+
+	/* set the remote CDS server and initialise local repository/cache */
+	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
+	if (lib == NULL) {
+		fprintf(stderr, "failed to open library\n");
+		return -ENOMEM;
+	}
+
+	db = adb_create_db(lib, 5, 1);
+	if (db == NULL) {
+		fprintf(stderr, "failed to create db\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	adb_set_msg_level(db, ADB_MSG_DEBUG);
+	adb_set_log_level(db, ADB_LOG_ALL);
+
+	table_id = adb_table_import_new(db, "VII", "118", "ngc2000.dat",
+				"mag", 0.0, 18.0, ADB_IMPORT_INC);
+	if (table_id < 0) {
+		fprintf(stderr, "failed to create import table\n");
+		ret = table_id;
+		goto out;
+	}
+
+	ret = adb_table_import_schema(db, table_id, ngc_fields,
+		adb_size(ngc_fields), sizeof(struct ngc_object));
+	if (ret < 0) {
+		fprintf(stderr, "%s: failed to register object type\n", __func__);
+		goto out;
+	}
+
+	ret = adb_table_import(db, table_id);
+	if (ret < 0)
+		fprintf(stderr, "failed to import\n");
+
+out:
 	adb_db_free(db);
 	adb_close_library(lib);
+	return ret;
+}
+
+static int ngc_solve(char *lib_dir)
+{
+	return 0;
+}
+
+static void usage(char *argv)
+{
+	fprintf(stdout, "Import: %s: -i [import dir]", argv);
+	fprintf(stdout, "Query: %s: -q [library dir]", argv);
+	fprintf(stdout, "Solve: %s: -s [library dir]", argv);
+
+	exit(0);
+}
+
+int main(int argc, char *argv[])
+{
+	int i;
+
+	fprintf(stdout, "%s using libastrodb %s\n\n", argv[0], adb_get_version());
+
+	if (argc < 3)
+		usage(argv[0]);
+
+	for (i = 1 ; i < argc - 1; i++) {
+
+		/* import */
+		if (!strcmp("-i", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			ngc_import(argv[i]);
+			continue;
+		}
+
+		/* query */
+		if (!strcmp("-q", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			ngc_query(argv[i]);
+			continue;
+		}
+
+		/* solve */
+		if (!strcmp("-s", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			ngc_solve(argv[i]);
+			continue;
+		}
+
+		/* print */
+		if (!strcmp("-p", argv[i])) {
+			print = 1;
+			continue;
+		}
+	}
 
 	return 0;
 }

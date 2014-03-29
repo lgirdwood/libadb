@@ -1,6 +1,6 @@
 noinst_PROGRAMS = \
-	sky2k
-#	ngc \
+	sky2k \
+	ngc
 #	vii110a \
 #	vii237 \
 #	v84
@@ -16,8 +16,8 @@ sky2k_SOURCES = \
 #v84_SOURCES = \
 #	v84.c
 
-#ngc_SOURCES = \
-#	ngc.c
+ngc_SOURCES = \
+	ngc.c
 	
 #vii237_SOURCES = \
 #	vii237.c
@@ -31,8 +31,8 @@ sky2k_LDADD = \
 #v84_LDADD = \
 #	../src/libastrodb.la
 
-#ngc_LDADD = \
-#	../src/libastrodb.la
+ngc_LDADD = \
+	../src/libastrodb.la
 	
 #vii237_LDADD = \
 #	../src/libastrodb.la

@@ -41,6 +41,7 @@ depcomp
 
 examples/*/*/ReadMe
 examples/sky2k
+examples/ngc
 
 lntest/libnovaconfig
 lntest/lntest
