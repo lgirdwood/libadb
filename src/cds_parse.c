@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008,2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <stdio.h>
@@ -97,7 +97,8 @@ static inline int get_int_at_pos(char *src, int pos, int *dest, int len)
 }
 
 
-/* Find section header <num> - copy section details into hdr_data (if non NULL)  */
+/* Find section header <num> and then copy section details
+ * into hdr_data (if non NULL) */
 static int find_header(char *header, FILE *fp, char *hdr_data)
 {
 	char line[README_LINE_SIZE], *end;
@@ -214,13 +215,13 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 
 #define BYTE_START_OFFSET			0
 #define BYTE_END_OFFSET				5
-#define BYTE_TYPE_OFFSET				10
+#define BYTE_TYPE_OFFSET			10
 #define BYTE_UNITS_OFFSET			15
 #define BYTE_LABEL_OFFSET			23
 #define BYTE_EXPLANATION_OFFSET		32
 
 /*
- * Format, Label  and Explanation line offsets vary between files.
+ * Format, Label and Explanation line offsets vary between files.
  */
 static int get_byte_desc_offset(struct adb_db *db,
 	struct readme *readme, int file_id,  FILE *fp)
@@ -278,7 +279,8 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 		if (end == NULL || *line == '-')
 			break;
 
-		get_int_at_pos(line, BYTE_START_OFFSET, &byte_desc->start, sizeof(line));
+		get_int_at_pos(line, BYTE_START_OFFSET, &byte_desc->start,
+			sizeof(line));
 		get_int_at_pos(line, BYTE_END_OFFSET, &byte_desc->end, sizeof(line));
 
 		if (byte_desc->start == 0 && byte_desc->end == 0) {
@@ -345,7 +347,8 @@ static inline int get_file_id(struct readme *readme, char *table_name)
 }
 
 /* parse all ReadMe byte-by-byte descriptions */
-static int get_byte_description(struct adb_db *db, struct readme *readme, FILE *fp)
+static int get_byte_description(struct adb_db *db, struct readme *readme,
+	FILE *fp)
 {
 	struct cds_file_info *file_info;
 	char table_name[README_LINE_SIZE];
@@ -359,10 +362,12 @@ static int get_byte_description(struct adb_db *db, struct readme *readme, FILE *
 
 		if (find_header("Byte-by-byte Description of file:", fp, table_name)) {
 
-			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n", table_name);
+			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n",
+				table_name);
 			file = get_file_id(readme, table_name);
 			if (file < 0) {
-				adb_info(db, ADB_LOG_CDS_PARSER," %s not required\n", table_name);
+				adb_info(db, ADB_LOG_CDS_PARSER," %s not required\n",
+					table_name);
 				continue;
 			}
 
@@ -377,10 +382,12 @@ static int get_byte_description(struct adb_db *db, struct readme *readme, FILE *
 	do {
 		if (find_header("Byte-per-byte Description of file:", fp, table_name)) {
 
-			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n", table_name);
+			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n",
+				table_name);
 			file = get_file_id(readme, table_name);
 			if (file < 0) {
-				adb_info(db, ADB_LOG_CDS_PARSER," %s not required\n", table_name);
+				adb_info(db, ADB_LOG_CDS_PARSER," %s not required\n",
+					table_name);
 				continue;
 			}
 

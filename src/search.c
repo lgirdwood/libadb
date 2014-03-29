@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -26,13 +26,13 @@
 #include "debug.h"
 #include "table.h"
 
-#define MAX_PARAMS			128
-#define PARAM_OPER			0
-#define PARAM_COMP			1
-#define OP_OP				0
-#define OP_COMP				1
+#define ADB_SRCH_MAX_PARAMS			128
+#define ADB_SRCH_PARAM_OPER			0
+#define ADB_SRCH_PARAM_COMP			1
+#define ADB_SRCH_OP_OP				0
+#define ADB_SRCH_OP_COMP				1
 
-#define SRCH_MAX_BRANCH_TESTS		32
+#define ADB_SRCH_MAX_BRANCH_TESTS		32
 
 
 /*! \defgroup search Search
@@ -57,10 +57,10 @@ struct adb_search {
 
 	struct adb_search_branch *root;	/*!< root search test */
 
-	struct adb_search_branch *branch_orphan[SRCH_MAX_BRANCH_TESTS];	/*!< orphaned operator_t children */
+	struct adb_search_branch *branch_orphan[ADB_SRCH_MAX_BRANCH_TESTS];	/*!< orphaned operator_t children */
 	int branch_orphan_count;
 
-	struct adb_search_branch *test_orphan[SRCH_MAX_BRANCH_TESTS];/*!< orphaned comparator_t children */
+	struct adb_search_branch *test_orphan[ADB_SRCH_MAX_BRANCH_TESTS];/*!< orphaned comparator_t children */
 	int test_orphan_count;
 
 	struct adb_search_branch *start_branch;
@@ -84,7 +84,7 @@ struct adb_search_branch {
 	operator_t operator;		/*!< operator_t on list */
 	unsigned int type;
 
-	struct adb_search_branch *branch[SRCH_MAX_BRANCH_TESTS];
+	struct adb_search_branch *branch[ADB_SRCH_MAX_BRANCH_TESTS];
 	int test_count;
 };
 
@@ -383,7 +383,8 @@ int adb_search_add_operator(struct adb_search *search,
 	if (branch == NULL)
 		return -ENOMEM;
 
-	adb_debug(search->db, ADB_LOG_SEARCH, "new %s branch with %d test and %d branch orphans\n",
+	adb_debug(search->db, ADB_LOG_SEARCH,
+		"new %s branch with %d test and %d branch orphans\n",
 		op == ADB_OP_AND ? "AND" : "OR",
 		search->test_orphan_count, search->branch_orphan_count);
 
@@ -404,11 +405,12 @@ int adb_search_add_operator(struct adb_search *search,
 			branch->operator = test_OR_comp;
 			break;
 		}
-		branch->type = OP_COMP;
+		branch->type = ADB_SRCH_OP_COMP;
 
 		for (i = 0; i < search->test_orphan_count; i++) {
 			branch->branch[i] = search->test_orphan[i];
-			adb_debug(search->db, ADB_LOG_SEARCH, "added test for offset %d index %d to branch\n",
+			adb_debug(search->db, ADB_LOG_SEARCH,
+				"added test for offset %d index %d to branch\n",
 				branch->branch[i]->offset, i);
 		}
 
@@ -428,13 +430,15 @@ int adb_search_add_operator(struct adb_search *search,
 
 		for (i = 0; i < search->branch_orphan_count; i++) {
 			branch->branch[i] = search->branch_orphan[i];
-			adb_debug(search->db, ADB_LOG_SEARCH, "added %s branch at index %d\n",
-				search->branch_orphan[i]->operator == test_AND_oper ? "AND" : "OR", i);
+			adb_debug(search->db, ADB_LOG_SEARCH,
+				"added %s branch at index %d\n",
+				search->branch_orphan[i]->operator == test_AND_oper ?
+				"AND" : "OR", i);
 		}
 
 		branch->test_count = search->branch_orphan_count;
 		search->branch_orphan_count = 0;
-		branch->type = OP_OP;
+		branch->type = ADB_SRCH_OP_OP;
 	}
 
 	for (i = search->search_test_count; i > 0; i--)
@@ -444,7 +448,8 @@ int adb_search_add_operator(struct adb_search *search,
 	search->branch_orphan[0] = branch;
 	search->start_branch = branch;
 	search->branch_orphan_count++;
-	adb_debug(search->db, ADB_LOG_SEARCH, "added %s branch as root index, total %d\n",
+	adb_debug(search->db, ADB_LOG_SEARCH,
+		"added %s branch as root index, total %d\n",
 		search->branch_orphan[0]->operator == test_AND_oper ? "AND" : "OR",
 		search->search_test_count);
 	search->search_test_count++;
@@ -486,11 +491,14 @@ int adb_search_add_comparator(struct adb_search *search,
 	if (test == NULL)
 		return -ENOMEM;
 
-	test->offset = adb_table_get_field_offset(search->db, search->table->id, field);
+	test->offset = adb_table_get_field_offset(search->db, search->table->id,
+		field);
 	test->compare = search_comp;
 
-	adb_debug(search->db, ADB_LOG_SEARCH, "new test on field %s for value %s with type %d offset %d at %d comp %p\n\n",
-			field, value, ctype, test->offset, search->test_orphan_count,  test->compare);
+	adb_debug(search->db, ADB_LOG_SEARCH,
+		"new test on field %s for value %s with type %d offset %d "
+		"at %d comp %p\n\n", field, value, ctype, test->offset,
+		search->test_orphan_count,  test->compare);
 
 	switch (ctype) {
 	case ADB_CTYPE_SIGN:
@@ -609,8 +617,9 @@ int adb_search_get_results(struct adb_search *search,
 		}
 	}
 
-	adb_info(search->db, ADB_LOG_SEARCH, "search count %d clipped heads %d tested objects %d\n",
-			set->count, object_heads, search->test_count);
+	adb_info(search->db, ADB_LOG_SEARCH,
+		"search count %d clipped heads %d tested objects %d\n",
+		set->count, object_heads, search->test_count);
 
 	*objects = search->objects;
 	return search->hit_count;

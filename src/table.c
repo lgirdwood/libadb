@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2012 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -48,7 +48,8 @@ static int table_open_local(struct adb_db *db, int table_id)
 	ret = stat(file, &stat_info);
 	if (ret == 0) {
 
-		adb_info(db, ADB_LOG_CDS_TABLE, "Found table schema %s\n", table->path.file);
+		adb_info(db, ADB_LOG_CDS_TABLE,
+			"Found table schema %s\n", table->path.file);
 		ret = schema_read(db, table);
 		if (ret < 0) {
 			adb_error(db, "Failed to load table schema %s %d\n",
@@ -167,7 +168,6 @@ err:
 int adb_table_close(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
-//	int err;
 
 	if (table_id < 0 || table_id > db->table_count)
 		return -EINVAL;
@@ -176,19 +176,6 @@ int adb_table_close(struct adb_db *db, int table_id)
 	adb_info(db, ADB_LOG_CDS_TABLE, "Closing table %d %s\n",
 		table_id, table->path.file);
 
-#if 0
-	if (table->object.new) {
-		err = schema_write(db, table);
-		if (err < 0)
-			adb_error(db, "failed to save table schema %s\n",
-				table->cds.name);
-
-		err = table_write_trixels(db, table, table_id);
-		if (err < 0)
-			adb_error(db, "failed to save table data %s\n",
-				table->cds.name);
-	}
-#endif
 	hash_free_maps(table);
 	free(table->objects);
 	return 0;
@@ -392,7 +379,8 @@ int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 		return -EINVAL;
 	}
 
-	adb_info(db, ADB_LOG_CDS_TABLE, "added hash for key %s on table %d with length %d at "
+	adb_info(db, ADB_LOG_CDS_TABLE,
+		"added hash for key %s on table %d with length %d at "
 		"offset %d type %d\n", key, table_id,
 		table->hash.map[table->hash.num].size,
 		table->hash.map[table->hash.num].offset,
@@ -453,5 +441,4 @@ int adb_table_insert_object(struct adb_db *db, int table_id,
 		return 0;
 	}
 }
-
 #endif

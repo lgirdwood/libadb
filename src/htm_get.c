@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2012 Liam Girdwood
  */
 
 #include <math.h>
@@ -59,8 +59,8 @@ static int vertex_is_inside_up(struct htm_trixel *t, struct htm_vertex *point)
 
 	/*
 	 * calculate the cross product of each edge in a clockwise a->b->c->a
-	 * direction. If cross product multiplied by the point vertex is greater than
-	 * INSIDE_UP_LIMIT for each edge then point is inside trixel.
+	 * direction. If cross product multiplied by the point vertex is greater
+	 * than INSIDE_UP_LIMIT for each edge then point is inside trixel.
 	 */
 
 	/* edge a -> b */
@@ -86,15 +86,16 @@ static int vertex_is_inside_up(struct htm_trixel *t, struct htm_vertex *point)
 }
 
 /* check vertex point is inside DOWN trixel */
-static int vertex_is_inside_down(struct htm_trixel *t, struct htm_vertex *point)
+static int vertex_is_inside_down(struct htm_trixel *t,
+	struct htm_vertex *point)
 {
 	struct htm_vertex prod;
 	float val;
 
 	/*
 	 * calculate the cross product of each edge in a anti-clockwise a->c->b->a
-	 * direction. If cross product multiplied by the point vertex is greater than
-	 * INSIDE_UP_LIMIT for each edge then point is inside trixel.
+	 * direction. If cross product multiplied by the point vertex is greater
+	 * than INSIDE_UP_LIMIT for each edge then point is inside trixel.
 	 */
 
 	/* edge a -> c */
@@ -263,8 +264,6 @@ int vertex_get_trixels_depth(struct htm *htm, struct htm_vertex *v,
 		if (v->trixel[i + offset] &&
 			!trixel_in_buffer(v->trixel[i + offset], trixel_buf, pos)) {
 			trixel_buf[pos] = v->trixel[i + offset];
-			//adb_htm_debug(htm, ADB_LOG_HTM_GET, "add trixel at pos %d ", pos);
-			//htm_dump_trixel(trixel_buf[pos]);
 			pos++;
 		} else
 			empty++;
@@ -295,8 +294,8 @@ static int trixel_get_neighbours(struct htm *htm, struct htm_trixel *t,
 	neighbours += vertex_get_trixels_depth(htm, t->c, t,
 		set->trixels, htm->trixel_count, depth, neighbours);
 
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "found %d neighbours at depth %d\n", neighbours,
-		depth);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET, "found %d neighbours at depth %d\n",
+		neighbours, depth);
 	return neighbours;
 }
 
@@ -321,7 +320,6 @@ static int trixel_add_parent(struct htm *htm,
 		if (trixel_buf[i] == NULL) {
 			trixel_buf[i] = t;
 			adb_htm_vdebug(htm, ADB_LOG_HTM_GET, "add trixel at pos %d ", i);
-			//htm_dump_trixel(trixel_buf[i]);
 			return 1;
 		}
 	}
@@ -370,7 +368,6 @@ static int trixel_get_children(struct htm *htm, struct adb_object_set *set,
 	adb_htm_vdebug(htm, ADB_LOG_HTM_GET,
 		"Parent %x add children at depth %d at offset %x\n",
 		htm_trixel_id(parent), current_depth, buf_pos);
-	//htm_dump_trixel(parent);
 
 	/* room for children ? */
 	if (buf_size < 4) {
@@ -418,12 +415,15 @@ int htm_clip(struct htm *htm, struct adb_object_set *set,
 	set->fov = fov;
 	vertex.ra = ra;
 	vertex.dec = dec;
-//#err fov depth should not be used to gather trixels when fov depth > depth
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "depth limits: %3.3f (htm depth %d) <--> %3.3f (htm depth %d)\n",
+
+	/* fov depth should not be used to gather trixels when fov depth > depth */
+	adb_htm_debug(htm, ADB_LOG_HTM_GET,
+		"depth limits: %3.3f (htm depth %d) <--> %3.3f (htm depth %d)\n",
 		min_depth, set->min_depth, max_depth, set->max_depth);
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "fov %3.3f degrees (htm fov depth %d)\n",
-		fov * R2D, set->fov_depth);
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "centre RA %f DEC %f\n", ra * R2D, dec * R2D);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET,
+		"fov %3.3f degrees (htm fov depth %d)\n", fov * R2D, set->fov_depth);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET, "centre RA %f DEC %f\n",
+		ra * R2D, dec * R2D);
 
 	set->centre = htm_get_home_trixel(htm, &vertex, set->fov_depth);
 	if (set->centre == NULL) {
@@ -437,25 +437,6 @@ int htm_clip(struct htm *htm, struct adb_object_set *set,
 	set->valid_trixels = 0;
 	return 0;
 }
-
-#if 0
-int htm_unclip(struct htm *htm)
-{
-	struct htm_vertex vertex;
-
-	set->min_depth = 0;
-	set->max_depth = htm->depth;
-	set->fov_depth = htm_get_depth_from_resolution(2.0 * M_PI);
-	vertex.ra = 0.0;
-	vertex.dec = 0.0;
-	set->centre = htm_get_home_trixel(htm, &vertex, set->fov_depth);
-	set->valid_trixels = 0;
-	set->fov = 2.0 * M_PI;
-	bzero(set->trixels, htm->trixel_count * sizeof(struct htm_trixel *));
-
-	return 0;
-}
-#endif
 
 int htm_get_trixels(struct htm *htm, struct adb_object_set *set)
 {
@@ -499,8 +480,8 @@ int htm_get_trixels(struct htm *htm, struct adb_object_set *set)
 		trixels = trixel_get_children(htm, set, set->trixels[i],
 			htm->trixel_count - trixels, set->fov_depth, trixels);
 
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "trixels %d parents %d neighbours %d\n",
-		trixels, parents, neighbours);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET,
+		"trixels %d parents %d neighbours %d\n", trixels, parents, neighbours);
 
 	set->trixels[trixels] = NULL;
 	set->valid_trixels = trixels;
@@ -518,9 +499,11 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 
 	if (trixel_count < 0) {
 		adb_htm_error(htm, "invalid trixel count %d\n", trixel_count);
-		adb_htm_debug(htm, ADB_LOG_HTM_GET, "htm clip depths: min %d max %d fov %d\n",
-				set->min_depth, set->max_depth, set->fov_depth);
-		adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f at ", set->fov * R2D);
+		adb_htm_debug(htm, ADB_LOG_HTM_GET,
+			"htm clip depths: min %d max %d fov %d\n",
+			set->min_depth, set->max_depth, set->fov_depth);
+		adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f at ",
+			set->fov * R2D);
 		htm_dump_trixel(htm, set->centre);
 		return -EINVAL;
 	}
@@ -531,7 +514,8 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 	/* get object head for every clipped trixel */
 	for (i = 0; i < set->valid_trixels; i++) {
 
-		adb_htm_vdebug(htm, ADB_LOG_HTM_GET, "trixels got %d count %d pos %x obs %d\n",
+		adb_htm_vdebug(htm, ADB_LOG_HTM_GET,
+			"trixels got %d count %d pos %x obs %d\n",
 			trixel_count, i, set->trixels[i]->position,
 			set->trixels[i]->data[set->table_id].num_objects);
 
@@ -551,17 +535,18 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 
 	}
 
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "got %d populated trixels with %d objects\n",
+	adb_htm_debug(htm, ADB_LOG_HTM_GET,
+		"got %d populated trixels with %d objects\n",
 		populated_trixels, object_count);
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "htm clip depths: min %d max %d fov %d\n",
-				set->min_depth, set->max_depth, set->fov_depth);
-		adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f at ", set->fov * R2D);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET,
+		"htm clip depths: min %d max %d fov %d\n",
+		set->min_depth, set->max_depth, set->fov_depth);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f at ", set->fov * R2D);
 
 	set->count = object_count;
 
 	return populated_trixels;
 }
-
 
 /*! \fn void adb_table_clip.on_fov (adb_table* table, double ra, double dec, double radius,
 double faint_mag, double bright_mag);
@@ -651,7 +636,8 @@ int adb_table_set_get_objects(struct adb_object_set *set)
 {
 	/* check for previous "get" since trixels will still be valid */
 	if (set->valid_trixels) {
-		adb_debug(set->db, ADB_LOG_HTM_GET, "using existing clipped trixels\n");
+		adb_debug(set->db, ADB_LOG_HTM_GET,
+			"using existing clipped trixels\n");
 		return set->valid_trixels;
 	}
 
@@ -700,9 +686,11 @@ int adb_table_set_get_object(struct adb_object_set *set,
 
 	/* get hash index */
 	ctype = adb_table_get_field_type(db, table->id, field);
+
 	switch (ctype) {
 	case ADB_CTYPE_STRING:
-		index = hash_string((const char*)id, strlen((const char *)id), table->object.count);
+		index = hash_string((const char*)id, strlen((const char *)id),
+			table->object.count);
 
 		/* any objects at hash index ? */
 		if (!table->hash.map[map].index[index])
@@ -710,7 +698,8 @@ int adb_table_set_get_object(struct adb_object_set *set,
 
 		/* search through hashes for exact match */
 		for (i = 0; i < table->hash.map[map].index[index]->count; i++) {
-			const struct adb_object *o = table->hash.map[map].index[index]->object[i];
+			const struct adb_object *o =
+				table->hash.map[map].index[index]->object[i];
 			char *_id = ((char *)o) + offset;
 
 			if (!strstr(_id, id))

@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2010,2012 Liam Girdwood
+ *  Copyright (C) 2010 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -90,11 +90,7 @@ struct adb_library *adb_open_library(const char *host,
 	lib = calloc(1, sizeof(struct adb_library));
 	if (lib == NULL)
 		return NULL;
-#if 0
-	astrolib_info(lib, ADB_LOG_CDS_DB, "Opened local CDS library using host %s\n", host);
-	astrolib_info(lib, ADB_LOG_CDS_DB, "Local path: %s\n", local);
-	astrolib_info(lib, ADB_LOG_CDS_DB, "Remote path: %s\n", remote);
-#endif
+
 	err = create_lib_local_dirs(local);
 	if (err < 0) {
 		astrolib_error(lib, "failed to create local lib dir %s %d\n",
@@ -128,7 +124,6 @@ err:
  */
 void adb_close_library(struct adb_library * lib)
 {
-	//astrolib_info(lib, ADB_LOG_CDS_DBDB, "Closed local CDS library\n");
 	free(lib->remote);
 	free(lib->local);
 	free(lib);
@@ -161,11 +156,6 @@ struct adb_db *adb_create_db(struct adb_library *lib,
 	db->msg_level = ADB_MSG_NONE;
 	db->msg_flags = 0;
 
-	/* create HTM */
-	//depth = htm_get_depth_from_resolution(resolution);
-	//astrolib_info(lib, ADB_LOG_CDS_DB,
-	//	"DB depth is %d for resolution %f\n", depth, resolution * R2D);
-
 	db->htm = htm_new(depth, tables);
 	if (db->htm == NULL) {
 		astrolib_error(lib, "failed to create DB with HTM depth of"
@@ -173,11 +163,7 @@ struct adb_db *adb_create_db(struct adb_library *lib,
 		free(db);
 		return NULL;
 	}
-#if 0
-	astrolib_info(lib, ADB_LOG_CDS_DB,
-		"Created DB with HTM spatial resolution of %3.3f degrees"
-		" and %d tables\n", resolution * R2D, tables);
-#endif
+
 	return db;
 }
 

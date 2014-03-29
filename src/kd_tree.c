@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2013 Liam Girdwood
+ *  Copyright (C) 2013 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -93,7 +93,8 @@ static inline void equ_to_kd_vertex(double ra, double dec, struct kd_vertex *v)
 	v->z = cos_dec * cos(ra);
 }
 
-static inline void kd_vertex_to_equ(double *ra, double *dec, struct kd_vertex *v)
+static inline void kd_vertex_to_equ(double *ra, double *dec,
+	struct kd_vertex *v)
 {
 	*dec = asin(v->y);
 	*ra = atan2(v->x, v->z);
@@ -308,7 +309,8 @@ static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase,
 	z_min = kd_get_z(z_base, z_start);
 	z_max = kd_get_z(z_base, z_end);
 
-	x_elem = elem_get_median_x_elem(x_base, x_start, x_end, y_min, y_max, z_min, z_max);
+	x_elem = elem_get_median_x_elem(x_base, x_start, x_end, y_min, y_max,
+		z_min, z_max);
 	if (x_elem == NULL)
 		return NULL;
 
@@ -317,7 +319,8 @@ static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase,
 	parent->used = 1;
 
 	/* get LHS child */
-	child = kd_y_select_elem(mbase, x_start, x_id, y_start, y_end, z_start, z_end);
+	child = kd_y_select_elem(mbase, x_start, x_id, y_start, y_end,
+		z_start, z_end);
 	if (child) {
 		child->kd.parent = parent->bid;
 		parent->kd.child[0] = child->bid;
@@ -326,9 +329,11 @@ static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase,
 
 	/* get RHS child */
 	if (x_id == x_end)
-		child = kd_y_select_elem(mbase, x_id, x_end, y_start, y_end, z_start, z_end);
+		child = kd_y_select_elem(mbase, x_id, x_end, y_start, y_end,
+			z_start, z_end);
 	else
-		child = kd_y_select_elem(mbase, x_id + 1, x_end, y_start, y_end, z_start, z_end);
+		child = kd_y_select_elem(mbase, x_id + 1, x_end, y_start, y_end,
+			z_start, z_end);
 	if (child) {
 		child->kd.parent = parent->bid;
 		parent->kd.child[1] = child->bid;
@@ -356,7 +361,8 @@ static struct kd_base_elem *kd_y_select_elem(struct kd_base *mbase,
 	z_min = kd_get_z(z_base, z_start);
 	z_max = kd_get_z(z_base, z_end);
 
-	y_elem = elem_get_median_y_elem(y_base, y_start, y_end, x_min, x_max, z_min, z_max);
+	y_elem = elem_get_median_y_elem(y_base, y_start, y_end, x_min, x_max,
+		z_min, z_max);
 	if (y_elem == NULL)
 		return NULL;
 
@@ -365,7 +371,8 @@ static struct kd_base_elem *kd_y_select_elem(struct kd_base *mbase,
 	parent->used = 1;
 
 	/* get LHS child */
-	child = kd_z_select_elem(mbase, x_start, x_end, y_start, y_id, z_start, z_end);
+	child = kd_z_select_elem(mbase, x_start, x_end, y_start, y_id,
+		z_start, z_end);
 	if (child) {
 		child->kd.parent = parent->bid;
 		parent->kd.child[0] = child->bid;
@@ -374,9 +381,11 @@ static struct kd_base_elem *kd_y_select_elem(struct kd_base *mbase,
 
 	/* get RHS child */
 	if (y_id == y_end)
-		child = kd_z_select_elem(mbase, x_start, x_end, y_id, y_end, z_start, z_end);
+		child = kd_z_select_elem(mbase, x_start, x_end, y_id, y_end,
+			z_start, z_end);
 	else
-		child = kd_z_select_elem(mbase, x_start, x_end, y_id + 1, y_end, z_start, z_end);
+		child = kd_z_select_elem(mbase, x_start, x_end, y_id + 1, y_end,
+			z_start, z_end);
 	if (child) {
 		child->kd.parent = parent->bid;
 		parent->kd.child[1] = child->bid;
@@ -404,7 +413,8 @@ static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase,
 	y_min = kd_get_y(y_base, y_start);
 	y_max = kd_get_y(y_base, y_end);
 
-	z_elem = elem_get_median_z_elem(z_base, z_start, z_end, x_min, x_max, y_min, y_max);
+	z_elem = elem_get_median_z_elem(z_base, z_start, z_end, x_min, x_max,
+		y_min, y_max);
 	if (z_elem == NULL)
 		return NULL;
 
@@ -413,7 +423,8 @@ static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase,
 	parent->used = 1;
 
 	/* get LHS child */
-	child = kd_x_select_elem(mbase, x_start, x_end, y_start, y_end, z_start, z_id);
+	child = kd_x_select_elem(mbase, x_start, x_end, y_start, y_end,
+		z_start, z_id);
 	if (child) {
 		child->kd.parent = parent->bid;
 		parent->kd.child[0] = child->bid;
@@ -422,9 +433,11 @@ static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase,
 
 	/* get RHS child */
 	if (z_id == z_end)
-		child = kd_x_select_elem(mbase, x_start, x_end, y_start, y_end, z_id, z_end);
+		child = kd_x_select_elem(mbase, x_start, x_end, y_start, y_end,
+			z_id, z_end);
 	else
-		child = kd_x_select_elem(mbase, x_start, x_end, y_start, y_end, z_id + 1, z_end);
+		child = kd_x_select_elem(mbase, x_start, x_end, y_start, y_end,
+			z_id + 1, z_end);
 	if (child) {
 		child->kd.parent = parent->bid;
 		parent->kd.child[1] = child->bid;
@@ -448,7 +461,7 @@ static enum kd_pivot pivot_next(enum kd_pivot pivot)
 	}
 }
 
-/* copy base elems into ra and dec arrays with a pointer back to their base elem */
+/* copy base elems into radec arrays with a pointer back to their base elem */
 static void elem_create_xyz(struct kd_base_elem *base,
 	struct adb_table *table)
 {
@@ -460,7 +473,8 @@ static void elem_create_xyz(struct kd_base_elem *base,
 	z_base = y_base + table->object.count;
 
 	for (i = 0; i < table->object.count; i++) {
-		equ_to_kd_vertex(base[i].object->posn_mag.ra, base[i].object->posn_mag.dec, &base[i].v);
+		equ_to_kd_vertex(base[i].object->posn_mag.ra,
+			base[i].object->posn_mag.dec, &base[i].v);
 		x_base[i].base = &base[i];
 		y_base[i].base = &base[i];
 		z_base[i].base = &base[i];
@@ -544,6 +558,11 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table,
 	struct kd_base_elem *base, *root;
 	int i, ret = 0;
 
+	if (table->object.count <= 0) {
+		adb_error(db, "error: table %s is empty\n", table->cds.name);
+		return -EINVAL;
+	}
+
 	/* allocate idx elem, ra elem  and dec elem arrays */
 	base = calloc(1, (sizeof(struct kd_base_elem) * table->object.count) +
 		(sizeof(struct kd_elem) * table->object.count * 3));
@@ -555,7 +574,8 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table,
 	mbase.y_base = mbase.x_base + table->object.count;
 	mbase.z_base = mbase.y_base + table->object.count;
 
-	adb_info(db, ADB_LOG_CDS_KDTREE, "Building KD Tree for %s with %d objects\n",
+	adb_info(db, ADB_LOG_CDS_KDTREE,
+		"Building KD Tree for %s with %d objects\n",
 		table->cds.name, table->object.count);
 
 	/* Get objects from HTM */
@@ -591,7 +611,8 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table,
 	/* update the objects with KD data */
 	update_objects(base, table, root);
 
-	adb_info(db, ADB_LOG_CDS_KDTREE, "Completed KD Tree for %s with %d objects at root %d\n",
+	adb_info(db, ADB_LOG_CDS_KDTREE,
+		"Completed KD Tree for %s with %d objects at root %d\n",
 		table->cds.name, table->object.count, root->bid);
 
 out:
@@ -640,7 +661,8 @@ int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 		return 1;
 
 	/* get xyz for current */
-	equ_to_kd_vertex(current->posn_mag.ra, current->posn_mag.dec, &current_vertex);
+	equ_to_kd_vertex(current->posn_mag.ra, current->posn_mag.dec,
+		&current_vertex);
 
 	/* get the new node */
 	switch (pivot) {
@@ -718,8 +740,8 @@ int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 }
 
 #if CHECK_KD_TREE
-static void check_search(struct adb_table *table, double ra, double dec, double distance,
-	const struct adb_object *object)
+static void check_search(struct adb_table *table, double ra, double dec,
+	double distance, const struct adb_object *object)
 {
 	const struct adb_object *current;
 	struct kd_vertex current_v, pos_v;
@@ -733,14 +755,17 @@ static void check_search(struct adb_table *table, double ra, double dec, double 
 		current = (const void *)table->objects + i * table->object.bytes;
 
 		/* get xyz for current */
-		equ_to_kd_vertex(current->posn_mag.ra, current->posn_mag.dec, &current_v);
+		equ_to_kd_vertex(current->posn_mag.ra, current->posn_mag.dec,
+			&current_v);
 
 		d = get_distance(current->posn_mag.ra, current->posn_mag.dec, &pos_v);
 
 		if (d < distance && current != object) {
-			printf("closer new %9.9f old %9.9f id %ld ra %f dec %f X %f Y %f Z %f\n", d,
-				distance, current->id, adb_object_ra(current) * R2D,
-				adb_object_dec(current) * R2D, current_v.x, current_v.y, current_v.z);
+			printf("closer new %9.9f old %9.9f id %ld ra %f dec"
+				"%f X %f Y %f Z %f\n", d, distance, current->id,
+				adb_object_ra(current) * R2D,
+				adb_object_dec(current) * R2D,
+				current_v.x, current_v.y, current_v.z);
 			distance = d;
 		}
 	}
@@ -794,4 +819,3 @@ const struct adb_object *adb_table_set_get_nearest_on_object(
 #endif
 	return kd.closest;
 }
-

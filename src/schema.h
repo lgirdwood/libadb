@@ -12,8 +12,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *  
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #ifndef __ADB_SCHEMA_H
@@ -48,7 +48,7 @@ struct table_file_index {
 	uint32_t kd_root;
 	uint32_t histo[ADB_TABLE_HISTOGRAM_DIVS];
 	struct table_depth depth[ADB_TABLE_DEPTH_DIVS];
-};
+} __attribute__((packed));
 
 /*
  * Importer API.
@@ -56,28 +56,17 @@ struct table_file_index {
 
 int schema_add_alternative_field(struct adb_db *db,
 	struct adb_table *table, const char *field, int pri_idx);
-
 int schema_order_import_index(struct adb_db *db,
 	struct adb_table *table);
-
 int schema_get_field(struct adb_db *db, struct adb_table *table,
 	const char *field);
 int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
 	const char *field);
-
 int schema_add_field(struct adb_db *db, struct adb_table *table,
 	struct adb_schema_field *new_schema_object);
-
 int schema_add_alternative_field(struct adb_db *db,
 	struct adb_table *table, const char *field, int pri_idx);
-
 int schema_write(struct adb_db *db, struct adb_table *table);
-
-
-/*
- * Data Access API
- */
-
 int schema_read(struct adb_db *db, struct adb_table *table);
 
 #endif

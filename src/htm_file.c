@@ -66,7 +66,8 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 	size = fread(&hdr, sizeof(hdr), 1, f);
 	while (size > 0) {
 
-		adb_vdebug(db, ADB_LOG_HTM_FILE, "read trixel %sQ%dD%dP%x with objs %d\n",
+		adb_vdebug(db, ADB_LOG_HTM_FILE,
+			"read trixel %sQ%dD%dP%x with objs %d\n",
 			htm_trixel_north(hdr.id) ? "N" : "S",
 			htm_trixel_quadrant(hdr.id),
 			htm_trixel_depth(hdr.id),
@@ -200,7 +201,8 @@ int table_read_trixels(struct adb_db *db, struct adb_table *table,
 		return -EIO;
 	}
 
-	adb_info(db, ADB_LOG_HTM_FILE, "Reading %d objects from %s with object size %d bytes\n",
+	adb_info(db, ADB_LOG_HTM_FILE,
+		"Reading %d objects from %s with object size %d bytes\n",
 		table->object.count, file, table->object.bytes);
 
 	/* read in table rows */

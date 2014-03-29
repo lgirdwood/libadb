@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #ifndef __ADB_IMPORT_H
@@ -62,7 +62,8 @@ struct cds_importer {
 	int kd_root;
 };
 
-typedef int (*object_import) (struct adb_db *, struct adb_object *, struct adb_table *);
+typedef int (*object_import) (struct adb_db *, struct adb_object *,
+	struct adb_table *);
 
 struct table_object {
 	int bytes;				/*!< Object size (bytes) */

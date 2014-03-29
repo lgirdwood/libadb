@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <string.h>
@@ -100,9 +100,11 @@ int schema_add_alternative_field(struct adb_db *db,
 
 			/* move primary field index and insert */
 			memcpy(&table->import.alt_field[table->object.num_alt_fields].key_field,
-			&table->import.field[pri_idx],
-			sizeof(struct adb_schema_field));
-			adb_info(db, ADB_LOG_CDS_SCHEMA, "Object fields %d\n", table->object.field_count);
+				&table->import.field[pri_idx],
+				sizeof(struct adb_schema_field));
+
+			adb_info(db, ADB_LOG_CDS_SCHEMA,
+				"Object fields %d\n", table->object.field_count);
 
 			if (table->object.field_count > pri_idx){
 				memmove(&table->import.field[pri_idx],
@@ -125,10 +127,12 @@ static void schema_dump(struct adb_db *db, struct adb_table *table)
 	int i;
 
 	adb_info(db, ADB_LOG_CDS_SCHEMA, "Table Schema:\n");
-	adb_info(db, ADB_LOG_CDS_SCHEMA, "Index\tSymbol\tOffset\tSize\tLine\tLSize\tType\tUnits\t\n");
+	adb_info(db, ADB_LOG_CDS_SCHEMA,
+		"Index\tSymbol\tOffset\tSize\tLine\tLSize\tType\tUnits\t\n");
 
 	for(i = 0; i < table->object.field_count; i++) {
-		adb_info(db, ADB_LOG_CDS_SCHEMA, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n", i,
+		adb_info(db, ADB_LOG_CDS_SCHEMA,
+			"%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n", i,
 			table->import.field[i].symbol,
 			table->import.field[i].struct_offset,
 			table->import.field[i].struct_bytes,
@@ -224,8 +228,9 @@ static int schema_add_field_file(struct adb_db *db, struct adb_table *table,
 
 		didx = &table->import.field[table->object.field_count];
 
-		if (!strncmp(new_schema_object->symbol, byte_desc->label, strlen(byte_desc->label)) &&
-		!schema_is_field(table, byte_desc->label)) {
+		if (!strncmp(new_schema_object->symbol, byte_desc->label,
+			strlen(byte_desc->label)) &&
+			!schema_is_field(table, byte_desc->label)) {
 
 			memcpy(didx, new_schema_object, sizeof(struct adb_schema_field));
 			didx->text_offset = byte_desc->start;
@@ -313,7 +318,8 @@ int schema_write(struct adb_db *db, struct adb_table *table)
 	hdr->catalog_magic = ADB_IDX_VERSION;
 	hdr->max_depth = table->max_depth;
 	hdr->object_bytes = table->object.bytes;
-	hdr->field_count = table->object.field_count + table->object.num_alt_fields;
+	hdr->field_count =
+		table->object.field_count + table->object.num_alt_fields;
 	hdr->object_count = table->object.count;
 	hdr->kd_root = table->import.kd_root;
 
@@ -365,7 +371,8 @@ int schema_write(struct adb_db *db, struct adb_table *table)
 		size = fwrite((char *) &table->import.alt_field[i].key_field,
 			sizeof(struct adb_schema_field), 1, f);
 		if (size == 0) {
-			adb_error(db, "Error failed to write alternate fields for schema %s\n",
+			adb_error(db,
+				"Error failed to write alternate fields for schema %s\n",
 				file);
 			ret = -EIO;
 			goto out;
@@ -444,4 +451,3 @@ out:
 	fclose(f);
 	return ret;
 }
-

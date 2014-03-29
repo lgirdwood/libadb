@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2010 Liam Girdwood
+ *  Copyright (C) 2010 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -125,7 +125,6 @@ static int dec_strip_init(struct htm *htm)
 			num_ra_steps = 1;
 
 		/* domain RA granularity */
-		//ra_step_size = 4.0 / num_ra_steps;
 		dec_strip->half_size = num_ra_steps / 2;
 		dec_strip->vertex_count = num_ra_steps;
 
@@ -734,10 +733,12 @@ struct htm *htm_new(int depth, int tables)
 		htm->trixel_count, sizeof(struct htm_trixel),
 		htm->trixel_count * sizeof(struct htm_trixel) / 1024,
 		90.0 / (powf(2, depth)));
-	adb_htm_info(htm, ADB_LOG_HTM_CORE, "HTM: %d domains of %lu bytes total %luk\n",
+	adb_htm_info(htm, ADB_LOG_HTM_CORE,
+		"HTM: %d domains of %lu bytes total %luk\n",
 		htm->dec_strip_count, sizeof(struct dec_strip),
 		htm->dec_strip_count * sizeof(struct dec_strip) / 1024);
-	adb_htm_info(htm, ADB_LOG_HTM_CORE, "HTM: %d vertices of %lu bytes total %luk\n",
+	adb_htm_info(htm, ADB_LOG_HTM_CORE,
+		"HTM: %d vertices of %lu bytes total %luk\n",
 		htm->vertex_count, sizeof(struct htm_vertex),
 		htm->vertex_count * sizeof(struct htm_vertex) / 1024);
 	adb_htm_info(htm, ADB_LOG_HTM_CORE, "HTM: Footprint %luk\n",
@@ -760,18 +761,3 @@ int htm_get_depth_from_resolution(float resolution)
 
 	return HTM_MAX_DEPTH - 1;
 }
-
-#if 0
-int htm_get_depth_from_magnitude(struct htm *htm, float mag)
-{
-	int depth;
-
-	for (depth = 0; depth < HTM_MAX_DEPTH; depth ++) {
-
-		if (mag <=  htm->depth_map[depth].boundary)
-			return depth;
-	}
-
-	return HTM_MAX_DEPTH - 1;
-}
-#endif

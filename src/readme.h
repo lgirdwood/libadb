@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2005 Liam Girdwood
+ *  Copyright (C) 2005 - 2014 Liam Girdwood
  */
 
 #ifndef __ADB_README_H
@@ -76,7 +76,6 @@ struct cds_file_info {
 	int num_desc;
 };
 
-
 #define RM_MAX_FILES		128
 #define RM_DSGN_SIZE		16
 #define RM_TITLE_SIZE		80
@@ -108,16 +107,11 @@ struct readme {
 
 struct readme *readme_parse(struct adb_db *db, char* file);
 void readme_free(struct readme* info);
-
 int cds_get_readme(struct adb_db *db, int table_id);
-
 int cds_get_split_dataset(struct adb_db *db, struct adb_table *table);
-
 int cds_get_dataset(struct adb_db *db, struct adb_table *table);
-
 int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	const char *ext);
-
 int table_parse_readme(struct adb_db *db, int table_id);
 
 #endif

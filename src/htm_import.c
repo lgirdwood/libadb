@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -83,7 +83,8 @@ void htm_import_object_ascending(struct adb_db *db,
 out:
 	trixel->data[table_id].num_objects++;
 	adb_vdebug(db, ADB_LOG_CDS_IMPORT,
-		"imported object at RA %3.3f DEC %3.3f size %f -> %sQ%dD%dP%x with objs %d\n",
+		"imported object at RA %3.3f DEC %3.3f size %f"
+		" -> %sQ%dD%dP%x with objs %d\n",
 		adb_object_ra(new_object) * R2D, adb_object_dec(new_object) * R2D,
 		adb_object_keyval(new_object),
 		trixel->hemisphere ? "S" : "N", trixel->quadrant, trixel->depth,
@@ -137,7 +138,8 @@ void htm_import_object_descending(struct adb_db *db,
 out:
 	trixel->data[table_id].num_objects++;
 	adb_vdebug(db, ADB_LOG_CDS_IMPORT,
-		"imported object at RA %3.3f DEC %3.3f size %f -> %sQ%dD%dP%x with objs %d\n",
+		"imported object at RA %3.3f DEC %3.3f size %f"
+		" -> %sQ%dD%dP%x with objs %d\n",
 		adb_object_ra(new_object) * R2D, adb_object_dec(new_object) * R2D,
 		adb_object_keyval(new_object),
 		trixel->hemisphere ? "S" : "N", trixel->quadrant, trixel->depth,

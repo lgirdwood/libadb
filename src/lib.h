@@ -25,11 +25,6 @@
 #include "private.h"
 
 /*
- * libastrodb interface version
- */
-#define ADB_IDX_VERSION 3
-
-/*
  * The library container.
  */
 struct adb_library {

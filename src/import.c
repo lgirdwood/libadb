@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2010, 2012 Liam Girdwood
+ *  Copyright (C) 2010 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -425,8 +425,8 @@ static int table_histogram_import(struct adb_db *db,
 	if (line == NULL)
 		return -ENOMEM;
 
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Creating histogram using field %s for depth\n",
-		key->symbol);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Creating histogram using field %s for depth\n", key->symbol);
 
 	histo = (table->object.max_value - table->object.min_value) /
 		(ADB_TABLE_HISTOGRAM_DIVS - 1);
@@ -476,8 +476,8 @@ static int table_histogram_import(struct adb_db *db,
 	}
 
 out:
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Used %d objects for histogram %d out of range\n",
-		used, oor);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Used %d objects for histogram %d out of range\n", used, oor);
 	histo_depth_calc(db, table, histo);
 	fseek(f, 0, SEEK_SET);
 	free(line);
@@ -499,7 +499,8 @@ static int table_histogram_alt_import(struct adb_db *db,
 	if (line == NULL)
 		return -ENOMEM;
 
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Creating histogram using field %s for depth\n",
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Creating histogram using field %s for depth\n",
 		key->key_field.symbol);
 
 	histo = (table->object.max_value - table->object.min_value) /
@@ -551,8 +552,8 @@ static int table_histogram_alt_import(struct adb_db *db,
 	}
 
 out:
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Used %d objects for histogram %d out of range\n",
-		used, oor);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Used %d objects for histogram %d out of range\n", used, oor);
 	histo_depth_calc(db, table, histo);
 	fseek(f, 0, SEEK_SET);
 	free(line);
@@ -628,8 +629,9 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 		return -EINVAL;
 	}
 
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Starting import with objects %d size %d bytes\n",
-	table->object.count, table->object.bytes);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Starting import with objects %d size %d bytes\n",
+		table->object.count, table->object.bytes);
 
 	size = table->import.text_length + 10;
 
@@ -723,9 +725,11 @@ static int import_rows_with_alternatives(struct adb_db *db,
 		return -EINVAL;
 	}
 
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Starting alt import with objects %d size %d bytes\n",
-	table->object.count, table->object.bytes);
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Importing %d alt fields\n", table->object.num_alt_fields);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Starting alt import with objects %d size %d bytes\n",
+		table->object.count, table->object.bytes);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Importing %d alt fields\n", table->object.num_alt_fields);
 
 	size = table->import.text_length + 10;
 	for (j = 0; j < table->object.count; j++) {
@@ -1049,7 +1053,7 @@ int adb_table_import_new(struct adb_db *db,
 			!strncmp(table_name, file_info->name, strlen(table_name))) {
 
 			/* init table fields from ReadMe information */
-			table->path.file = strdup(table_name);//file_info->name);
+			table->path.file = strdup(table_name);
 			table->import.byte_desc = byte_desc;
 			table->import.text_length = file_info->length;
 			table->import.file_info = file_info;
@@ -1070,7 +1074,8 @@ int adb_table_import_new(struct adb_db *db,
 
 			table->object.max_value = max_limit;
 			table->object.min_value = min_limit;
-			adb_info(db, ADB_LOG_CDS_TABLE, "  creating: %s\n", file_info->name);
+			adb_info(db, ADB_LOG_CDS_TABLE,
+				"  creating: %s\n", file_info->name);
 			return table_id;
 		}
 	}
@@ -1150,4 +1155,3 @@ import:
 
 	return table->object.count;
 }
-

@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008, 2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -184,7 +184,8 @@ int hash_build_table(struct adb_table *table, int map)
 	case ADB_CTYPE_DOUBLE_HMS_HRS:
 	case ADB_CTYPE_DOUBLE_HMS_MINS:
 	case ADB_CTYPE_DOUBLE_HMS_SECS:
-		adb_error(table->db, "ctype %d not implemented\n", table->hash.map[map].type);
+		adb_error(table->db, "ctype %d not implemented\n",
+			table->hash.map[map].type);
 		break;
 	}
 

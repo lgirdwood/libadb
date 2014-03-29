@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2008,2012 Liam Girdwood
+ *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -32,8 +32,8 @@
 #include "debug.h"
 #include "private.h"
 
-#define GZ_CHUNK 16384
-#define CHUNK_SIZE (1024 * 32)
+#define GZ_CHUNK 	16384
+#define CHUNK_SIZE	(1024 * 32)
 
 static int inflate_file(struct adb_db *db, const char *path,
 	const char *src_file, const char *dest_file)
@@ -188,6 +188,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 
 		count ++;
 	} while (ret > 0);
+
 	FtpClose(nbuf_dir);
 
 	/* parse directory */
@@ -351,7 +352,8 @@ int cds_get_dataset(struct adb_db *db, struct adb_table *table)
 	char file[1024];
 
 	/* try table filename first */
-	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s from CDS\n", table->path.file);
+	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s from CDS\n",
+		table->path.file);
 	ret = ftp_get_file(table, table->path.file);
 	if (ret == 0) {
 		/* did we get it */
@@ -466,12 +468,14 @@ int cds_get_readme(struct adb_db *db, int table_id)
 	/* check for local disk ReadMe (ASCII) copy */
 	snprintf(file, ADB_PATH_SIZE, "%s%s", table->path.local, "ReadMe");
 	if (stat(file, &buf) == 0) {
-		adb_info(db, ADB_LOG_CDS_FTP, "Found local ReadMe version at %s\n", file);
+		adb_info(db, ADB_LOG_CDS_FTP, "Found local ReadMe version at %s\n",
+			file);
 		return ret;
 	}
 
 	/* local binary or ASCII not available, so download ASCII ReadMe*/
-	adb_info(db, ADB_LOG_CDS_FTP, "%s not found, using remote version\n", file);
+	adb_info(db, ADB_LOG_CDS_FTP, "%s not found, using remote version\n",
+		file);
 	ret = ftp_get_file(table, "ReadMe");
 	if (ret < 0)
 		adb_error(db, "failed to load ReadMe %d\n", ret);

@@ -13,7 +13,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  Copyright (C) 2010, 2012 Liam Girdwood
+ *  Copyright (C) 2010 - 2014 Liam Girdwood
  */
 
 #ifndef __ADB_TABLE_HTM_H
@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-//#include <libastrodb/db.h>
 #include "private.h"
 
 #define INSIDE_UP_LIMIT		-1.0e-5
