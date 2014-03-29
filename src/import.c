@@ -439,7 +439,7 @@ static int table_histogram_import(struct adb_db *db,
 		/* try and read a little extra padding */
 		rsize = getline(&line, &size, f);
 		if (rsize <= 0) {
-			adb_error(db, "cant read line\n");
+			adb_error(db, "cant read line %d\n", j);
 			goto out;
 		}
 
@@ -829,7 +829,8 @@ int table_import(struct adb_db *db, int table_id, char *file)
 
 	table = &db->table[table_id];
 	sprintf(file_path, "%s%s", table->path.local, file);
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Importing table %s from CDS ASCII format\n", file_path);
+	adb_info(db, ADB_LOG_CDS_IMPORT,
+		"Importing table %s from CDS ASCII format file %s\n", file_path, file);
 
 	/* make sure we have valid import type */
 	if (!table->object.import) {
@@ -958,7 +959,7 @@ add_fields:
 int adb_table_import_new(struct adb_db *db,
 		const char *cat_class, const char *cat_id, const char *table_name,
 		const char *depth_field, float min_limit, float max_limit,
-		adb_otype otype)
+		adb_import_type otype)
 {
 	struct readme *readme;
 	struct adb_table *table;
@@ -1057,11 +1058,12 @@ int adb_table_import_new(struct adb_db *db,
 			table->object.count = file_info->records;
 			db->table_count++;
 
+			/* import type */
 			switch (table->object.otype) {
-			case ADB_OTYPE_STAR:
+			case ADB_IMPORT_INC:
 				table->object.import = &import_object_ascending;
 				break;
-			case ADB_OTYPE_GALAXY:
+			case ADB_IMPORT_DEC:
 				table->object.import = &import_object_descending;
 				break;
 			}

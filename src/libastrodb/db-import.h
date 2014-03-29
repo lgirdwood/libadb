@@ -68,9 +68,9 @@ typedef enum {
 } adb_ctype;
 
 typedef enum {
-	ADB_OTYPE_STAR,
-	ADB_OTYPE_GALAXY,
-} adb_otype;
+	ADB_IMPORT_INC,
+	ADB_IMPORT_DEC,
+} adb_import_type;
 
 typedef int (*adb_field_import1)(struct adb_object *, int, char *);
 typedef int (*adb_field_import2)(struct adb_object *, int, char *, char *);
@@ -103,7 +103,7 @@ struct adb_schema_field {
 int adb_table_import_new(struct adb_db *db,
 		const char *cat_class, const char *cat_id, const char *table_name,
 		const char *depth_field, float min_limit, float max_limit,
-		adb_otype otype);
+		adb_import_type otype);
 
 /*! \fn int adb_table_register_schema(struct adb_db *db,
 					struct adb_schema_object *schema,

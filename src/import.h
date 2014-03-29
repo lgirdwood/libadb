@@ -73,7 +73,7 @@ struct table_object {
 	int new;
 	float min_value;
 	float max_value;
-	adb_otype otype;
+	adb_import_type otype;
 };
 
 /* init row insertion function */
