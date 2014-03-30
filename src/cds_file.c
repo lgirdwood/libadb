@@ -285,7 +285,7 @@ out:
 }
 
 /* concat split CDS data files into signgle file */
-static int table_concat_files(struct adb_table *table)
+static int table_concat_files(struct adb_table *table, const char *ext)
 {
 	struct adb_db *db = table->db;
 	char ofile[1024];
@@ -302,7 +302,7 @@ static int table_concat_files(struct adb_table *table)
 	}
 
 	/* open output file */
-	sprintf(ofile, "%s%s", table->path.local, table->path.file);
+	sprintf(ofile, "%s%s%s", table->path.local, table->path.file, ext);
 	ofd = fopen(ofile, "w");
 	if (ofd == NULL) {
 		adb_error(db, "Error can't open output file %s for writing\n", ofile);
@@ -365,13 +365,15 @@ int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
 	const char *ext)
 {
 	int ret;
+	char file[1024];
 
-	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s split files from CDS\n",
-		table->path.file);
+	sprintf(file, "%s%s", table->path.file, ext);
+	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s  splits from CDS\n",
+		file);
 
-	ret = ftp_get_files(table, table->path.file);
+	ret = ftp_get_files(table, file);
 	if (ret < 0)
-		adb_error(db, "Error can't get split files %s\n", table->path.file);
+		adb_error(db, "Error can't get split files %s\n", file);
 	return ret;
 }
 
@@ -445,7 +447,7 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 
 	/* if required, concat files */
 	if (found > 1)
-		table_concat_files(table);
+		table_concat_files(table, ext);
 
 	return found;
 }
