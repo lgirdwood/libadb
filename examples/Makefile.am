@@ -1,8 +1,8 @@
 noinst_PROGRAMS = \
 	sky2k \
-	ngc
+	ngc \
+	hyperleda
 #	vii110a \
-#	vii237 \
 #	v84
 
 AM_CFLAGS = -I../src
@@ -19,8 +19,8 @@ sky2k_SOURCES = \
 ngc_SOURCES = \
 	ngc.c
 	
-#vii237_SOURCES = \
-#	vii237.c
+hyperleda_SOURCES = \
+	hyperleda.c
 
 sky2k_LDADD = \
 	../src/libastrodb.la
@@ -34,5 +34,5 @@ sky2k_LDADD = \
 ngc_LDADD = \
 	../src/libastrodb.la
 	
-#vii237_LDADD = \
-#	../src/libastrodb.la
+hyperleda_LDADD = \
+	../src/libastrodb.la
