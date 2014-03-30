@@ -108,8 +108,10 @@ struct readme {
 struct readme *readme_parse(struct adb_db *db, char* file);
 void readme_free(struct readme* info);
 int cds_get_readme(struct adb_db *db, int table_id);
-int cds_get_split_dataset(struct adb_db *db, struct adb_table *table);
-int cds_get_dataset(struct adb_db *db, struct adb_table *table);
+int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
+	const char *ext);
+int cds_get_dataset(struct adb_db *db, struct adb_table *table,
+	const char *ext);
 int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	const char *ext);
 int table_parse_readme(struct adb_db *db, int table_id);

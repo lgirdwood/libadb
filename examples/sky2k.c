@@ -262,21 +262,21 @@ static struct adb_schema_field star_fields[] = {
 	adb_member("ID", "ID", struct sky2kv4_object,
 		object.id, ADB_CTYPE_INT, "", 0, NULL),
 	adb_gmember("RA Hours", "RAh", struct sky2kv4_object, \
-		object.posn_mag.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL),
+		object.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL),
 	adb_gmember("RA Minutes", "RAm", struct sky2kv4_object,
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL),
+		object.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL),
 	adb_gmember("RA Seconds", "RAs", struct sky2kv4_object,
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL),
+		object.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL),
 	adb_gmember("DEC Degrees", "DEd", struct sky2kv4_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL),
+		object.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL),
 	adb_gmember("DEC Minutes", "DEm", struct sky2kv4_object,
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL),
+		object.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL),
 	adb_gmember("DEC Seconds", "DEs", struct sky2kv4_object,
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL),
+		object.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL),
 	adb_gmember("DEC sign", "DE-", struct sky2kv4_object,
-		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL),
+		object.dec, ADB_CTYPE_SIGN, "", 0, NULL),
 	adb_member("Visual Mag", "Vmag", struct sky2kv4_object,
-		object.posn_mag.key, ADB_CTYPE_FLOAT, "", 0, NULL),
+		object.key, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("sp", "Sp", struct sky2kv4_object,
 		sp, ADB_CTYPE_STRING, "", 0, sky2kv4_sp_insert),
 	adb_member("HD", "HD", struct sky2kv4_object,
@@ -379,8 +379,8 @@ static void search_print(const struct adb_object *_objects[], int count)
 	for (i = 0; i < count; i++) {
 		const struct sky2kv4_object *obj = objects[i];
 		fprintf(stdout, "Obj:%s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
-			obj->name, obj->object.id, obj->object.posn_mag.ra * R2D,
-			obj->object.posn_mag.dec * R2D, obj->object.posn_mag.key,
+			obj->name, obj->object.id, obj->object.ra * R2D,
+			obj->object.dec * R2D, obj->object.key,
 			obj->sp, obj->HD);
 		obj++;
 	}
@@ -559,8 +559,8 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 
 		for (j = 0; j < object_head->count; j++) {
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
-				obj->name, obj->object.id, obj->object.posn_mag.ra * R2D,
-				obj->object.posn_mag.dec * R2D, obj->object.posn_mag.key,
+				obj->name, obj->object.id, obj->object.ra * R2D,
+				obj->object.dec * R2D, obj->object.key,
 				obj->sp, obj->HD);
 			obj++;
 		}
@@ -573,8 +573,8 @@ static void object_printf(const struct adb_object *object)
 	const struct sky2kv4_object *obj = (const struct sky2kv4_object *)object;
 
 	fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
-		obj->name, obj->object.id, obj->object.posn_mag.ra * R2D,
-		obj->object.posn_mag.dec * R2D, obj->object.posn_mag.key,
+		obj->name, obj->object.id, obj->object.ra * R2D,
+		obj->object.dec * R2D, obj->object.key,
 		obj->sp, obj->HD);
 }
 
@@ -617,7 +617,7 @@ static int get2(struct adb_db *db, int table_id)
 	if (!set)
 		return -ENOMEM;
 
-	/* we clip the dbalog in terms of RA, DEC and mag, this is much faster
+	/* we clip the db in terms of RA, DEC and mag, this is much faster
 	 * than searching, but suffers from boundary overlaps i.e.
 	 * we may get some objects fainter than mag 3 depending on the mag clip
 	 * boundary. This is not a problem for rendering sky views.
@@ -648,7 +648,7 @@ static int get3(struct adb_db *db, int table_id)
 	if (!set)
 		return -ENOMEM;
 
-	/* we clip the dbalog in terms of RA, DEC and mag, this is much faster
+	/* we clip the db in terms of RA, DEC and mag, this is much faster
 	 * than searching, but suffers from boundary overlaps i.e.
 	 * we may get some objects fainter than mag 3 depending on the mag clip
 	 * boundary. This is not a problem for rendering sky views.
@@ -795,7 +795,7 @@ static int sky2k_query(char *lib_dir)
 	adb_table_hash_key(db, table_id, "HD");
 	adb_table_hash_key(db, table_id, "Name");
 
-	/* we can now perform operations on the dbalog data !!! */
+	/* we can now perform operations on the db data !!! */
 	get1(db, table_id);
 	get2(db, table_id);
 	get3(db, table_id);

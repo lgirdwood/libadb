@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, 
- * Boston, MA 02111-1307, USA. 
+ * Foundation, Inc., 59 Temple Place, Suite 330,
+ * Boston, MA 02111-1307, USA.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -48,21 +48,21 @@ struct planetary_nebula_object {
 	adb_member("ID", "PNG", struct planetary_nebula_object, \
 		object.designation, ADB_CTYPE_STRING, "", 0, NULL), \
 	adb_gmember("RA Hours", "RAh", struct planetary_nebula_object, \
-		object.posn_mag.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL), \
+		object.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL), \
 	adb_gmember("RA Minutes", "RAm", struct planetary_nebula_object,\
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL), \
+		object.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL), \
 	adb_gmember("RA Seconds", "RAs", struct planetary_nebula_object, \
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL), \
+		object.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL), \
 	adb_gmember("DEC Degrees", "DEd", struct planetary_nebula_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL), \
+		object.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL), \
 	adb_gmember("DEC Minutes", "DEm", struct planetary_nebula_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL), \
+		object.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL), \
 	adb_gmember("DEC Seconds", "DEs", struct planetary_nebula_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL), \
+		object.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL), \
 	adb_gmember("DEC sign", "DE-", struct planetary_nebula_object, \
-		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL), \
+		object.dec, ADB_CTYPE_SIGN, "", 0, NULL), \
 	adb_member("Visual Mag", "Vmag", struct planetary_nebula_object, \
-		object.posn_mag.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL), \
+		object.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL), \
 	adb_member("Opt Diam", "oDiam", struct planetary_nebula_object, \
 		oDiam, ADB_CTYPE_FLOAT, "arcsec", 0, NULL), \
 	adb_member("Rad Diam", "rDiam", struct planetary_nebula_object, \
@@ -85,20 +85,20 @@ struct main_object {
 	adb_member("ID", "PNG", struct main_object, \
 		object.designation, ADB_CTYPE_STRING, "", 0, NULL), \
 	adb_gmember("RA Hours", "RAh", struct main_object, \
-		object.posn_mag.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL), \
+		object.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 2, NULL), \
 	adb_gmember("RA Minutes", "RAm", struct main_object,\
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL), \
+		object.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 1, NULL), \
 	adb_gmember("RA Seconds", "RAs", struct main_object, \
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL), \
+		object.ra, ADB_CTYPE_DOUBLE_HMS_SECS, "seconds", 0, NULL), \
 	adb_gmember("DEC Degrees", "DEd", struct main_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL), \
+		object.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 3, NULL), \
 	adb_gmember("DEC Minutes", "DEm", struct main_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL), \
+		object.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 2, NULL), \
 	adb_gmember("DEC Seconds", "DEs", struct main_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL), \
+		object.dec, ADB_CTYPE_DOUBLE_DMS_SECS, "seconds", 1, NULL), \
 	adb_gmember("DEC sign", "DE-", struct main_object, \
-		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL), \
-	
+		object.dec, ADB_CTYPE_SIGN, "", 0, NULL), \
+
 static struct adb_schema_field main_fields[] = {
 	main_schema
 };
@@ -159,7 +159,7 @@ struct cstar_object {
 	adb_member("ID", "PNG", struct cstar_object, \
 		object.designation, ADB_CTYPE_STRING, "", 0, NULL), \
 	adb_member("Visual Mag", "Vmag", struct cstar_object, \
-		object.posn_mag.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL)
+		object.Vmag, ADB_CTYPE_FLOAT, "", 0, NULL)
 
 static struct adb_schema_field cstar_fields[] = {
 	cstar_schema
@@ -209,25 +209,25 @@ static int insert_row(struct adb_db *db, int table_id,
 		object->designation, "PNG", &gobject);
 	if (gobject) {
 		struct cstar_object *cstar_obj = (struct cstar_object *)gobject;
-		pn_obj->object.posn_mag.key =
-			cstar_obj->object.posn_mag.key;
+		pn_obj->object.key =
+			cstar_obj->object.key;
 	}
 
 	added += adb_table_insert_object(db, table_id, (struct adb_object*) pn_obj);
 
-	return 0;	
+	return 0;
 }
 
 /* we only accept the --prefix as our 1 arg*/
 int main (int argc, char* argv[])
-{ 
+{
 	struct adb_db *db;
 	struct adb_library *lib;
 	struct adb_object **objects;
 	int i, err, count, heads, new = 0;
 
 	printf("%s using libastrodb %s\n", argv[0], adb_get_version());
-	
+
 	/* set the remote db and initialise local repository/cache */
 	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", argv[1]);
 	if (lib == NULL) {
@@ -235,7 +235,7 @@ int main (int argc, char* argv[])
 		return -1;
 	}
 
-	/* create a dbalog, using class V and dbalog 109 (Skymap2000) */
+	/* create a db, using class V and db 109 (Skymap2000) */
 	/* ra,dec,mag bounds are set here along with the 3d tile array size */
 	db = adb_create_db(lib, 1.0 * D2R, 1);
 	if (db == NULL) {
@@ -288,7 +288,7 @@ int main (int argc, char* argv[])
 		printf("failed to open table\n");
 		return err;
 	}
-	
+
 	/* distance table */
 	dist_id = adb_table_create(db, "V", "84", "dist",
 			ADB_POSITION_MAG, -2.0, 8.0, 1.0);
@@ -310,7 +310,7 @@ int main (int argc, char* argv[])
 		printf("failed to open table\n");
 		return err;
 	}
-	
+
 	/* velocity table */
 	vel_id = adb_table_create(db, "V", "84", "vel",
 			ADB_POSITION_MAG, -2.0, 8.0, 1.0);
@@ -332,7 +332,7 @@ int main (int argc, char* argv[])
 		printf("failed to open table\n");
 		return err;
 	}
-	
+
 	/* cstar table */
 	cstar_id = adb_table_create(db, "V", "84", "cstar",
 			ADB_POSITION_MAG, -2.0, 8.0, 1.0);
@@ -354,7 +354,7 @@ int main (int argc, char* argv[])
 		printf("failed to open table\n");
 		return err;
 	}
-printf("%d\n", __LINE__);	
+printf("%d\n", __LINE__);
 	/* PNG table */
 	png_id = adb_table_create(db, "V", "84", "png",
 			ADB_POSITION_MAG, -2.0, 8.0, 1.0);
@@ -408,11 +408,56 @@ out:
 	adb_table_close(db, cstar_id);
 printf("%d\n", __LINE__);
 	adb_table_close(db, png_id);
-printf("%d\n", __LINE__);	
-	/* were now done with dbalog */
+printf("%d\n", __LINE__);
+	/* were now done with db */
 	adb_db_free(db);
 printf("%d\n", __LINE__);
 	adb_close_library(lib);
 printf("%d\n", __LINE__);
+	return 0;
+}
+
+int main(int argc, char *argv[])
+{
+	int i;
+
+	fprintf(stdout, "%s using libastrodb %s\n\n", argv[0], adb_get_version());
+
+	if (argc < 3)
+		usage(argv[0]);
+
+	for (i = 1 ; i < argc - 1; i++) {
+
+		/* import */
+		if (!strcmp("-i", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			sky2k_import(argv[i]);
+			continue;
+		}
+
+		/* query */
+		if (!strcmp("-q", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			sky2k_query(argv[i]);
+			continue;
+		}
+
+		/* solve */
+		if (!strcmp("-s", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			sky2k_solve(argv[i]);
+			continue;
+		}
+
+		/* print */
+		if (!strcmp("-p", argv[i])) {
+			print = 1;
+			continue;
+		}
+	}
+
 	return 0;
 }

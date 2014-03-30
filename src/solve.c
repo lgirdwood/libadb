@@ -189,9 +189,9 @@ static int object_cmp(const void *o1, const void *o2)
 	const struct adb_object *p1 = *(const struct adb_object **)o1,
 		*p2 = *(const struct adb_object **)o2;
 
-	if (p1->posn_mag.key < p2->posn_mag.key)
+	if (p1->key < p2->key)
 		return -1;
-	else if (p1->posn_mag.key > p2->posn_mag.key)
+	else if (p1->key > p2->key)
 		return 1;
 	else
 		return 0;
@@ -215,13 +215,13 @@ static double get_equ_distance(const struct adb_object *o1,
 {
 	double x,y,z;
 
-	x = (cos(o1->posn_mag.dec) * sin (o2->posn_mag.dec))
-		- (sin(o1->posn_mag.dec) * cos(o2->posn_mag.dec) *
-		cos(o2->posn_mag.ra - o1->posn_mag.ra));
-	y = cos(o2->posn_mag.dec) * sin(o2->posn_mag.ra - o1->posn_mag.ra);
-	z = (sin(o1->posn_mag.dec) * sin(o2->posn_mag.dec)) +
-		(cos(o1->posn_mag.dec) * cos(o2->posn_mag.dec) *
-		cos(o2->posn_mag.ra - o1->posn_mag.ra));
+	x = (cos(o1->dec) * sin (o2->dec))
+		- (sin(o1->dec) * cos(o2->dec) *
+		cos(o2->ra - o1->ra));
+	y = cos(o2->dec) * sin(o2->ra - o1->ra);
+	z = (sin(o1->dec) * sin(o2->dec)) +
+		(cos(o1->dec) * cos(o2->dec) *
+		cos(o2->ra - o1->ra));
 
 	x = x * x;
 	y = y * y;
@@ -247,13 +247,13 @@ static float get_plate_magnitude(struct adb_solve *solve,
 {
 	float delta[4];
 
-	delta[0] = solve_objects->object[0]->posn_mag.key +
+	delta[0] = solve_objects->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[0], primary);
-	delta[1] = solve_objects->object[0]->posn_mag.key +
+	delta[1] = solve_objects->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[1], primary);
-	delta[2] = solve_objects->object[0]->posn_mag.key +
+	delta[2] = solve_objects->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[2], primary);
-	delta[3] = solve_objects->object[0]->posn_mag.key +
+	delta[3] = solve_objects->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[3], primary);
 
 	return quad_avg(delta[0], delta[1], delta[2], delta[3]);
@@ -274,9 +274,9 @@ static double get_plate_pa(struct adb_pobject *primary,
 static inline int not_within_fov_fast(struct adb_solve *solve,
 		const struct adb_object *p, const struct adb_object *s)
 {
-	double ra_diff = fabs(p->posn_mag.ra - s->posn_mag.ra);
-	double dec_diff = s->posn_mag.dec +
-			((p->posn_mag.dec - s->posn_mag.dec) / 2.0);
+	double ra_diff = fabs(p->ra - s->ra);
+	double dec_diff = s->dec +
+			((p->dec - s->dec) / 2.0);
 
 	/* check for large angles near 0 and 2.0 * M_PI */
 	if (ra_diff > M_PI)
@@ -284,7 +284,7 @@ static inline int not_within_fov_fast(struct adb_solve *solve,
 
 	if (cos(dec_diff) * ra_diff > solve->constraint.max_fov)
 		return 1;
-	if (fabs(p->posn_mag.dec - s->posn_mag.dec) > solve->constraint.max_fov)
+	if (fabs(p->dec - s->dec) > solve->constraint.max_fov)
 		return 1;
 	return 0;
 }
@@ -298,13 +298,13 @@ static double get_equ_pa(const struct adb_object *o1,
 	double sin_pdec, cos_pdec;
 
 	/* pre-calc common terms */
-	sin_dec = sin(o1->posn_mag.dec);
-	cos_dec = cos(o1->posn_mag.dec);
-	sin_ra = sin(o1->posn_mag.ra);
-	ra_delta = o1->posn_mag.ra - o2->posn_mag.ra;
+	sin_dec = sin(o1->dec);
+	cos_dec = cos(o1->dec);
+	sin_ra = sin(o1->ra);
+	ra_delta = o1->ra - o2->ra;
 	cos_ra_delta = cos(ra_delta);
-	cos_pdec = cos(o2->posn_mag.dec);
-	sin_pdec = sin(o2->posn_mag.dec);
+	cos_pdec = cos(o2->dec);
+	sin_pdec = sin(o2->dec);
 
 	/* calc scaling factor */
 	k = 2.0 / (1.0 + sin_pdec * sin_ra +
@@ -346,15 +346,15 @@ static void plate_to_equ(struct adb_solve_objects *solve_objects,
 	target_dist *= rad_per_pixel;
 
 	/* middle declination of line */
-	mid_dec = o1->posn_mag.dec + ((o2->posn_mag.dec - o1->posn_mag.dec) / 2.0);
+	mid_dec = o1->dec + ((o2->dec - o1->dec) / 2.0);
 
 	/* Add line to object o1, reverse RA since RHS of plate increases X and
 	 * RHS of sky is decreasing in RA.
 	 */
 	ra = -cos(target_pa) * target_dist / cos(mid_dec);
 	dec = sin(target_pa) * target_dist;
-	*ra_ = ra + o1->posn_mag.ra;
-	*dec_ = dec + o1->posn_mag.dec;
+	*ra_ = ra + o1->ra;
+	*dec_ = dec + o1->dec;
 }
 
 /* calculate the average difference between plate position values and solution
@@ -634,10 +634,10 @@ static int bsearch_head(const struct adb_object **adb_source_objects,
 		return idx;
 
 	/* narrow search */
-	if (object->posn_mag.key > value)
+	if (object->key > value)
 		return bsearch_head(adb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
-	else if (object->posn_mag.key < value)
+	else if (object->key < value)
 		return bsearch_head(adb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
@@ -657,13 +657,13 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 	object = source->objects[idx];
 
 	/* make sure the object is first in the array amongst equals */
-	if (object->posn_mag.key < vmag) {
+	if (object->key < vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx++; idx < source->num_objects; idx++) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.key >= vmag)
+			if (object->key >= vmag)
 				return idx - 1;
 		}
 	} else {
@@ -671,7 +671,7 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 		for (idx--; idx > start_idx; idx--) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.key < vmag)
+			if (object->key < vmag)
 				return idx + 1;
 		}
 	}
@@ -691,10 +691,10 @@ static int bsearch_tail(const struct adb_object **adb_source_objects,
 		return idx;
 
 	/* narrow search */
-	if (object->posn_mag.key > value)
+	if (object->key > value)
 		return bsearch_tail(adb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
-	else if (object->posn_mag.key < value)
+	else if (object->key < value)
 		return bsearch_tail(adb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
@@ -714,13 +714,13 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 	object = source->objects[idx];
 
 	/* make sure the object is last in the array amongst equals */
-	if (object->posn_mag.key > vmag) {
+	if (object->key > vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx--; idx > start_idx; idx--) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.key <= vmag)
+			if (object->key <= vmag)
 				return idx + 1;
 		}
 	} else {
@@ -728,7 +728,7 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 		for (idx++; idx < source->num_objects; idx++) {
 			object = source->objects[idx];
 
-			if (object->posn_mag.key > vmag)
+			if (object->key > vmag)
 				return idx - 1;
 		}
 	}
@@ -749,13 +749,13 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 
 	/* get search start position */
 	pos = object_get_first_on_mag(source,
-		primary->posn_mag.key - solve->mag_delta, 0);
+		primary->key - solve->mag_delta, 0);
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
-		t->mag.pattern_min + primary->posn_mag.key, pos);
+		t->mag.pattern_min + primary->key, pos);
 	end = object_get_last_with_mag(source,
-		t->mag.pattern_max + primary->posn_mag.key, pos);
+		t->mag.pattern_max + primary->key, pos);
 
 	/* both out of range */
 	if (start == end)
@@ -1110,8 +1110,8 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime,
 	plate_diff = get_plate_mag_diff(&solve->pobject[idx],
 			&solve->pobject[idx + 1]);
 
-	db_diff = s->object[idx]->posn_mag.key -
-			s->object[idx + 1]->posn_mag.key;
+	db_diff = s->object[idx]->key -
+			s->object[idx + 1]->key;
 
 	return plate_diff - db_diff;
 }
@@ -1144,7 +1144,7 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		runtime->pot_pa[i].delta_magnitude =
 			fabs(get_plate_magnitude(runtime->solve, solve_objects, pobject) -
-			runtime->pot_pa[0].object[0]->posn_mag.key);
+			runtime->pot_pa[0].object[0]->key);
 
 		runtime->pot_pa[i].divergance =
 			runtime->pot_pa[i].delta_magnitude * DELTA_MAG_COEFF +
@@ -1454,8 +1454,8 @@ int adb_solve_prep_solution(struct adb_solve *solve,
 	//if (set)
 	//	free(set);
 
-	centre_ra = solve_objects->object[0]->posn_mag.ra;
-	centre_dec = solve_objects->object[0]->posn_mag.dec;
+	centre_ra = solve_objects->object[0]->ra;
+	centre_dec = solve_objects->object[0]->dec;
 
 	/* create new set based on image fov and mag limits */
 	set = adb_table_set_new(solve->db, solve->table->id);
@@ -1538,10 +1538,10 @@ int adb_solve_get_object(struct adb_solve *solve,
 	if (!count && o != NULL) {
 
 		/* nothing found so return object magnitude and position */
-		o->posn_mag.key = get_plate_magnitude(solve, solve_objects,
+		o->key = get_plate_magnitude(solve, solve_objects,
 				pobject);
 		get_plate_position(solve, solve_objects, pobject,
-			&o->posn_mag.ra, &o->posn_mag.dec);
+			&o->ra, &o->dec);
 		return 0;
 	}
 

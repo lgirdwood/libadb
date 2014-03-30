@@ -11,9 +11,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. 
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * Copyright (C) 2005 Liam Girdwood 
+ * Copyright (C) 2005 Liam Girdwood
  */
 
 #include <stdlib.h>
@@ -35,9 +35,9 @@ static inline void start_timer(void)
 static void end_timer(int objects, int bytes)
 {
 	double secs;
- 
+
 	gettimeofday(&end, NULL);
-	secs = ((end.tv_sec * 1000000 + end.tv_usec) - 
+	secs = ((end.tv_sec * 1000000 + end.tv_usec) -
 		(start.tv_sec * 1000000 + start.tv_usec)) / 1000000.0;
 
 	if (bytes)
@@ -68,15 +68,15 @@ static int search(struct adb_table * table)
 	adb_search_add_operator(srch, ADB_OP_OR);
 
 	start_timer();
-	
+
 	err = adb_search_get_results(srch, &res, ADB_SMEM);
 	if (err < 0)
 		printf("Search init failed %d\n", err);
 
 	end_timer(adb_search_get_tests(srch), 0);
 
-	printf("   Search got %d objects out of %d tests\n", 
-	       adb_search_get_hits(srch), adb_search_get_tests(srch));
+	printf("   Search got %d objects out of %d tests\n",
+	adb_search_get_hits(srch), adb_search_get_tests(srch));
 
 	adb_search_put_results(res);
 	adb_search_free(srch);
@@ -163,8 +163,53 @@ int main(int argc, char *argv[])
 	/* were done with the dataset */
 	adb_table_close(db, table_id);
 
-	/* were now done with dbalog */
+	/* were now done with db */
 	adb_db_free(db);
 	adb_close_library(lib);
+	return 0;
+}
+
+int main(int argc, char *argv[])
+{
+	int i;
+
+	fprintf(stdout, "%s using libastrodb %s\n\n", argv[0], adb_get_version());
+
+	if (argc < 3)
+		usage(argv[0]);
+
+	for (i = 1 ; i < argc - 1; i++) {
+
+		/* import */
+		if (!strcmp("-i", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			sky2k_import(argv[i]);
+			continue;
+		}
+
+		/* query */
+		if (!strcmp("-q", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			sky2k_query(argv[i]);
+			continue;
+		}
+
+		/* solve */
+		if (!strcmp("-s", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			sky2k_solve(argv[i]);
+			continue;
+		}
+
+		/* print */
+		if (!strcmp("-p", argv[i])) {
+			print = 1;
+			continue;
+		}
+	}
+
 	return 0;
 }

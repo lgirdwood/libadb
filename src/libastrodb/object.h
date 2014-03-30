@@ -33,12 +33,6 @@ extern "C" {
 
 struct adb_db;
 
-struct adb_posn_mag {
-	double ra;
-	double dec;
-	float key;
-};
-
 struct adb_kd_tree {
 	/* KD tree - indexs */
 	int32_t child[2], parent, index;
@@ -56,8 +50,11 @@ struct adb_object {
 		unsigned long id;
 		char designation[ADB_OBJECT_NAME_SIZE];
 	};
+
 	/* primary keys for object attribute based access */
-	struct adb_posn_mag posn_mag;
+	double ra;
+	double dec;
+	float key;
 
 	union {
 		struct adb_import import; /* only used for importing */
@@ -94,9 +91,9 @@ void adb_table_set_free(struct adb_object_set *set);
 
 /******************* Table Object Get *****************************************/
 
-#define adb_object_ra(object) object->posn_mag.ra
-#define adb_object_dec(object) object->posn_mag.dec
-#define adb_object_keyval(object) object->posn_mag.key
+#define adb_object_ra(object) object->ra
+#define adb_object_dec(object) object->dec
+#define adb_object_keyval(object) object->key
 
 struct adb_object_head {
 	const void *objects;

@@ -43,17 +43,17 @@ static struct adb_schema_field ngc_fields[] = {
 	adb_member("Type", "Type", struct ngc_object,
 		type, ADB_CTYPE_STRING, "", 0, NULL),
 	adb_gmember("RA Hours", "RAh", struct ngc_object, \
-		object.posn_mag.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 1, NULL),
+		object.ra,  ADB_CTYPE_DOUBLE_HMS_HRS, "hours", 1, NULL),
 	adb_gmember("RA Minutes", "RAm", struct ngc_object,
-		object.posn_mag.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 0, NULL),
+		object.ra, ADB_CTYPE_DOUBLE_HMS_MINS, "minutes", 0, NULL),
 	adb_gmember("DEC Degrees", "DEd", struct ngc_object, \
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 2, NULL),
+		object.dec, ADB_CTYPE_DOUBLE_DMS_DEGS, "degrees", 2, NULL),
 	adb_gmember("DEC Minutes", "DEm", struct ngc_object,
-		object.posn_mag.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 1, NULL),
+		object.dec, ADB_CTYPE_DOUBLE_DMS_MINS, "minutes", 1, NULL),
 	adb_gmember("DEC sign", "DE-", struct ngc_object,
-		object.posn_mag.dec, ADB_CTYPE_SIGN, "", 0, NULL),
+		object.dec, ADB_CTYPE_SIGN, "", 0, NULL),
 	adb_member("Integrated Mag", "mag", struct ngc_object,
-		object.posn_mag.key, ADB_CTYPE_FLOAT, "", 0, NULL),
+		object.key, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("Description", "Desc", struct ngc_object,
 		desc, ADB_CTYPE_STRING, "", 0, NULL),
 	adb_gmember("Largest Dimension", "size", struct ngc_object, \
@@ -75,8 +75,8 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 
 		for (j = 0; j < object_head->count; j++) {
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f size %f desc %s\n",
-				obj->object.designation, obj->object.id, obj->object.posn_mag.ra * R2D,
-				obj->object.posn_mag.dec * R2D, obj->object.posn_mag.key,
+				obj->object.designation, obj->object.id, obj->object.ra * R2D,
+				obj->object.dec * R2D, obj->object.key,
 				obj->size, obj->desc);
 			obj++;
 		}
@@ -133,14 +133,14 @@ int ngc_query(char *lib_dir)
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use CDS catalog class VII, #118, dataset ngc2000 */
-	table_id = adb_table_open(db, "VII", "118", "ngc2000.dat");
+	table_id = adb_table_open(db, "VII", "118", "ngc2000");
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create table\n");
 		ret = table_id;
 		goto table_err;
 	}
 
-	/* we can now perform operations on the dbalog data !!! */
+	/* we can now perform operations on the db data !!! */
 	get_all(db, table_id);
 
 	/* were done with the db */
@@ -177,7 +177,7 @@ int ngc_import(char *lib_dir)
 	adb_set_msg_level(db, ADB_MSG_DEBUG);
 	adb_set_log_level(db, ADB_LOG_ALL);
 
-	table_id = adb_table_import_new(db, "VII", "118", "ngc2000.dat",
+	table_id = adb_table_import_new(db, "VII", "118", "ngc2000",
 				"mag", 0.0, 18.0, ADB_IMPORT_INC);
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create import table\n");
@@ -204,6 +204,7 @@ out:
 
 static int ngc_solve(char *lib_dir)
 {
+	/* TODO: */
 	return 0;
 }
 

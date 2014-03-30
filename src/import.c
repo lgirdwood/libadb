@@ -457,16 +457,16 @@ static int table_histogram_import(struct adb_db *db,
 			continue;
 		}
 
-		if (object.posn_mag.key < table->object.min_value ||
-			object.posn_mag.key > table->object.max_value) {
+		if (object.key < table->object.min_value ||
+			object.key > table->object.max_value) {
 			oor++;
 			continue;
 		}
 
-		hindex = (object.posn_mag.key - table->object.min_value) / histo;
+		hindex = (object.key - table->object.min_value) / histo;
 		if (hindex >= ADB_TABLE_HISTOGRAM_DIVS || hindex < 0) {
 			adb_error(db, "hash index out of range %d for %s have val %f\n",
-				hindex, buf, object.posn_mag.key);
+				hindex, buf, object.key);
 			oor++;
 			continue;
 		}
@@ -533,16 +533,16 @@ static int table_histogram_alt_import(struct adb_db *db,
 			continue;
 		}
 
-		if (object.posn_mag.key < table->object.min_value ||
-			object.posn_mag.key > table->object.max_value) {
+		if (object.key < table->object.min_value ||
+			object.key > table->object.max_value) {
 			oor++;
 			continue;
 		}
 
-		hindex = (object.posn_mag.key - table->object.min_value) / histo;
+		hindex = (object.key - table->object.min_value) / histo;
 		if (hindex >= ADB_TABLE_HISTOGRAM_DIVS || hindex < 0) {
 			adb_error(db, "hash index out of range %d for %s (%s) have val %f\n",
-				hindex, buf, buf2, object.posn_mag.key);
+				hindex, buf, buf2, object.key);
 			oor++;
 			continue;
 		}
@@ -1075,7 +1075,7 @@ int adb_table_import_new(struct adb_db *db,
 			table->object.max_value = max_limit;
 			table->object.min_value = min_limit;
 			adb_info(db, ADB_LOG_CDS_TABLE,
-				"  creating: %s\n", file_info->name);
+				"  creating table: %s\n", file_info->name);
 			return table_id;
 		}
 	}
@@ -1092,49 +1092,61 @@ err:
 	return err;
 }
 
+static const char *file_extensions[] = {
+	".gz", ".dat.gz", ".dat", "",
+};
+
 int adb_table_import(struct adb_db *db, int table_id)
 {
 	struct adb_table *table = &db->table[table_id];
-	int ret = -EINVAL, num_files;
+	int ret = -EINVAL, num_files, i;
+	char file[ADB_PATH_SIZE];
 
-	/* no schema exists locally, so do the ASCII data files exist locally ?  */
-	/* try compressed files first, then ASCII */
-	num_files = cds_prepare_files(db, table, ".gz");
-	if (num_files == 0)
-		num_files = cds_prepare_files(db, table, NULL);
-	if (num_files > 0)
-		goto import;
-
-	/* do we have any CDS files in local path */
-	if (num_files == 0) {
-		/* download single file */
-		ret = cds_get_dataset(db, table);
-		if (ret < 0)
-			/* try split files */
-			ret = cds_get_split_dataset(db, table);
-		if (ret < 0){
-			adb_error(db, "Error failed to FTP CDS data files for %s\n",
-					table->path.file);
-			return ret;
-		}
+	/* do the ASCII data files exist locally ?  */
+	for (i = 0; i < adb_size(file_extensions); i++) {
+		num_files = cds_prepare_files(db, table, file_extensions[i]);
+		if (num_files > 0)
+			goto import;
 	}
+
+	/* none local, so try for files over FTP */
+	for (i = 0; i < adb_size(file_extensions); i++) {
+		/* download single file */
+		ret = cds_get_dataset(db, table, file_extensions[i]);
+		if (ret == 0)
+			goto import;
+	}
+
+	/* now try split files over FTP */
+	for (i = 0; i < adb_size(file_extensions); i++) {
+		/* try split files */
+		ret = cds_get_split_dataset(db, table, file_extensions[i]);
+		if (ret == 0)
+			goto import;
+	}
+
+	adb_warn(db, ADB_LOG_CDS_TABLE,
+		"Error failed to FTP CDS data files for %s\n", table->path.file);
+	return ret;
 
 	/* at this point we should have the CDS files -
 	 * try compressed files first, then ASCII */
-	num_files = cds_prepare_files(db, table, ".gz");
-	if (num_files == 0)
-		num_files = cds_prepare_files(db, table, NULL);
+	for (i = 0; i < adb_size(file_extensions); i++) {
+		num_files = cds_prepare_files(db, table, file_extensions[i]);
+		if (num_files > 0)
+			goto import;
+	}
 	if (num_files == 0) {
-		adb_error(db, "Error failed to find CDS data files for %s\n",
-				table->path.file);
+		adb_warn(db, ADB_LOG_CDS_TABLE,
+			"Error failed to find CDS data files for %s\n", table->path.file);
 		return ret;
 	}
 
 import:
-	/* now import the ASCII CDS data into table and save schema and table objects*/
-	adb_info(db, ADB_LOG_CDS_TABLE, "Importing CDS ASCII data %s\n",
-		table->path.file);
-	ret = table_import(db, table_id, table->path.file);
+	/* now import the CDS data into table and save schema and table objects*/
+	sprintf(file, "%s%s", table->path.file, file_extensions[i]);
+	adb_info(db, ADB_LOG_CDS_TABLE, "Importing CDS ASCII data %s\n", file);
+	ret = table_import(db, table_id, file);
 	if (ret < 0) {
 		adb_error(db, "Error failed to import CDS table %s %d\n",
 			table->path.file, ret);

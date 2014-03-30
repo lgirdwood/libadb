@@ -473,8 +473,8 @@ static void elem_create_xyz(struct kd_base_elem *base,
 	z_base = y_base + table->object.count;
 
 	for (i = 0; i < table->object.count; i++) {
-		equ_to_kd_vertex(base[i].object->posn_mag.ra,
-			base[i].object->posn_mag.dec, &base[i].v);
+		equ_to_kd_vertex(base[i].object->ra,
+			base[i].object->dec, &base[i].v);
 		x_base[i].base = &base[i];
 		y_base[i].base = &base[i];
 		z_base[i].base = &base[i];
@@ -661,7 +661,7 @@ int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 		return 1;
 
 	/* get xyz for current */
-	equ_to_kd_vertex(current->posn_mag.ra, current->posn_mag.dec,
+	equ_to_kd_vertex(current->ra, current->dec,
 		&current_vertex);
 
 	/* get the new node */
@@ -755,10 +755,10 @@ static void check_search(struct adb_table *table, double ra, double dec,
 		current = (const void *)table->objects + i * table->object.bytes;
 
 		/* get xyz for current */
-		equ_to_kd_vertex(current->posn_mag.ra, current->posn_mag.dec,
+		equ_to_kd_vertex(current->ra, current->dec,
 			&current_v);
 
-		d = get_distance(current->posn_mag.ra, current->posn_mag.dec, &pos_v);
+		d = get_distance(current->ra, current->dec, &pos_v);
 
 		if (d < distance && current != object) {
 			printf("closer new %9.9f old %9.9f id %ld ra %f dec"

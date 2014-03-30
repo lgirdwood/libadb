@@ -75,7 +75,7 @@
 		object = object->next)
 
 #define htm_for_each_clipped_trixel(htm, trixel)		\
-	for (trixel = htm->clip.trixels[0]; trixel!= NULL; trixel++)
+	for (trixel = htm->clitrixels[0]; trixel!= NULL; trixel++)
 
 struct htm_trixel;
 struct htm;

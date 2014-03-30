@@ -345,47 +345,34 @@ static int table_concat_files(struct adb_table *table)
 	return 0;
 }
 
-int cds_get_dataset(struct adb_db *db, struct adb_table *table)
+int cds_get_dataset(struct adb_db *db, struct adb_table *table,
+	const char *ext)
 {
 	int ret;
-	struct stat stat_info;
 	char file[1024];
 
-	/* try table filename first */
-	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s from CDS\n",
-		table->path.file);
-	ret = ftp_get_file(table, table->path.file);
-	if (ret == 0) {
-		/* did we get it */
-		sprintf(file, "%s%s", table->path.local, table->path.file);
-		return stat(file, &stat_info);
-	}
-
 	/* now try tablet name with a .gz extension */
-	sprintf(file, "%s%s", table->path.file, ".gz");
+	sprintf(file, "%s%s", table->path.file, ext);
 	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s from CDS\n", file);
 	ret = ftp_get_file(table, file);
-	if (ret == 0)
-		return stat(file, &stat_info);
-
-	/* give up ! */
-	adb_error(db, "couldn't download %s\n", table->path.file);
-	return -EIO;
+	if (ret != 0)
+		/* give up ! */
+		adb_warn(db, ADB_LOG_CDS_FTP, "couldn't download %s\n", table->path.file);
+	return ret;
 }
 
-int cds_get_split_dataset(struct adb_db *db, struct adb_table *table)
+int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
+	const char *ext)
 {
-	int res;
+	int ret;
 
 	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s split files from CDS\n",
 		table->path.file);
 
-	res = ftp_get_files(table, table->path.file);
-	if (res < 0) {
+	ret = ftp_get_files(table, table->path.file);
+	if (ret < 0)
 		adb_error(db, "Error can't get split files %s\n", table->path.file);
-		return -EIO;
-	}
-	return 0;
+	return ret;
 }
 
 /* search the local directory for table CDS (ASCII) data files with extension */
@@ -395,7 +382,7 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	struct dirent *dent;
 	DIR *dir;
 	char dest[1024], *suffix;
-	int found = 0, inflate, err;
+	int found = 0, err;
 
 	/* open local directory */
 	dir = opendir(table->path.local);
@@ -407,15 +394,19 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	adb_info(db, ADB_LOG_CDS_FTP,"Searching %s for %s CDS data files\n",
 		table->path.local, ext ? ext : "");
 
-	/* do we need to inflate any found .gz files */
-	if (!strncmp(ext, ".gz", strlen(".gz")))
-		inflate = 1;
-
 	/* check each directory entry */
 	while ((dent = readdir(dir)) != NULL) {
 
 		/* skip if filename does not match */
 		if (strncmp(table->path.file, dent->d_name, strlen(table->path.file)))
+			continue;
+
+		/* skip existing db files */
+		if (strstr(dent->d_name, ".db"))
+			continue;
+
+		/* skip existing schema files */
+		if (strstr(dent->d_name, ".schema"))
 			continue;
 
 		/* do we need to also check file extension */
@@ -430,7 +421,8 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 			found++;
 
 			/* if the extension is .gz then inflate it */
-			if (inflate) {
+			if (strstr(dent->d_name, ".gz")) {
+
 				/* chop the .gz from the inflate destination file */
 				sprintf(dest, "%s", dent->d_name);
 				suffix = strstr(dest, ".gz");
