@@ -5,21 +5,18 @@ AC_INIT([libastrodb],[m4_esyscmd(./git-version-gen .tarball-version)],[lgirdwood
 AC_CONFIG_MACRO_DIR([m4])
 
 # libtool versioning
-LIBASTRODB_MAJOR_VERSION=0
-LIBASTRODB_MINOR_VERSION=1
-LIBASTRODB_MICRO_VERSION=0
-LIBASTRODB_VERSION=$LIBASTRODB_MAJOR_VERSION.$LIBASTRODB_MINOR_VERSION.$LIBASTRODB_MICRO_VERSION
-AC_SUBST(LIBASTRODB_MAJOR_VERSION)
-AC_SUBST(LIBASTRODB_MINOR_VERSION)
-AC_SUBST(LIBASTRODB_MICRO_VERSION)
+LIBASTRODB_CURRENT_VERSION=0
+LIBASTRODB_RELEASE_VERSION=2
+LIBASTRODB_AGE_VERSION=0
+LIBASTRODB_VERSION=$LIBASTRODB_CURRENT_VERSION.$LIBASTRODB_RELEASE_VERSION.$LIBASTRODB_AGE_VERSION
+AC_SUBST(LIBASTRODB_CURRENT_VERSION)
+AC_SUBST(LIBASTRODB_RELEASE_VERSION)
+AC_SUBST(LIBASTRODB_AGE_VERSION)
 AC_SUBST(LIBASTRODB_VERSION)
 
-LT_VERSION=$LIBASTRODB_MICRO_VERSION
-LT_RELEASE=$LIBASTRODB_MAJOR_VERSION.$LIBASTRODB_MINOR_VERSION
+LT_VERSION=$LIBASTRODB_CURRENT_VERSION:$LIBASTRODB_RELEASE_VERSION:$LIBASTRODB_AGE_VERSION
 AC_SUBST(LT_VERSION)
-AC_SUBST(LT_RELEASE)
 
-VERSION=$LIBASTRODB_VERSION
 PACKAGE=libastrodb
 
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax])
@@ -68,8 +65,8 @@ AC_DEFINE([_GNU_SOURCE], [], [Description])
 AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],[enable debug symbols])],
 	have_debug=$enableval, have_debug=no)
 if test "$have_debug" = "yes"; then
-        AC_DEFINE(HAVE_DEBUG,1,[Define to enable debug symbols.])
-        CFLAGS+=" -g"
+	AC_DEFINE(HAVE_DEBUG,1,[Define to enable debug symbols.])
+	CFLAGS+=" -g"
 else
 	CFLAGS+=" -O3"
 fi
@@ -77,7 +74,7 @@ fi
 # AVX support
 AC_ARG_ENABLE(avx, [AS_HELP_STRING([--enable-avx],[enable AVX optimizations])], have_avx=$enableval, have_avx=no)
 if test "$have_avx" = "yes"; then
-        AC_DEFINE(HAVE_AVX,1,[Define to enable AVX optimizations.])
+	AC_DEFINE(HAVE_AVX,1,[Define to enable AVX optimizations.])
 fi
 AM_CONDITIONAL(HAVE_AVX, test "$have_avx" = "yes")
 
@@ -91,7 +88,7 @@ AC_SUBST(AVX_CFLAGS)
 # OpenMP support
 AC_ARG_ENABLE(openmp, [AS_HELP_STRING([--enable-openmp],[enable OpenMP])], have_openmp=$enableval, have_openmp=no)
 if test "$have_openmp" = "yes"; then
-        AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
+	AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
 fi
 AM_CONDITIONAL(HAVE_OPENMP, test "$have_openmp" = "yes")
 
