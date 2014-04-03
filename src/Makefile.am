@@ -31,5 +31,4 @@ noinst_HEADERS = \
 
 libastrodb_la_LDFLAGS = \
 	-version-info $(LT_VERSION) \
-	-release $(LIBASTRODB_VERSION) \
 	-export-dynamic

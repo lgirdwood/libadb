@@ -102,6 +102,7 @@ AC_CONFIG_FILES([
 	examples/Makefile
 	doc/Makefile
 	m4/Makefile
+	libastrodb.pc
 ])
 
 AC_OUTPUT
