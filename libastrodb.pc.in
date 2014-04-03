@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libastrodb
+Description: Fast General Purpose Astronomical Database
+Version: @VERSION@
+Libs: -L${libdir} -lastrodb
+Cflags: -I${includedir}/libastrodb
