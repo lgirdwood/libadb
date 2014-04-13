@@ -113,7 +113,7 @@ static int ftp_get_file(struct adb_table *table, const char *file)
 	//TODO: FtpDir(NULL, "/", nbuf);
 	ret = FtpGet(dest, src, FTPLIB_IMAGE, nbuf);
 	if (ret == 0) {
-		adb_error(db, "FTP could not get %s\n", src);
+		adb_warn(db, ADB_LOG_CDS_FTP, "FTP could not get %s\n", src);
 		ret = -EIO;
 		unlink(dest);
 	} else
@@ -194,6 +194,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 	do {
 		/* check for pattern */
 		file = strstr(ftp_dir[count], pattern);
+		adb_info(db, ADB_LOG_CDS_FTP, "found file %s\n", ftp_dir[count]);
 		if (file) {
 			int err;
 
