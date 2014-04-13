@@ -56,8 +56,8 @@
 *
 */
 
-#ifndef __LIBADB_DB_H
-#define __LIBADB_DB_H
+#ifndef __LIBADB_H
+#define __LIBADB_H
 
 #include <stdint.h>
 

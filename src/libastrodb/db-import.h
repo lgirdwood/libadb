@@ -16,8 +16,8 @@
  *  Copyright (C) 2005 - 2014 Liam Girdwood
  */
 
-#ifndef __LIBADB_H
-#define __LIBADB_H
+#ifndef __LIBADB_IMPORT_H
+#define __LIBADB_IMPORT_H
 
 #include <stdint.h>
 
