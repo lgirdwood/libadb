@@ -111,5 +111,7 @@ int table_insert_object(struct adb_db *db, int table_id,
 int table_get_object_depth_max(struct adb_table *table, float value);
 int table_get_object_depth_min(struct adb_table *table, float value);
 int table_get_hashmap(struct adb_db *db, int table_id, const char *key);
+void table_put_id(struct adb_db *db, int id);
+int table_get_id(struct adb_db *db);
 
 #endif

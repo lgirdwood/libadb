@@ -43,8 +43,8 @@ struct adb_db {
 	struct htm *htm;
 
 	/* tables */
-	int table_count;      		/*!< Number of catalog data sets */
 	struct adb_table table[ADB_MAX_TABLES];   /*!< Catalog datasets */
+	int table_in_use[ADB_MAX_TABLES];
 
 	/* logging */
 	enum adb_msg_level msg_level;

@@ -316,7 +316,7 @@ struct adb_search *adb_search_new(struct adb_db *db, int table_id)
 	struct adb_table *table = &db->table[table_id];
 	struct adb_search *search;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return NULL;
 
 	search = calloc(1, sizeof(struct adb_search));

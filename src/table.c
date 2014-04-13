@@ -96,6 +96,25 @@ int table_get_object_depth_max(struct adb_table *table, float value)
 	return table->db->htm->depth;
 }
 
+int table_get_id(struct adb_db *db)
+{
+	int i;
+
+	for (i = 0; i < ADB_MAX_TABLES; i++) {
+		if (!db->table_in_use[i]) {
+			db->table_in_use[i] = 1;
+			return i;
+		}
+	}
+
+	return -EINVAL;
+}
+
+void table_put_id(struct adb_db *db, int id)
+{
+	db->table_in_use[id] = 0;
+}
+
 /*! \fn int adb_table_open(adb_table * table, adb_progress progress, int ra, int dec, int mag)
  * \param table dataset
  * \param progress Progress callback
@@ -112,10 +131,10 @@ int adb_table_open(struct adb_db *db, const char *cat_class,
 	int table_id, ret = -EINVAL;
 	char local[ADB_PATH_SIZE];
 
-	if (db->table_count == ADB_MAX_TABLES - 1)
-		return -EINVAL;
+	table_id = table_get_id(db);
+	if (table_id < 0)
+		return table_id;
 
-	table_id = db->table_count;
 	table = &db->table[table_id];
 	table->db = db;
 
@@ -150,13 +169,13 @@ int adb_table_open(struct adb_db *db, const char *cat_class,
 		goto err;
 	}
 
-	db->table_count++;
 	return 0;
 
 err:
 	free(table->cds.class);
 	free(table->cds.index);
 	free(table->path.local);
+	table_put_id(db, table_id);
 	return ret;
 }
 
@@ -169,7 +188,7 @@ int adb_table_close(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 	table = &db->table[table_id];
 
@@ -178,6 +197,7 @@ int adb_table_close(struct adb_db *db, int table_id)
 
 	hash_free_maps(table);
 	free(table->objects);
+	table_put_id(db, table_id);
 	return 0;
 }
 
@@ -192,7 +212,7 @@ int adb_table_get_size(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 	table = &db->table[table_id];
 
@@ -208,7 +228,7 @@ int adb_table_get_count(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 	table = &db->table[table_id];
 
@@ -228,7 +248,7 @@ adb_ctype adb_table_get_field_type(struct adb_db *db,
 	struct adb_table *table;
 	int i;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 
 	table = &db->table[table_id];
@@ -256,7 +276,7 @@ int adb_table_get_field_offset(struct adb_db *db,
 	struct adb_table *table;
 	int i;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 
 	table = &db->table[table_id];
@@ -285,7 +305,7 @@ int adb_table_get_field_size(struct adb_db *db,
 	struct adb_table *table;
 	int i;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 
 	table = &db->table[table_id];
@@ -314,7 +334,7 @@ int adb_table_get_object_size(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 
 	table = &db->table[table_id];
@@ -333,7 +353,7 @@ int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 {
 	struct adb_table *table;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 
 	table = &db->table[table_id];
@@ -424,7 +444,7 @@ int adb_table_insert_object(struct adb_db *db, int table_id,
 	struct adb_table *table;
 	int insert;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return 0;
 
 	table = &db->table[table_id];

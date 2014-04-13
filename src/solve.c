@@ -1286,7 +1286,7 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 {
 	struct adb_solve *solve;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return NULL;
 
 	solve = calloc(1, sizeof(struct adb_solve));

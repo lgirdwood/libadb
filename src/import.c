@@ -889,7 +889,7 @@ int adb_table_import_field(struct adb_db *db, int table_id,
 	struct adb_table *table;
 	int idx, err;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 	table = &db->table[table_id];
 
@@ -928,7 +928,7 @@ int adb_table_import_schema(struct adb_db *db, int table_id,
 	struct adb_table *table;
 	int n, i;
 
-	if (table_id < 0 || table_id > db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 	table = &db->table[table_id];
 
@@ -972,10 +972,10 @@ int adb_table_import_new(struct adb_db *db,
 	char local[ADB_PATH_SIZE];
 	char remote[ADB_PATH_SIZE];
 
-	if (db->table_count == ADB_MAX_TABLES - 1)
+	table_id = table_get_id(db);
+	if (table_id < 0)
 		return -EINVAL;
 
-	table_id = db->table_count;
 	table = &db->table[table_id];
 	table->db = db;
 	table->object.otype = otype;
@@ -1060,7 +1060,6 @@ int adb_table_import_new(struct adb_db *db,
 
 			/* set initial object count - will be updated by import */
 			table->object.count = file_info->records;
-			db->table_count++;
 
 			/* import type */
 			switch (table->object.otype) {
@@ -1089,6 +1088,7 @@ err:
 	free(table->cds.index);
 	free(table->path.remote);
 	free(table->path.local);
+	table_put_id(db, table_id);
 	return err;
 }
 

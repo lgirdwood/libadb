@@ -559,7 +559,7 @@ struct adb_object_set *adb_table_set_new(struct adb_db *db,
 	struct adb_table *table;
 	struct adb_object_set *set;
 
-	if (table_id < 0 || table_id >= db->table_count)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return NULL;
 	table = &db->table[table_id];
 
