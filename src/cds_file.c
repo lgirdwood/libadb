@@ -103,7 +103,7 @@ static int ftp_get_file(struct adb_table *table, const char *file)
 		return -EIO;
 	}
 
-	ret = FtpLogin("anonymous", "lgirdwood@gmail.com", nbuf);
+	ret = FtpLogin("anonymous", "anonymous@", nbuf);
 	if (ret == 0) {
 		adb_error(db, "FTP could not login\n", ret);
 		ret = -EIO;
