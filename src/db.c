@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <libastrodb/object.h>
 #include <libastrodb/db.h>
@@ -41,17 +42,19 @@ static const char *dirs[] = {
 	"/B",
 };
 
-static int create_lib_local_dirs(const char *location)
+static int create_lib_local_dirs(struct adb_library *lib, const char *location)
 {
 	char dir[ADB_PATH_SIZE];
 	struct stat stat_info;
 	int i, ret = 0;
 
-	/* create <path>/lnc/ */
+	/* create <path>/ */
 	snprintf(dir, ADB_PATH_SIZE, "%s", location);
 	if (stat(location, &stat_info) < 0) {
 		if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
-			return ret;
+			astrolib_error(lib, "failed to create directory %s %d\n",
+						dir, -errno);
+			return errno;
 		}
 	}
 
@@ -60,7 +63,9 @@ static int create_lib_local_dirs(const char *location)
 		snprintf(dir, ADB_PATH_SIZE, "%s%s", location, dirs[i]);
 		if (stat(dir, &stat_info) < 0) {
 			if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
-				return ret;
+				astrolib_error(lib, "failed to create directory %s %d\n",
+						dir, -errno);
+				return errno;
 			}
 		}
 	}
@@ -91,12 +96,9 @@ struct adb_library *adb_open_library(const char *host,
 	if (lib == NULL)
 		return NULL;
 
-	err = create_lib_local_dirs(local);
-	if (err < 0) {
-		astrolib_error(lib, "failed to create local lib dir %s %d\n",
-			local, err);
+	err = create_lib_local_dirs(lib, local);
+	if (err < 0)
 		goto err;
-	}
 
 	lib->local = strdup(local);
 	if (lib->local == NULL)
