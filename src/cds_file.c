@@ -116,10 +116,8 @@ static int ftp_get_file(struct adb_table *table, const char *file)
 		adb_error(db, "FTP could not get %s\n", src);
 		ret = -EIO;
 		unlink(dest);
-		goto out;
-	}
-
-	ret = 0;
+	} else
+		ret = 1;
 
 out:
 	FtpQuit(nbuf);
@@ -134,7 +132,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 	char dest[ADB_PATH_SIZE], src[ADB_PATH_SIZE], dir[ADB_PATH_SIZE];
 	static char *ftp_dir[CHUNK_SIZE];
 	char *file;
-	int ret, count = 0;
+	int ret, count = 0, got = 0;
 
 	snprintf(src, ADB_PATH_SIZE, "%s", table->path.remote);
 
@@ -211,13 +209,14 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 					ftp_dir[count], dest);
 				ret = -EIO;
 				goto out;
-			}
+			} else
+				got++;
 		}
 		free(ftp_dir[count]);
 		count--;
 	} while (count);
 
-	ret = 0;
+	ret = got;
 
 out:
 	for (;count >= 0; count--)
@@ -355,10 +354,12 @@ int cds_get_dataset(struct adb_db *db, struct adb_table *table,
 	sprintf(file, "%s%s", table->path.file, ext);
 	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s from CDS\n", file);
 	ret = ftp_get_file(table, file);
-	if (ret != 0)
+	if (ret <= 0) {
 		/* give up ! */
 		adb_warn(db, ADB_LOG_CDS_FTP, "couldn't download %s\n", table->path.file);
-	return ret;
+		return -ENOENT;
+	} else
+		return 0;
 }
 
 int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
@@ -372,9 +373,11 @@ int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
 		file);
 
 	ret = ftp_get_files(table, file);
-	if (ret < 0)
+	if (ret <= 0) {
 		adb_error(db, "Error can't get split files %s\n", file);
-	return ret;
+		return -ENOENT;
+	} else
+		return 0;
 }
 
 /* search the local directory for table CDS (ASCII) data files with extension */
