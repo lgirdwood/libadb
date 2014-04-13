@@ -1114,7 +1114,7 @@ int adb_table_import(struct adb_db *db, int table_id)
 		/* download single file */
 		ret = cds_get_dataset(db, table, file_extensions[i]);
 		if (ret == 0)
-			goto import;
+			goto prepare;
 	}
 
 	/* now try split files over FTP */
@@ -1122,13 +1122,14 @@ int adb_table_import(struct adb_db *db, int table_id)
 		/* try split files */
 		ret = cds_get_split_dataset(db, table, file_extensions[i]);
 		if (ret == 0)
-			goto import;
+			goto prepare;
 	}
 
 	adb_warn(db, ADB_LOG_CDS_TABLE,
 		"Error failed to FTP CDS data files for %s\n", table->path.file);
 	return ret;
 
+prepare:
 	/* at this point we should have the CDS files -
 	 * try compressed files first, then ASCII */
 	for (i = 0; i < adb_size(file_extensions); i++) {
