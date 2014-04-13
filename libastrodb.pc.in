@@ -7,4 +7,4 @@ Name: libastrodb
 Description: Fast General Purpose Astronomical Database
 Version: @VERSION@
 Libs: -L${libdir} -lastrodb
-Cflags: -I${includedir}/libastrodb
+Cflags: -I${includedir}
