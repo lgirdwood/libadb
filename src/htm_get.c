@@ -515,9 +515,15 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 	for (i = 0; i < set->valid_trixels; i++) {
 
 		adb_htm_vdebug(htm, ADB_LOG_HTM_GET,
-			"trixels got %d count %d pos %x obs %d\n",
+			"trixels got %d count %d pos %x obs %d parent pos %x\n",
 			trixel_count, i, set->trixels[i]->position,
-			set->trixels[i]->data[set->table_id].num_objects);
+			set->trixels[i]->data[set->table_id].num_objects,
+			set->trixels[i]->parent ? set->trixels[i]->parent->position : 0);
+		adb_htm_vdebug(htm, ADB_LOG_HTM_GET,
+			" RA %3.3f DEC %3.3f RA %3.3f DEC %3.3f RA %3.3f DEC %3.3f\n",
+			set->trixels[i]->a->ra * R2D, set->trixels[i]->a->dec * R2D,
+			set->trixels[i]->b->ra * R2D, set->trixels[i]->b->dec * R2D,
+			set->trixels[i]->c->ra * R2D, set->trixels[i]->c->dec * R2D);
 
 		if (set->trixels[i]->depth < set->min_depth ||
 			set->trixels[i]->depth > set->max_depth)
