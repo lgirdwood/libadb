@@ -34,7 +34,7 @@
 #define MIN_PLATE_OBJECTS	4
 #define MAX_POTENTAL_MATCHES	256
 #define MAX_ACTUAL_MATCHES	16
-#define MAX_RT_SOLUTIONS	16
+#define MAX_RT_SOLUTIONS	32
 #define DELTA_MAG_COEFF		0.5
 #define DELTA_DIST_COEFF	1.0
 #define DELTA_PA_COEFF		1.0
@@ -1178,6 +1178,12 @@ static void copy_solution(struct solve_runtime *runtime)
 
 	pthread_mutex_lock(&solve->mutex);
 
+	if (solve->num_solutions == MAX_RT_SOLUTIONS) {
+		adb_error(solve->db, "too many solutions, narrow params\n");
+		pthread_mutex_unlock(&solve->mutex);
+		return;
+	}
+
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		soln = &solve->solve_objects[solve->num_solutions];
 
@@ -1248,6 +1254,9 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:count)
 	for (i = 0; i < solve->source.num_objects; i++)
 		count += try_object_as_primary(solve, solve->source.objects[i], i);
+
+	if (count >= MAX_RT_SOLUTIONS)
+		count = MAX_RT_SOLUTIONS - 1;
 
 	qsort(solve->solve_objects, count,
 			sizeof(struct adb_solve_objects), solution_cmp);
