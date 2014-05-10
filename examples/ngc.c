@@ -56,7 +56,7 @@ static struct adb_schema_field ngc_fields[] = {
 		object.key, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("Description", "Desc", struct ngc_object,
 		desc, ADB_CTYPE_STRING, "", 0, NULL),
-	adb_gmember("Largest Dimension", "size", struct ngc_object, \
+	adb_member("Largest Dimension", "size", struct ngc_object, \
 		size,  ADB_CTYPE_FLOAT, "arcmin", 0, NULL),
 };
 
