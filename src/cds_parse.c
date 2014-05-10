@@ -41,62 +41,6 @@ static inline void skiplines(FILE *fp, int lines)
 	}
 }
 
-static inline int get_string_at_pos(char *src, int pos, char *dest, int len)
-{
-	/* skip to pos n*/
-	const char * _src = src + pos;
-
-	/* skip white space */
-	while (*_src == ' ' )
-		_src++;
-
-	/* copy word at offset */
-	while (*_src != 0 && len--) {
-		*dest = *_src;
-		dest++;
-		_src++;
-	}
-	*dest = 0;
-
-	return 1;
-}
-
-static inline int get_word_at_pos(char *src, int pos, char *dest, int len)
-{
-	/* skip to pos n*/
-	const char * _src = src + pos;
-
-	/* some word fields our out of position by being 1 char early */
-	if (pos > 0) {
-		if (*(_src -1) != ' ' && *_src != ' ')
-			_src--;
-	}
-
-	/* skip white space */
-	while (*_src == ' ')
-		_src++;
-
-	/* copy word at offset */
-	while (*_src != ' ' && len--) {
-		*dest = *_src;
-		dest++;
-		_src++;
-	}
-	*dest = 0;
-
-	return 1;
-}
-
-static inline int get_int_at_pos(char *src, int pos, int *dest, int len)
-{
-	/* skip to pos n*/
-	const char * _src = src + pos;
-
-	*dest = atoi(_src);
-	return 1;
-}
-
-
 /* Find section header <num> and then copy section details
  * into hdr_data (if non NULL) */
 static int find_header(char *header, FILE *fp, char *hdr_data)
@@ -161,11 +105,6 @@ static int get_description(struct readme *info, FILE *fp)
 	return 0;
 }
 
-#define FILE_NAME_OFFSET			0
-#define FILE_LENGTH_OFFSET			13
-#define FILE_RECORDS_OFFSET			21
-#define FILE_EXPLANATION_OFFSET		31
-
 /* read all table files from readMe */
 static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 {
@@ -184,6 +123,8 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 	skiplines(fp, 3);
 
 	do {
+		int n;
+
 		file_info = &readme->file[files];
 
 		end = fgets(line, README_LINE_SIZE - 2, fp) ;
@@ -193,18 +134,11 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 		if (*line == ' ')
 			continue;
 
-		/* get name */
-		get_word_at_pos(line, FILE_NAME_OFFSET,
-				file_info->name, sizeof(line));
-		/* get length */
-		get_int_at_pos(line, FILE_LENGTH_OFFSET,
-				&file_info->length, sizeof(line));
-		/* get records */
-		get_int_at_pos(line, FILE_RECORDS_OFFSET,
-				&file_info->records, sizeof(line));
-		/* get explanation */
-		get_string_at_pos(line, FILE_EXPLANATION_OFFSET,
-				file_info->title, sizeof(line));
+		n = sscanf(line, "%s %d %d %80c", file_info->name,
+				&file_info->length, &file_info->records, file_info->title);
+		if (n != 4)
+			continue;
+
 		files++;
 
 	} while (files < RM_MAX_FILES);
@@ -212,13 +146,6 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 	adb_debug(db, ADB_LOG_CDS_PARSER, "found %d files in ReadMe\n", files);
 	return files;
 }
-
-#define BYTE_START_OFFSET			0
-#define BYTE_END_OFFSET				5
-#define BYTE_TYPE_OFFSET			10
-#define BYTE_UNITS_OFFSET			15
-#define BYTE_LABEL_OFFSET			23
-#define BYTE_EXPLANATION_OFFSET		32
 
 /*
  * Format, Label and Explanation line offsets vary between files.
@@ -272,6 +199,8 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 	skiplines(fp, 1);
 
 	do {
+		int n;
+
 		byte_desc = &readme->file[file_id].byte_desc[desc];
 
 		bzero(line, sizeof(line));
@@ -279,51 +208,43 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 		if (end == NULL || *line == '-')
 			break;
 
-		get_int_at_pos(line, BYTE_START_OFFSET, &byte_desc->start,
-			sizeof(line));
-		get_int_at_pos(line, BYTE_END_OFFSET, &byte_desc->end, sizeof(line));
-
-		if (byte_desc->start == 0 && byte_desc->end == 0) {
-
-			/* continuation */
-			byte_desc = &readme->file[file_id].byte_desc[--desc];
-			get_string_at_pos(line, 0, cont + 1, sizeof(cont) - 1);
-			strncat(byte_desc->explanation, cont,
-				RM_BYTE_EXP_SIZE - strlen(byte_desc->explanation) - 1);
-
-		} else if (byte_desc->end > byte_desc->start) {
-
-			/* multiple bytes */
-			get_word_at_pos(line, BYTE_TYPE_OFFSET,
-							byte_desc->type, sizeof(line));
-			get_word_at_pos(line, BYTE_UNITS_OFFSET,
-							byte_desc->units, sizeof(line));
-			get_word_at_pos(line, readme->label_offset,
-							byte_desc->label, sizeof(line));
-			get_string_at_pos(line,readme->explain_offset,
-							byte_desc->explanation, sizeof(line));
-
-			/* subtract 1 from start and end to align */
-			byte_desc->start --;
-			byte_desc->end --;
-
-		} else {
-
-			/* single byte */
-			get_word_at_pos(line, BYTE_TYPE_OFFSET ,
-							byte_desc->type, sizeof(line));
-			get_word_at_pos(line, BYTE_UNITS_OFFSET,
-							byte_desc->units, sizeof(line));
-			get_word_at_pos(line, BYTE_LABEL_OFFSET,
-							byte_desc->label, sizeof(line));
-			get_string_at_pos(line, BYTE_EXPLANATION_OFFSET,
-							byte_desc->explanation, sizeof(line));
-
-			/* align end */
-			byte_desc->end = byte_desc->start--;
+		/* try "%d-%d" start-end format */
+		n = sscanf(line, "%d- %d %s %s %s %128c",
+				&byte_desc->start, &byte_desc->end, byte_desc->type,
+				byte_desc->units, byte_desc->label, byte_desc->explanation);
+		if (n == 6) {
+			byte_desc->start--;
+			byte_desc->end--;
+			goto next;
 		}
 
-		adb_debug(db, ADB_LOG_CDS_PARSER, " %d...%d is %s of (%s) at %s : %s",
+		/* try "%d %d" start-end format */
+		n = sscanf(line, "%d %d %s %s %s %128c",
+				&byte_desc->start, &byte_desc->end, byte_desc->type,
+				byte_desc->units, byte_desc->label, byte_desc->explanation);
+		if (n == 6) {
+			byte_desc->start--;
+			byte_desc->end--;
+			goto next;
+		}
+
+		/* try "%d" start-end format */
+		n = sscanf(line, "%d %s %s %s %128c",
+				&byte_desc->start, byte_desc->type,
+				byte_desc->units, byte_desc->label, byte_desc->explanation);
+		if (n == 5) {
+			byte_desc->end = byte_desc->start--;
+			goto next;
+		}
+
+		/* continuation of explanation */
+		byte_desc = &readme->file[file_id].byte_desc[--desc];
+		sscanf(line, " %128c", cont);
+		strncat(byte_desc->explanation, cont,
+			RM_BYTE_EXP_SIZE - strlen(byte_desc->explanation) - 1);
+
+next:
+		adb_debug(db, ADB_LOG_CDS_PARSER, " %d...%d is %s of (%s) at %s : %s\n",
 			byte_desc->start, byte_desc->end, byte_desc->type,
 			byte_desc->units, byte_desc->label, byte_desc->explanation);
 
