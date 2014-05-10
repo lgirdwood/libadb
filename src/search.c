@@ -291,6 +291,7 @@ static comparator_t get_comparator(enum adb_comparator comp,
 			return string_ne_comp;
 		}
 		break;
+	case ADB_CTYPE_DEGREES:
 	case ADB_CTYPE_DOUBLE_DMS_DEGS:
 	case ADB_CTYPE_DOUBLE_DMS_MINS:
 	case ADB_CTYPE_DOUBLE_DMS_SECS:
@@ -523,6 +524,7 @@ int adb_search_add_comparator(struct adb_search *search,
 		*((float *) test->value) = strtod(value, NULL);
 		break;
 	case ADB_CTYPE_DOUBLE:
+	case ADB_CTYPE_DEGREES:
 	case ADB_CTYPE_DOUBLE_DMS_DEGS:
 	case ADB_CTYPE_DOUBLE_DMS_MINS:
 	case ADB_CTYPE_DOUBLE_DMS_SECS:

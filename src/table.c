@@ -384,6 +384,7 @@ int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 	case ADB_CTYPE_SHORT:
 	case ADB_CTYPE_STRING:
 		break;
+	case ADB_CTYPE_DEGREES:
 	case ADB_CTYPE_DOUBLE:
 	case ADB_CTYPE_FLOAT:
 	case ADB_CTYPE_SIGN:

@@ -740,6 +740,7 @@ int adb_table_set_get_object(struct adb_object_set *set,
 	case ADB_CTYPE_NULL:
 	case ADB_CTYPE_FLOAT:
 	case ADB_CTYPE_DOUBLE:
+	case ADB_CTYPE_DEGREES:
 	case ADB_CTYPE_DOUBLE_DMS_DEGS:
 	case ADB_CTYPE_DOUBLE_DMS_MINS:
 	case ADB_CTYPE_DOUBLE_DMS_SECS:

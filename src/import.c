@@ -81,6 +81,25 @@ static int double_import(struct adb_object *object, int offset, char *src)
 	}
 	return 0;
 }
+
+static int double_degrees_import(struct adb_object *object, int offset,
+	char *src)
+{
+	char *ptr, *dest = (char*)object + offset;
+
+	*(double *) dest = strtod(src, &ptr);
+
+	if (unlikely(src == ptr)) {
+		*(double*) dest = FP_NAN;
+		return -1;
+	}
+
+	/* convert to radians */
+	*(double *) dest *= D2R;
+
+	return 0;
+}
+
 static int str_import(struct adb_object *object, int offset, char *src)
 {
 	char *dest = (char*)object + offset;
@@ -248,6 +267,8 @@ adb_field_import1 table_get_column_import(struct adb_db *db,
 	switch (type) {
 	case ADB_CTYPE_DOUBLE:
 		return double_import;
+	case ADB_CTYPE_DEGREES:
+			return double_degrees_import;
 	case ADB_CTYPE_INT:
 		return int_import;
 	case ADB_CTYPE_SHORT:
@@ -290,6 +311,7 @@ adb_field_import2 table_get_alt_key_import(struct adb_db *db,
 	case ADB_CTYPE_FLOAT:
 		return float_alt_import;
 	case ADB_CTYPE_INT:
+	case ADB_CTYPE_DEGREES:
 	case ADB_CTYPE_SHORT:
 	case ADB_CTYPE_STRING:
 	case ADB_CTYPE_DOUBLE_DMS_DEGS:
@@ -682,10 +704,14 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 
 		/* import row into table */
 		import = table->object.import(db, object, table);
-		if (import < 0)
+		if (import == 0)
 			warn = 1;
-		else
+		else if (import == 1)
 			count += import;
+		else {
+			adb_error(db, "failed to import object at line %d: %s\n", j, line);
+			return -EINVAL;
+		}
 
 		if (warn) {
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT,
@@ -799,10 +825,14 @@ static int import_rows_with_alternatives(struct adb_db *db,
 
 		/* import row into table */
 		import = table->object.import(db, object, table);
-		if (import < 0)
+		if (import == 0)
 			warn = 1;
-		else
+		else if (import == 1)
 			count += import;
+		else {
+			adb_error(db, "failed to import object at line %d: %s\n", j, line);
+			return -EINVAL;
+		}
 
 		if (warn) {
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT,
@@ -867,10 +897,13 @@ int table_import(struct adb_db *db, int table_id, char *file)
 		ret = import_rows_with_alternatives(db, table_id, f);
 	else
 		ret = import_rows(db, table_id, f);
+	if (ret < 0)
+		goto out;
 
 	/* build KD-Tree */
 	ret = import_build_kdtree(db, table, table_id);
 
+out:
 	fclose(f);
 	return ret;
 }

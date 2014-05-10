@@ -54,6 +54,7 @@ typedef enum {
 	ADB_CTYPE_INT,					/*!< int */
 	ADB_CTYPE_SHORT,				/*!< short */
 	ADB_CTYPE_DOUBLE, 				/*!< double */
+	ADB_CTYPE_DEGREES, 				/*!< double degrees */
 	ADB_CTYPE_FLOAT,				/*!< float */
 	ADB_CTYPE_STRING,				/*!< string */
 	ADB_CTYPE_SIGN,					/*!< sign + or - */
