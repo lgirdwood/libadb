@@ -30,6 +30,7 @@
 #include <assert.h>
 
 #include <libastrodb/db.h>
+#include <libastrodb/object.h>
 #include "hash.h"
 #include "table.h"
 #include "debug.h"
@@ -84,10 +85,9 @@ void hash_free_maps(struct adb_table *table)
 	}
 }
 
-int hash_insert_object(struct adb_table *table, int map,
+static int hash_insert_object(struct hash_map *hash_map,
 		const struct adb_object *object, unsigned int index)
 {
-	struct hash_map *hash_map = &table->hash.map[map];
 	int size, count;
 
 	if (hash_map->index[index]) {
@@ -105,8 +105,8 @@ int hash_insert_object(struct adb_table *table, int map,
 		hash_map->index[index]->object[count - 1] = object;
 		hash_map->index[index]->count++;
 	} else {
-		/* no hash,so create new one */
 
+		/* no hash,so create new one */
 		hash_map->index[index] = calloc(1, sizeof(struct hash_object) +
 			sizeof(struct adb_object *));
 		if (!hash_map->index[index])
@@ -120,7 +120,7 @@ int hash_insert_object(struct adb_table *table, int map,
 	return 0;
 }
 
-static void build_hash_string(struct adb_table *table, int map)
+static void table_hash_string(struct adb_table *table, int map)
 {
 	const void *object = table->objects;
 	const void *field;
@@ -133,12 +133,12 @@ static void build_hash_string(struct adb_table *table, int map)
 		index = hash_string(field, table->hash.map[map].size,
 			table->object.count);
 
-		hash_insert_object(table, map, object, index);
+		hash_insert_object(&table->hash.map[map], object, index);
 		object += table->object.bytes;
 	}
 }
 
-static void build_hash_int(struct adb_table *table, int map)
+static void table_hash_int(struct adb_table *table, int map)
 {
 	const void *object = table->objects;
 	const void *field;
@@ -150,7 +150,7 @@ static void build_hash_int(struct adb_table *table, int map)
 
 		index = hash_int(*((int*)field), table->object.count);
 
-		hash_insert_object(table, map, object, index);
+		hash_insert_object(&table->hash.map[map], object, index);
 		object += table->object.bytes;
 	}
 }
@@ -167,11 +167,11 @@ int hash_build_table(struct adb_table *table, int map)
 
 	switch (table->hash.map[map].type) {
 	case ADB_CTYPE_STRING:
-		build_hash_string(table, map);
+		table_hash_string(table, map);
 		break;
 	case ADB_CTYPE_SHORT:
 	case ADB_CTYPE_INT:
-		build_hash_int(table, map);
+		table_hash_int(table, map);
 		break;
 	case ADB_CTYPE_DOUBLE_MPC:
 	case ADB_CTYPE_SIGN:
@@ -193,3 +193,87 @@ int hash_build_table(struct adb_table *table, int map)
 	return 0;
 }
 
+static void set_hash_string(struct adb_object_set *set, int map)
+{
+	const struct adb_object_head *object_heads = set->object_heads;
+	const void *object;
+	const void *field;
+	int i, j, index;
+
+	for (i = 0; i < set->head_count; i++) {
+		object = object_heads->objects;
+
+		for (j = 0; j < object_heads->count; j++) {
+
+			field = object + set->hash.map[map].offset;
+			index = hash_string(field, set->hash.map[map].size, set->count);
+
+			hash_insert_object(&set->hash.map[map], object, index);
+			object += set->table->object.bytes;
+		}
+	}
+}
+
+static void set_hash_int(struct adb_object_set *set, int map)
+{
+	const struct adb_object_head *object_heads = set->object_heads;
+	const void *object;
+	const void *field;
+	int i, j, index;
+
+	for (i = 0; i < set->head_count; i++) {
+		object = object_heads->objects;
+
+		for (j = 0; j < object_heads->count; j++) {
+
+			field = object + set->hash.map[map].offset;
+			index = hash_int(*((int*)field), set->count);
+
+			hash_insert_object(&set->hash.map[map], object, index);
+			object += set->table->object.bytes;
+		}
+	}
+}
+
+int hash_build_set(struct adb_object_set *set, int map)
+{
+	struct hash_object **hash_object;
+	struct adb_table *table = set->table;
+
+	hash_object = calloc(sizeof(struct hash_object *), set->count);
+	if (hash_object == NULL)
+		return -ENOMEM;
+
+	set->hash.map[map].index = hash_object;
+	set->hash.map[map].offset = table->hash.map[map].offset;
+	set->hash.map[map].type = table->hash.map[map].type;
+	set->hash.map[map].size = table->hash.map[map].size;
+	set->hash.map[map].key = table->hash.map[map].key;
+
+	switch (set->hash.map[map].type) {
+	case ADB_CTYPE_STRING:
+		set_hash_string(set, map);
+		break;
+	case ADB_CTYPE_SHORT:
+	case ADB_CTYPE_INT:
+		set_hash_int(set, map);
+		break;
+	case ADB_CTYPE_DOUBLE_MPC:
+	case ADB_CTYPE_SIGN:
+	case ADB_CTYPE_NULL:
+	case ADB_CTYPE_FLOAT:
+	case ADB_CTYPE_DOUBLE:
+	case ADB_CTYPE_DEGREES:
+	case ADB_CTYPE_DOUBLE_DMS_DEGS:
+	case ADB_CTYPE_DOUBLE_DMS_MINS:
+	case ADB_CTYPE_DOUBLE_DMS_SECS:
+	case ADB_CTYPE_DOUBLE_HMS_HRS:
+	case ADB_CTYPE_DOUBLE_HMS_MINS:
+	case ADB_CTYPE_DOUBLE_HMS_SECS:
+		adb_error(set->db, "ctype %d not implemented\n",
+			set->hash.map[map].type);
+		break;
+	}
+
+	return 0;
+}

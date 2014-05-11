@@ -492,7 +492,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 {
 	struct htm *htm = set->db->htm;
 	int trixel_count = 0, populated_trixels = 0;
-	int i, object_count = 0;
+	int i, object_count = 0, head_count = 0;
 
 	if (!set->valid_trixels)
 		trixel_count = htm_get_trixels(htm, set);
@@ -538,6 +538,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 			set->trixels[i]->data[set->table_id].num_objects;
 		object_count +=
 			set->trixels[i]->data[set->table_id].num_objects;
+		head_count++;
 
 	}
 
@@ -550,6 +551,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 	adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f at ", set->fov * R2D);
 
 	set->count = object_count;
+	set->head_count = head_count;
 
 	return populated_trixels;
 }
@@ -756,3 +758,23 @@ out:
 	return 1;
 }
 
+int adb_table_set_hash_objects(struct adb_object_set *set)
+{
+	struct adb_table *table = set->table;
+	int i, ret;
+
+	for (i = 0; i < table->hash.num; i++) {
+		ret = hash_build_set(set, i);
+		if (ret < 0)
+			return ret;
+	}
+
+	return 0;
+}
+
+int adb_table_set_add_set(struct adb_object_set *target,
+	struct adb_object_set *source, int avoid_duplicates)
+{
+
+	return 0;
+}

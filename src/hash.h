@@ -59,5 +59,6 @@ int hash_string(const char *data, int len, int mod);
 int hash_int(int val, int mod);
 void hash_free_maps(struct adb_table *table);
 int hash_build_table(struct adb_table *table, int map);
+int hash_build_set(struct adb_object_set *set, int map);
 
 #endif

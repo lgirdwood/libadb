@@ -60,6 +60,10 @@ struct adb_object_set {
 	int valid_trixels;
 
 	int count;
+	int head_count;
+
+	/* hashed object searching */
+	struct table_hash hash;
 };
 
 /*! \struct struct adb_table
