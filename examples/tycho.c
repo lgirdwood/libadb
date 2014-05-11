@@ -35,6 +35,8 @@ struct tycho_object {
 	float pmRA;
 	float pmDEC;
 	float plx;
+	unsigned int HD;
+	unsigned int HIP;
 };
 
 int tycid2_sp_insert(struct adb_object *object, int offset, char *src)
@@ -64,6 +66,10 @@ static struct adb_schema_field tycho_fields[] = {
 		pmDEC, ADB_CTYPE_FLOAT, "mas/a", 0, NULL),
 	adb_member("Parallax", "Plx", struct tycho_object, \
 		plx,  ADB_CTYPE_FLOAT, "mas", 0, NULL),
+	adb_member("HD Number", "HD", struct tycho_object, \
+		HD,  ADB_CTYPE_INT, "", 0, NULL),
+	adb_member("HIP Number", "HIP", struct tycho_object, \
+		HIP,  ADB_CTYPE_INT, "", 0, NULL),
 };
 
 static int print = 0;
@@ -114,7 +120,7 @@ static int get_all(struct adb_db *db, int table_id)
 	return 0;
 }
 
-int ngc_query(char *lib_dir)
+int tycho_query(char *lib_dir)
 {
 	struct adb_library *lib;
 	struct adb_db *db;
@@ -134,7 +140,7 @@ int ngc_query(char *lib_dir)
 		goto lib_err;
 	}
 
-	adb_set_msg_level(db, ADB_MSG_VDEBUG);
+	adb_set_msg_level(db, ADB_MSG_DEBUG);
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use CDS catalog class I, #250, dataset tycho */
@@ -144,6 +150,10 @@ int ngc_query(char *lib_dir)
 		ret = table_id;
 		goto table_err;
 	}
+
+	/* create a fast lookup hash on object HD & HIP numbers */
+	adb_table_hash_key(db, table_id, "HD");
+	adb_table_hash_key(db, table_id, "HIP");
 
 	/* we can now perform operations on the db data !!! */
 	get_all(db, table_id);
@@ -159,7 +169,7 @@ lib_err:
 	return ret;
 }
 
-int ngc_import(char *lib_dir)
+int tycho_import(char *lib_dir)
 {
 	struct adb_library *lib;
 	struct adb_db *db;
@@ -207,7 +217,7 @@ out:
 	return ret;
 }
 
-static int ngc_solve(char *lib_dir)
+static int tycho_solve(char *lib_dir)
 {
 	/* TODO: */
 	return 0;
@@ -237,7 +247,7 @@ int main(int argc, char *argv[])
 		if (!strcmp("-i", argv[i])) {
 			if (++i == argc)
 				usage(argv[0]);
-			ngc_import(argv[i]);
+			tycho_import(argv[i]);
 			continue;
 		}
 
@@ -245,7 +255,7 @@ int main(int argc, char *argv[])
 		if (!strcmp("-q", argv[i])) {
 			if (++i == argc)
 				usage(argv[0]);
-			ngc_query(argv[i]);
+			tycho_query(argv[i]);
 			continue;
 		}
 
@@ -253,7 +263,7 @@ int main(int argc, char *argv[])
 		if (!strcmp("-s", argv[i])) {
 			if (++i == argc)
 				usage(argv[0]);
-			ngc_solve(argv[i]);
+			tycho_solve(argv[i]);
 			continue;
 		}
 
