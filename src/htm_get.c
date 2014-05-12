@@ -640,7 +640,7 @@ void adb_table_set_free(struct adb_object_set *set)
  * Get objects from dataset based on clipping area. Results must be released
  * with adb_table_put_objects() after use.
  */
-int adb_table_set_get_objects(struct adb_object_set *set)
+int adb_set_get_objects(struct adb_object_set *set)
 {
 	/* check for previous "get" since trixels will still be valid */
 	if (set->valid_trixels) {
@@ -665,21 +665,117 @@ int adb_set_get_count(struct adb_object_set *set)
 	return set->count;
 }
 
-/*! \fn void* adb_table_get_object (adb_table* table, char* id, char* field);
- * \param table dataset
- * \param id object id
- * \param field dataset field
- * \return object or NULL if not found
- *
- * Get an object based on it' ID
- */
-int adb_table_set_get_object(struct adb_object_set *set,
+static int set_get_hashmap(struct adb_object_set *set, const char *key)
+{
+	int i;
+
+	for (i = 0; i < set->table->hash.num; i++) {
+		if (!strcmp(key, set->hash.map[i].key))
+			return i;
+	}
+
+	return -EINVAL;
+}
+
+static int hash_get_object(struct table_hash *hash, const void *id,
+		int map, int offset, adb_ctype ctype, int count,
+		const struct adb_object **object)
+{
+	int i, index;
+
+	switch (ctype) {
+	case ADB_CTYPE_STRING:
+		index = hash_string((const char*)id, strlen((const char *)id),
+			count);
+
+		/* any objects at hash index ? */
+		if (hash->map[map].index[index])
+			return 0;
+
+		/* search through hashes for exact match */
+		for (i = 0; i < hash->map[map].index[index]->count; i++) {
+			const struct adb_object *o =
+				hash->map[map].index[index]->object[i];
+			char *_id = ((char *)o) + offset;
+
+			if (!strstr(_id, id))
+				continue;
+
+			*object = o;
+			return 1;
+		}
+		break;
+	case ADB_CTYPE_SHORT:
+	case ADB_CTYPE_INT:
+		index = hash_int(*((int*)id), count);
+
+		/* any objects at hash index ? */
+		if (!hash->map[map].index[index])
+			return 0;
+
+		/* search through hashes for exact match */
+		for (i = 0; i < hash->map[map].index[index]->count; i++) {
+			const void *o = hash->map[map].index[index]->object[i];
+			int *_id = ((int *)(o + offset));
+
+			if (*_id != *((int*)id))
+				continue;
+
+			*object = o;
+			return 1;
+		}
+		break;
+	case ADB_CTYPE_DOUBLE_MPC:
+	case ADB_CTYPE_SIGN:
+	case ADB_CTYPE_NULL:
+	case ADB_CTYPE_FLOAT:
+	case ADB_CTYPE_DOUBLE:
+	case ADB_CTYPE_DEGREES:
+	case ADB_CTYPE_DOUBLE_DMS_DEGS:
+	case ADB_CTYPE_DOUBLE_DMS_MINS:
+	case ADB_CTYPE_DOUBLE_DMS_SECS:
+	case ADB_CTYPE_DOUBLE_HMS_HRS:
+	case ADB_CTYPE_DOUBLE_HMS_MINS:
+	case ADB_CTYPE_DOUBLE_HMS_SECS:
+	default:
+		return -EINVAL;
+	}
+
+	return -EINVAL;
+}
+
+int adb_set_get_object(struct adb_object_set *set,
 	const void *id, const char *field, const struct adb_object **object)
 {
 	struct adb_table *table = set->table;
-	struct adb_db *db = set->db;
+	struct adb_db *db = table->db;
 	adb_ctype ctype;
-	int map, index, i, offset;
+	int map, offset;
+
+	*object = NULL;
+
+	/* get map based on key */
+	map = set_get_hashmap(set, field);
+	if (map < 0)
+		return map;
+
+	offset = adb_table_get_field_offset(db, table->id, field);
+	if (offset < 0)
+		return offset;
+
+	/* get hash index */
+	ctype = adb_table_get_field_type(db, table->id, field);
+
+	return hash_get_object(&set->hash, id,
+			map, offset, ctype, set->count, object);
+}
+
+int adb_table_get_object(struct adb_db *db, int table_id,
+	const void *id, const char *field, const struct adb_object **object)
+{
+	struct adb_table *table = &db->table[table_id];
+	adb_ctype ctype;
+	int map, offset;
 
 	*object = NULL;
 
@@ -695,67 +791,8 @@ int adb_table_set_get_object(struct adb_object_set *set,
 	/* get hash index */
 	ctype = adb_table_get_field_type(db, table->id, field);
 
-	switch (ctype) {
-	case ADB_CTYPE_STRING:
-		index = hash_string((const char*)id, strlen((const char *)id),
-			table->object.count);
-
-		/* any objects at hash index ? */
-		if (!table->hash.map[map].index[index])
-			return 0;
-
-		/* search through hashes for exact match */
-		for (i = 0; i < table->hash.map[map].index[index]->count; i++) {
-			const struct adb_object *o =
-				table->hash.map[map].index[index]->object[i];
-			char *_id = ((char *)o) + offset;
-
-			if (!strstr(_id, id))
-				continue;
-
-			*object = o;
-			goto out;
-		}
-		break;
-	case ADB_CTYPE_SHORT:
-	case ADB_CTYPE_INT:
-		index = hash_int(*((int*)id), table->object.count);
-
-		/* any objects at hash index ? */
-		if (!table->hash.map[map].index[index])
-			return 0;
-
-		/* search through hashes for exact match */
-		for (i = 0; i < table->hash.map[map].index[index]->count; i++) {
-			const void *o = table->hash.map[map].index[index]->object[i];
-			int *_id = ((int *)(o + offset));
-
-			if (*_id != *((int*)id))
-				continue;
-
-			*object = o;
-			goto out;
-		}
-		break;
-	case ADB_CTYPE_DOUBLE_MPC:
-	case ADB_CTYPE_SIGN:
-	case ADB_CTYPE_NULL:
-	case ADB_CTYPE_FLOAT:
-	case ADB_CTYPE_DOUBLE:
-	case ADB_CTYPE_DEGREES:
-	case ADB_CTYPE_DOUBLE_DMS_DEGS:
-	case ADB_CTYPE_DOUBLE_DMS_MINS:
-	case ADB_CTYPE_DOUBLE_DMS_SECS:
-	case ADB_CTYPE_DOUBLE_HMS_HRS:
-	case ADB_CTYPE_DOUBLE_HMS_MINS:
-	case ADB_CTYPE_DOUBLE_HMS_SECS:
-		adb_error(db, "ctype %d not implemented\n", ctype);
-		break;
-	}
-	return 0;
-
-out:
-	return 1;
+	return hash_get_object(&table->hash, id,
+			map, offset, ctype, table->object.count, object);
 }
 
 int adb_table_set_hash_objects(struct adb_object_set *set)
@@ -768,13 +805,6 @@ int adb_table_set_hash_objects(struct adb_object_set *set)
 		if (ret < 0)
 			return ret;
 	}
-
-	return 0;
-}
-
-int adb_table_set_add_set(struct adb_object_set *target,
-	struct adb_object_set *source, int avoid_duplicates)
-{
 
 	return 0;
 }

@@ -594,7 +594,7 @@ static int build_and_sort_object_set(struct adb_solve *solve,
 	int object_heads, i, j, count = 0;
 
 	/* get object heads */
-	object_heads = adb_table_set_get_objects(set);
+	object_heads = adb_set_get_objects(set);
 	if (object_heads <= 0)
 		return object_heads;
 
@@ -1476,7 +1476,7 @@ int adb_solve_prep_solution(struct adb_solve *solve,
 			fov, -10.0, mag_limit);
 
 	/* get object heads */
-	object_heads = adb_table_set_get_objects(set);
+	object_heads = adb_set_get_objects(set);
 	if (object_heads <= 0) {
 		free(set);
 		solve_objects->set = NULL;

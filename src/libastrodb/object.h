@@ -100,19 +100,19 @@ struct adb_object_head {
 	unsigned int count;
 };
 
-int adb_table_set_get_objects(struct adb_object_set *set);
+int adb_set_get_objects(struct adb_object_set *set);
 
 int adb_table_set_hash_objects(struct adb_object_set *set);
-
-int adb_table_set_add_set(struct adb_object_set *target,
-	struct adb_object_set *source, int avoid_duplicates);
 
 /*! \fn void* adb_table_get_object (adb_table *table, char *id, char *field);
  * \brief Get object from catalog based on ID
  * \return pointer to object or NULL
  * \ingroup dataset
  */
-int adb_table_set_get_object(struct adb_object_set *set,
+int adb_set_get_object(struct adb_object_set *set,
+	const void *id, const char *field, const struct adb_object **object);
+
+int adb_table_get_object(struct adb_db *db, int table_id,
 	const void *id, const char *field, const struct adb_object **object);
 
 const struct adb_object *adb_table_set_get_nearest_on_object(

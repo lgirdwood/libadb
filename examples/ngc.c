@@ -99,7 +99,7 @@ static int get_all(struct adb_db *db, int table_id)
 
 	adb_table_set_constraints(set, 0.0, 0.0, 360.0, 0.0, 16.0);
 
-	heads = adb_table_set_get_objects(set);
+	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 

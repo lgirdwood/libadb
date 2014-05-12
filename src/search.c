@@ -596,7 +596,7 @@ int adb_search_get_results(struct adb_search *search,
 	}
 
 	/* operator_t is root */
-	object_heads = adb_table_set_get_objects(set);
+	object_heads = adb_set_get_objects(set);
 
 	if (object_heads <= 0)
 		return object_heads;

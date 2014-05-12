@@ -593,7 +593,7 @@ static int get1(struct adb_db *db, int table_id)
 
 	adb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 16.0);
 
-	heads = adb_table_set_get_objects(set);
+	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
@@ -624,7 +624,7 @@ static int get2(struct adb_db *db, int table_id)
 	 */
 	adb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 2.0);
 
-	heads = adb_table_set_get_objects(set);
+	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
@@ -655,7 +655,7 @@ static int get3(struct adb_db *db, int table_id)
 	 */
 	adb_table_set_constraints(set, 0.0, 0.0, 30.0, -2.0, 2.0);
 
-	heads = adb_table_set_get_objects(set);
+	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
@@ -676,12 +676,12 @@ static int get4(struct adb_db *db, int table_id)
 		return -ENOMEM;
 
 	fprintf(stdout, "Get object HD 58977 \n");
-	found = adb_table_set_get_object(set, &id, "HD", &object);
+	found = adb_set_get_object(set, &id, "HD", &object);
 	if (found)
 		object_printf(object);
 
 	fprintf(stdout, "Get object 21alp Sc\n");
-	found = adb_table_set_get_object(set, "21alp Sc", "Name", &object);
+	found = adb_set_get_object(set, "21alp Sc", "Name", &object);
 	if (found)
 		object_printf(object);
 
