@@ -169,7 +169,7 @@ int adb_table_open(struct adb_db *db, const char *cat_class,
 		goto err;
 	}
 
-	return 0;
+	return table_id;
 
 err:
 	free(table->cds.class);
