@@ -514,7 +514,7 @@ children:
 }
 
 static void insert_elem_objects(struct adb_db *db,
-	struct adb_table *table, struct kd_base *mbase, int table_id)
+	struct adb_table *table, struct kd_base *mbase)
 {
 	struct htm *htm = db->htm;
 	struct kd_init init;
@@ -523,7 +523,7 @@ static void insert_elem_objects(struct adb_db *db,
 	init.kbase = mbase;
 	init.db = db;
 	init.table = table;
-	init.table_id = table_id;
+	init.table_id = table->id;
 	init.iid = 0;
 
 	insert_elem_object(&init, &htm->N[0]);
@@ -551,8 +551,7 @@ static void update_objects(struct kd_base_elem *base, struct adb_table *table,
 	table->import.kd_root = root->bid;
 }
 
-int import_build_kdtree(struct adb_db *db, struct adb_table *table,
-	int table_id)
+int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 {
 	struct kd_base mbase;
 	struct kd_base_elem *base, *root;
@@ -579,7 +578,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table,
 		table->cds.name, table->object.count);
 
 	/* Get objects from HTM */
-	insert_elem_objects(db, table, &mbase, table_id);
+	insert_elem_objects(db, table, &mbase);
 
 	/* create RA and DEC elems */
 	elem_create_xyz(base, table);

@@ -95,6 +95,8 @@ void adb_table_set_free(struct adb_object_set *set);
 #define adb_object_dec(object) object->dec
 #define adb_object_keyval(object) object->key
 
+#define ADB_FIELD_DESIGNATION	"_DESIGNATION"
+
 struct adb_object_head {
 	const void *objects;
 	unsigned int count;
@@ -102,7 +104,7 @@ struct adb_object_head {
 
 int adb_set_get_objects(struct adb_object_set *set);
 
-int adb_table_set_hash_objects(struct adb_object_set *set);
+int adb_set_hash_key(struct adb_object_set *set, const char *key);
 
 /*! \fn void* adb_table_get_object (adb_table *table, char *id, char *field);
  * \brief Get object from catalog based on ID

@@ -30,6 +30,7 @@
 #include <assert.h>
 
 #include <libastrodb/db.h>
+#include <libastrodb/object.h>
 #include "table.h"
 #include "debug.h"
 #include "private.h"
@@ -44,30 +45,29 @@ static int table_open_local(struct adb_db *db, int table_id)
 
 	/* check for local binary schema  */
 	sprintf(file, "%s%s%s", table->path.local, table->path.file, ".schema");
-
 	ret = stat(file, &stat_info);
-	if (ret == 0) {
-
-		adb_info(db, ADB_LOG_CDS_TABLE,
-			"Found table schema %s\n", table->path.file);
-		ret = schema_read(db, table);
-		if (ret < 0) {
-			adb_error(db, "Failed to load table schema %s %d\n",
-				file, ret);
-			return ret;
-		}
-
-		/* now read in objects */
-		ret = table_read_trixels(db, table, table_id);
-		if (ret < 0) {
-			adb_error(db, "Failed to read table objects from file %d\n",
-				ret);
-			return ret;
-		}
-		return 1;
+	if (ret < 0) {
+		adb_info(db, ADB_LOG_CDS_TABLE, "Did not find table schema %s %d\n",
+			file, -errno);
+		return -errno;
 	}
 
-	adb_info(db, ADB_LOG_CDS_TABLE, "Did not find table schema %s\n", file);
+	adb_info(db, ADB_LOG_CDS_TABLE,
+		"Found table schema %s\n", table->path.file);
+	ret = schema_read(db, table);
+	if (ret < 0) {
+		adb_error(db, "Failed to load table schema %s %d\n",
+			file, ret);
+		return ret;
+	}
+
+	/* now read in objects */
+	ret = table_read_trixels(db, table);
+	if (ret < 0) {
+		adb_error(db, "Failed to read table objects from file %d\n",
+			ret);
+		return ret;
+	}
 	return 0;
 }
 
@@ -137,6 +137,7 @@ int adb_table_open(struct adb_db *db, const char *cat_class,
 
 	table = &db->table[table_id];
 	table->db = db;
+	table->id = table_id;
 
 	adb_info(db, ADB_LOG_CDS_TABLE,
 		"Opening table: %s (%d) from Catalog %s:%s\n",
@@ -253,6 +254,10 @@ adb_ctype adb_table_get_field_type(struct adb_db *db,
 
 	table = &db->table[table_id];
 
+	/* check std field */
+	if (!strcmp(field, ADB_FIELD_DESIGNATION))
+		return ADB_CTYPE_STRING;
+
 	/* check for default fields */
 	for (i = 0; i < table->object.field_count; i++) {
 		if (!strcmp(table->import.field[i].symbol, field))
@@ -280,6 +285,10 @@ int adb_table_get_field_offset(struct adb_db *db,
 		return -EINVAL;
 
 	table = &db->table[table_id];
+
+	/* check std field */
+	if (!strcmp(field, ADB_FIELD_DESIGNATION))
+		return 0;
 
 	/* check custom fields */
 	for (i = 0; i < table->object.field_count; i++) {
@@ -309,6 +318,10 @@ int adb_table_get_field_size(struct adb_db *db,
 		return -EINVAL;
 
 	table = &db->table[table_id];
+
+	/* check std field */
+	if (!strcmp(field, ADB_FIELD_DESIGNATION))
+		return ADB_OBJECT_NAME_SIZE;
 
 	/* check custom fields */
 	for (i = 0; i < table->object.field_count; i++) {
@@ -342,6 +355,60 @@ int adb_table_get_object_size(struct adb_db *db, int table_id)
 	return table->object.bytes;
 }
 
+
+static int add_hash_key(struct adb_db *db, int table_id,
+	struct table_hash *hash, const char *key)
+{
+
+	if (!strcmp(key, ADB_FIELD_DESIGNATION)) {
+
+		hash->map[hash->num].offset = 0;
+		hash->map[hash->num].size = ADB_OBJECT_NAME_SIZE;
+		hash->map[hash->num].type = ADB_CTYPE_STRING;
+
+	} else {
+
+		hash->map[hash->num].offset =
+			adb_table_get_field_offset(db, table_id, key);
+		if (hash->map[hash->num].offset < 0) {
+			adb_error(db, "invalid field offset %s\n", key);
+			return -EINVAL;
+		}
+
+		hash->map[hash->num].size =
+			adb_table_get_field_size(db, table_id, key);
+		if (hash->map[hash->num].size <= 0) {
+			adb_error(db, "invalid field size %s\n", key);
+			return -EINVAL;
+		}
+
+		hash->map[hash->num].type =
+			adb_table_get_field_type(db, table_id, key);
+		switch (hash->map[hash->num].type) {
+		case ADB_CTYPE_INT:
+		case ADB_CTYPE_SHORT:
+		case ADB_CTYPE_STRING:
+			break;
+		case ADB_CTYPE_DEGREES:
+		case ADB_CTYPE_DOUBLE:
+		case ADB_CTYPE_FLOAT:
+		case ADB_CTYPE_SIGN:
+		case ADB_CTYPE_DOUBLE_HMS_HRS:
+		case ADB_CTYPE_DOUBLE_HMS_MINS:
+		case ADB_CTYPE_DOUBLE_HMS_SECS:
+		case ADB_CTYPE_DOUBLE_DMS_DEGS:
+		case ADB_CTYPE_DOUBLE_DMS_MINS:
+		case ADB_CTYPE_DOUBLE_DMS_SECS:
+		case ADB_CTYPE_DOUBLE_MPC:
+		case ADB_CTYPE_NULL:
+			adb_error(db, "field %s type not supported for hash\n", key);
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
 /*! \fn int adb_table_hash_key(adb_table* table, char* field)
  * \param table dataset
  * \param field Field to be hashed.
@@ -352,6 +419,7 @@ int adb_table_get_object_size(struct adb_db *db, int table_id)
 int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 {
 	struct adb_table *table;
+	int ret;
 
 	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
@@ -363,42 +431,9 @@ int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 		return -EINVAL;
 	}
 
-	table->hash.map[table->hash.num].offset =
-		adb_table_get_field_offset(db, table_id, key);
-	if (table->hash.map[table->hash.num].offset < 0) {
-		adb_error(db, "invalid field offset %s\n", key);
-		return -EINVAL;
-	}
-
-	table->hash.map[table->hash.num].size =
-		adb_table_get_field_size(db, table_id, key);
-	if (table->hash.map[table->hash.num].size <= 0) {
-		adb_error(db, "invalid field size %s\n", key);
-		return -EINVAL;
-	}
-
-	table->hash.map[table->hash.num].type =
-		adb_table_get_field_type(db, table_id, key);
-	switch (table->hash.map[table->hash.num].type) {
-	case ADB_CTYPE_INT:
-	case ADB_CTYPE_SHORT:
-	case ADB_CTYPE_STRING:
-		break;
-	case ADB_CTYPE_DEGREES:
-	case ADB_CTYPE_DOUBLE:
-	case ADB_CTYPE_FLOAT:
-	case ADB_CTYPE_SIGN:
-	case ADB_CTYPE_DOUBLE_HMS_HRS:
-	case ADB_CTYPE_DOUBLE_HMS_MINS:
-	case ADB_CTYPE_DOUBLE_HMS_SECS:
-	case ADB_CTYPE_DOUBLE_DMS_DEGS:
-	case ADB_CTYPE_DOUBLE_DMS_MINS:
-	case ADB_CTYPE_DOUBLE_DMS_SECS:
-	case ADB_CTYPE_DOUBLE_MPC:
-	case ADB_CTYPE_NULL:
-		adb_error(db, "field %s type not supported for hash\n", key);
-		return -EINVAL;
-	}
+	ret = add_hash_key(db, table_id, &table->hash, key);
+	if (ret < 0)
+		return ret;
 
 	adb_info(db, ADB_LOG_CDS_TABLE,
 		"added hash for key %s on table %d with length %d at "
@@ -409,9 +444,36 @@ int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 	table->hash.map[table->hash.num].key = key;
 
 	hash_build_table(table, table->hash.num);
-
 	table->hash.num++;
-	return 0;
+
+	return ret;
+}
+
+int adb_set_hash_key(struct adb_object_set *set, const char *key)
+{
+	int ret;
+
+	if (set->hash.num == ADB_MAX_HASH_MAPS) {
+		adb_error(set->db, "too many hashed keys %s\n", key);
+		return -EINVAL;
+	}
+
+	ret = add_hash_key(set->db, set->table_id, &set->hash, key);
+	if (ret < 0)
+		return ret;
+
+	adb_info(set->db, ADB_LOG_CDS_TABLE,
+		"added hash for key %s on table %d with length %d at "
+		"offset %d type %d\n", key, set->table_id,
+		set->hash.map[set->hash.num].size,
+		set->hash.map[set->hash.num].offset,
+		set->hash.map[set->hash.num].type);
+	set->hash.map[set->hash.num].key = key;
+
+	hash_build_set(set, set->hash.num);
+	set->hash.num++;
+
+	return ret;
 }
 
 int table_get_hashmap(struct adb_db *db, int table_id, const char *key)

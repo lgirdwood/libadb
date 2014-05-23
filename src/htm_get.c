@@ -182,7 +182,7 @@ struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 	htm_vertex_update_unit(point);
 
 	if (depth > htm->depth)
-		return NULL;
+		depth = htm->depth - 1;
 
 	/* northern hemisphere quad trixels */
 	for (i = 0; i < 4; i++) {
@@ -319,7 +319,7 @@ static int trixel_add_parent(struct htm *htm,
 		/* not in buffer, so add */
 		if (trixel_buf[i] == NULL) {
 			trixel_buf[i] = t;
-			adb_htm_vdebug(htm, ADB_LOG_HTM_GET, "add trixel at pos %d ", i);
+			adb_htm_vdebug(htm, ADB_LOG_HTM_GET, "add trixel at pos %d\n", i);
 			return 1;
 		}
 	}
@@ -515,7 +515,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 	for (i = 0; i < set->valid_trixels; i++) {
 
 		adb_htm_vdebug(htm, ADB_LOG_HTM_GET,
-			"trixels got %d count %d pos %x obs %d parent pos %x\n",
+			"trixels got %d count %d pos %x objects %d parent pos %x\n",
 			trixel_count, i, set->trixels[i]->position,
 			set->trixels[i]->data[set->table_id].num_objects,
 			set->trixels[i]->parent ? set->trixels[i]->parent->position : 0);
@@ -669,7 +669,7 @@ static int set_get_hashmap(struct adb_object_set *set, const char *key)
 {
 	int i;
 
-	for (i = 0; i < set->table->hash.num; i++) {
+	for (i = 0; i < set->hash.num; i++) {
 		if (!strcmp(key, set->hash.map[i].key))
 			return i;
 	}
@@ -689,7 +689,7 @@ static int hash_get_object(struct table_hash *hash, const void *id,
 			count);
 
 		/* any objects at hash index ? */
-		if (hash->map[map].index[index])
+		if (!hash->map[map].index[index])
 			return 0;
 
 		/* search through hashes for exact match */

@@ -95,7 +95,7 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 }
 
 static int write_trixel(struct adb_db *db, struct adb_table *table,
-		struct htm_trixel *trixel, FILE *file, int table_id)
+		struct htm_trixel *trixel, FILE *file)
 {
 	struct adb_object *object, *object_next;
 	struct adb_kd_tree *kd;
@@ -107,7 +107,7 @@ static int write_trixel(struct adb_db *db, struct adb_table *table,
 		return 0;
 
 	/* write children if this trixel has no objects */
-	if (!trixel->data[table_id].num_objects)
+	if (!trixel->data[table->id].num_objects)
 		goto children;
 
 	/* write trixel header */
@@ -116,14 +116,14 @@ static int write_trixel(struct adb_db *db, struct adb_table *table,
 			trixel->quadrant << HTM_ID_QUAD_SHIFT |
 			trixel->depth << HTM_ID_DEPTH_SHIFT |
 			trixel->position;
-	hdr.num_objects = trixel->data[table_id].num_objects;
+	hdr.num_objects = trixel->data[table->id].num_objects;
 
 	size = fwrite(&hdr, sizeof(struct trixel_hdr), 1, file);
 	if (size == 0)
 		return 0;
 
 	/* write objects */
-	object = trixel->data[table_id].objects;
+	object = trixel->data[table->id].objects;
 	while (object) {
 		kd = object->import.kd;
 		object_next = object->import.next;
@@ -140,11 +140,11 @@ static int write_trixel(struct adb_db *db, struct adb_table *table,
 		object = object_next;
 		count++;
 	}
-	count = trixel->data[table_id].num_objects;
+	count = trixel->data[table->id].num_objects;
 
-	if (count != trixel->data[table_id].num_objects) {
+	if (count != trixel->data[table->id].num_objects) {
 		adb_error(db, "wrote %d expected %d ", count,
-			trixel->data[table_id].num_objects);
+			trixel->data[table->id].num_objects);
 		adb_error(db, "for trixel %x\n", hdr.id);
 		return -EINVAL;
 	}
@@ -153,27 +153,26 @@ children:
 	if (!trixel->child)
 		return count;
 
-	_count = write_trixel(db, table, &trixel->child[0], file, table_id);
+	_count = write_trixel(db, table, &trixel->child[0], file);
 	if (_count < 0)
 		return _count;
 	count += _count;
-	_count = write_trixel(db, table, &trixel->child[1], file, table_id);
+	_count = write_trixel(db, table, &trixel->child[1], file);
 	if (_count < 0)
 		return _count;
 	count += _count;
-	_count = write_trixel(db, table, &trixel->child[2], file, table_id);
+	_count = write_trixel(db, table, &trixel->child[2], file);
 	if (_count < 0)
 		return _count;
 	count += _count;
-	_count = write_trixel(db, table, &trixel->child[3], file, table_id);
+	_count = write_trixel(db, table, &trixel->child[3], file);
 	if (_count < 0)
 		return _count;
 	count += _count;
 	return count;
 }
 
-int table_read_trixels(struct adb_db *db, struct adb_table *table,
-	int table_id)
+int table_read_trixels(struct adb_db *db, struct adb_table *table)
 {
 	struct adb_object *objects;
 	int count;
@@ -214,8 +213,7 @@ int table_read_trixels(struct adb_db *db, struct adb_table *table,
 	return count;
 }
 
-int table_write_trixels(struct adb_db *db, struct adb_table *table,
-	int table_id)
+int table_write_trixels(struct adb_db *db, struct adb_table *table)
 {
 	struct htm *htm = db->htm;
 	int count = 0, count_;
@@ -231,42 +229,42 @@ int table_write_trixels(struct adb_db *db, struct adb_table *table,
 		return -EIO;
 	}
 
-	count_ = write_trixel(db, table, &htm->N[0], f, table_id);
+	count_ = write_trixel(db, table, &htm->N[0], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d N0 objects\n", count_);
 	count += count_;
-	count_= write_trixel(db, table, &htm->N[1], f, table_id);
+	count_= write_trixel(db, table, &htm->N[1], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d N1 objects\n", count_);
 	count += count_;
-	count_ = write_trixel(db, table, &htm->N[2], f, table_id);
+	count_ = write_trixel(db, table, &htm->N[2], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d N2 objects\n", count_);
 	count += count_;
-	count_ = write_trixel(db, table, &htm->N[3], f, table_id);
+	count_ = write_trixel(db, table, &htm->N[3], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d N3 objects\n", count_);
 	count += count_;
-	count_ = write_trixel(db, table, &htm->S[0], f, table_id);
+	count_ = write_trixel(db, table, &htm->S[0], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d S0 objects\n", count_);
 	count += count_;
-	count_ = write_trixel(db, table, &htm->S[1], f, table_id);
+	count_ = write_trixel(db, table, &htm->S[1], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d S1 objects\n", count_);
 	count += count_;
-	count_ = write_trixel(db, table, &htm->S[2], f, table_id);
+	count_ = write_trixel(db, table, &htm->S[2], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d S2 objects\n", count_);
 	count += count_;
-	count_ = write_trixel(db, table, &htm->S[3], f, table_id);
+	count_ = write_trixel(db, table, &htm->S[3], f);
 	if (count_ < 0)
 		goto err;
 	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d S3 objects\n", count_);

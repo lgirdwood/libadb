@@ -102,10 +102,7 @@ struct htm_vertex {
 
 struct htm_trixel_data {
 	struct adb_object *objects;	/*!< object catalog data */
-	union {
-		int num_objects;
-		float v;
-	};
+	int num_objects;
 };
 
 /*
@@ -117,7 +114,7 @@ struct htm_trixel {
 	struct htm_trixel *parent;			/* parent trixel */
 	struct htm_trixel *child;		/* child trixels - 0,1,2,3 */
 
-	struct htm_trixel_data data[8]; 	/*!< object or flux data */
+	struct htm_trixel_data data[ADB_MAX_TABLES]; 	/*!< object data */
 
 	/* flags */
 	unsigned int visible:2;		/* visible in query - partial or full */
@@ -176,8 +173,6 @@ void htm_free(struct htm *htm);
 int htm_clip(struct htm *htm, struct adb_object_set *set,
 	float ra, float dec, float fov,
 	float min_depth, float max_depth);
-
-//int htm_unclip(struct htm *htm);
 
 int htm_get_trixels(struct htm *htm, struct adb_object_set *set);
 

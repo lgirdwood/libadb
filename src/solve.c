@@ -31,6 +31,8 @@
 #include "table.h"
 #include "debug.h"
 
+#define DEBUG
+
 #define MIN_PLATE_OBJECTS	4
 #define MAX_POTENTAL_MATCHES	256
 #define MAX_ACTUAL_MATCHES	16
@@ -49,6 +51,7 @@ struct target_object {
 	struct adb_pobject *pobject;
 	struct tdata distance;
 	struct tdata pa;
+	struct tdata pa_flip;
 	struct tdata mag;
 };
 
@@ -81,6 +84,10 @@ struct solve_runtime {
 
 	/* target cluster */
 	struct target_object soln_target[MIN_PLATE_OBJECTS];
+
+#ifdef DEBUG
+	int debug;
+#endif
 };
 
 struct solve_constraint {
@@ -124,6 +131,65 @@ struct adb_solve {
 	struct adb_solve_objects solve_objects[MAX_RT_SOLUTIONS];
 	int num_solutions;
 };
+
+#ifdef DEBUG
+static const struct adb_object *dobj[4] = {NULL, NULL, NULL, NULL};
+
+static const char *dnames[] = {
+		"3992-746-1", "3992-942-1", "3992-193-1", "3996-1436-1",
+};
+
+static void debug_init(struct adb_object_set *set)
+{
+	int i, found;
+
+	adb_set_hash_key(set, ADB_FIELD_DESIGNATION);
+
+	for (i = 0; i < 4; i++) {
+		found = adb_set_get_object(set, dnames[i], ADB_FIELD_DESIGNATION,
+			&dobj[i]);
+		if (found <= 0)
+			fprintf(stderr, "can't find %s\n", dnames[i]);
+	}
+}
+
+#define DOBJ_CHECK(stage, object) \
+		do { \
+			if (object == dobj[stage - 1] && runtime->debug == stage - 1) { \
+				runtime->debug = stage; \
+			} else { \
+				if (runtime->debug == stage) \
+					runtime->debug = stage - 1; \
+			} \
+		} while (0);
+#define DOBJ_CHECK_DIST(stage, object1, object2, dist, min, max, num, i) \
+		do { \
+			if (stage < runtime->debug) \
+				fprintf(stdout, "pass %d:object %s (%3.3f) --> %s (%3.3f) dist %f min %f max %f tests %d no %d\n", \
+				stage, object1->designation, object1->key, \
+				object2->designation, object2->key, dist, min, max, num, i); \
+		} while (0)
+#define DOBJ_LIST(stage, object1, object2, dist, i) \
+		do { \
+			if (stage <= runtime->debug) \
+				fprintf(stdout, " check %d:object %s (%3.3f) --> %s (%3.3f) dist %f no %d\n", \
+				stage, object1->designation, object1->key, \
+				object2->designation, object2->key, dist, i); \
+		} while (0)
+#define DOBJ_PA_CHECK(object0, object1, object2, delta, min, max) \
+		do { \
+			if (object0 == dobj[0]) \
+				fprintf(stdout, "check %s --> (%s) <-- %s is %3.3f min %3.3f max %3.3f\n", \
+						object1->designation, object0->designation, object2->designation, \
+						delta * R2D, min * R2D, max * R2D); \
+		} while (0)
+#else
+#define debug_init(set) while (0) {}
+#define DOBJ_CHECK(stage, object)
+#define DOBJ_CHECK_DIST(stage, object, dist, min, max)
+#define DOBJ_LIST(stage, object1, object2, dist)
+#define DOBJ_PA_CHECK(object0, object1, object2, delta, min, max)
+#endif
 
 static inline double dmax(double a, double b)
 {
@@ -460,6 +526,19 @@ static void create_target_pattern(struct adb_solve *solve)
 			(t2->pa.pattern_max - t2->pa.pattern_min) / 2.0;
 	if (t2->pa.plate_actual < 0.0)
 			t2->pa.plate_actual += 2.0 * M_PI;
+
+	/* calculate flip PA deltas where image can be fliped */
+	t0->pa_flip.plate_actual = 2.0 * M_PI - t0->pa.plate_actual;
+	t0->pa_flip.pattern_min = 2.0 * M_PI - t0->pa.pattern_min;
+	t0->pa_flip.pattern_max = 2.0 * M_PI - t0->pa.pattern_max;
+
+	t1->pa_flip.plate_actual = 2.0 * M_PI - t1->pa.plate_actual;
+	t1->pa_flip.pattern_min = 2.0 * M_PI - t1->pa.pattern_min;
+	t1->pa_flip.pattern_max = 2.0 * M_PI - t1->pa.pattern_max;
+
+	t2->pa_flip.plate_actual = 2.0 * M_PI - t2->pa.plate_actual;
+	t2->pa_flip.pattern_min = 2.0 * M_PI - t2->pa.pattern_min;
+	t2->pa_flip.pattern_max = 2.0 * M_PI - t2->pa.pattern_max;
 }
 
 /* calculate object pattern variables to match against source objects */
@@ -597,6 +676,8 @@ static int build_and_sort_object_set(struct adb_solve *solve,
 	object_heads = adb_set_get_objects(set);
 	if (object_heads <= 0)
 		return object_heads;
+
+	debug_init(set);
 
 	/* allocate space for adb_source_objects */
 	source->objects = calloc(set->count, sizeof(struct adb_object *));
@@ -893,12 +974,16 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 	t2 = &solve->target.secondary[2];
 	runtime->num_pot_distance = 0;
 
+	DOBJ_CHECK(1, primary);
+
 	/* check t0 candidates */
 	for (i = range->start[0]; i < range->end[0]; i++) {
 
 		s[0] = solve->source.objects[i];
 		if (s[0] == primary)
 			continue;
+
+		DOBJ_CHECK(2, s[0]);
 
 		if (not_within_fov_fast(solve, primary, s[0]))
 			continue;
@@ -915,6 +1000,9 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 		t1_min = t1->distance.pattern_min * rad_per_pixel;
 		t1_max = t1->distance.pattern_max * rad_per_pixel;
 
+		DOBJ_CHECK_DIST(1, primary, s[0], distance0, 0.0, 0.0,
+				range->end[0] - range->start[0], i);
+
 		/* check each t1 candidates against t0 <-> primary distance ratio */
 		for (j = range->start[1]; j < range->end[1]; j++) {
 
@@ -922,14 +1010,21 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 			if (s[0] == s[1] || s[1] == primary)
 				continue;
 
+			DOBJ_CHECK(3, s[1]);
+
 			if (not_within_fov_fast(solve, primary, s[1]))
 				continue;
 
 			distance1 = get_equ_distance(primary, s[1]);
 
+			DOBJ_LIST(2, primary, s[1], distance1, j);
+
 			/* rule out any distances > FOV */
 			if (distance1 > solve->constraint.max_fov)
 				continue;
+
+			DOBJ_CHECK_DIST(2, primary, s[1], distance1, t1_min, t1_max,
+					range->end[1] - range->start[1], j);
 
 			/* is this t1 candidate within t0 primary ratio */
 			if (distance1 >= t1_min && distance1 <= t1_max) {
@@ -944,18 +1039,26 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 					if (s[0] == s[2] || s[1] == s[2] || s[2] == primary)
 						continue;
 
+					DOBJ_CHECK(4, s[2]);
+
 					if (not_within_fov_fast(solve, primary, s[2]))
 						continue;
 
 					distance2 = get_equ_distance(primary, s[2]);
 
+					DOBJ_LIST(3, primary, s[2], distance2, k);
+
 					/* rule out any distances > FOV */
 					if (distance2 > solve->constraint.max_fov)
 						continue;
 
+					DOBJ_CHECK_DIST(3, primary, s[2], distance2, t2_min, t2_max, 0, k);
+
 					if (distance2 >= t2_min && distance2 <= t2_max) {
 
 						double ratio1, ratio2, delta;
+
+						DOBJ_CHECK_DIST(4, primary, s[2], distance2, t2_min, t2_max, 0, 0);
 
 						ratio1 = distance1 / t1->distance.plate_actual;
 						ratio2 = distance2 / t2->distance.plate_actual;
@@ -985,6 +1088,22 @@ static void add_pot_on_pa(struct solve_runtime *runtime,
 	runtime->pot_pa[runtime->num_pot_pa++] = *p;
 }
 
+static inline int pa_valid(struct target_object *t, double delta, int flip)
+{
+	if (flip) {
+		/* min/max swapped for flipped */
+		if (delta >= t->pa_flip.pattern_max && delta <= t->pa_flip.pattern_min)
+			return 1;
+		else
+			return 0;
+	} else {
+		if (delta >= t->pa.pattern_min && delta <= t->pa.pattern_max)
+			return 1;
+		else
+			return 0;
+	}
+}
+
 static int solve_object_on_pa(struct solve_runtime *runtime,
 	const struct adb_object *primary, int idx)
 {
@@ -992,7 +1111,7 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 	struct adb_solve *solve = runtime->solve;
 	struct target_object *t0, *t1, *t2;
 	double pa1, pa2, pa3, pa_delta12, pa_delta23, pa_delta31, delta;
-	int i, count = 0;
+	int i, count = 0, flip;
 
 	t0 = &solve->target.secondary[0];
 	t1 = &solve->target.secondary[1];
@@ -1003,6 +1122,7 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 		i < runtime->num_pot_distance; i++) {
 
 		p = &runtime->pot_distance[i];
+		flip = 0;
 
 		/* check PA for primary to each secondary object */
 		pa1 = get_equ_pa(p->object[0], p->object[1]);
@@ -1010,22 +1130,42 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 		pa_delta12 = pa1 - pa2;
 		if (pa_delta12 < 0.0)
 			pa_delta12 += 2.0 * M_PI;
-		if (pa_delta12 < t0->pa.pattern_min || pa_delta12 > t0->pa.pattern_max)
-			continue;
 
+		DOBJ_PA_CHECK(p->object[0], p->object[1], p->object[2], pa_delta12,
+					t0->pa.pattern_min, t0->pa.pattern_max);
+
+		if (!pa_valid(t0, pa_delta12, 0)) {
+			DOBJ_PA_CHECK(p->object[0], p->object[1], p->object[2], pa_delta12,
+								t0->pa_flip.pattern_min, t0->pa_flip.pattern_max);
+			if (pa_valid(t0, pa_delta12, 1)) {
+				flip = 1;
+				goto next;
+			}
+			continue;
+		}
+
+next:
 		/* matches delta 1 - 2, now try 2 - 3 */
 		pa3 = get_equ_pa(p->object[0], p->object[3]);
 		pa_delta23 = pa2 - pa3;
 		if (pa_delta23 < 0.0)
 			pa_delta23 += 2.0 * M_PI;
-		if (pa_delta23 < t1->pa.pattern_min || pa_delta23 > t1->pa.pattern_max)
+
+		DOBJ_PA_CHECK(p->object[0], p->object[2], p->object[3], pa_delta23,
+					t1->pa.pattern_min, t1->pa.pattern_max);
+
+		if (!pa_valid(t1, pa_delta23, flip))
 			continue;
 
 		/* matches delta 2 -3, now try 3 - 1 */
 		pa_delta31 = pa3 - pa1;
 		if (pa_delta31 < 0.0)
 			pa_delta31 += 2.0 * M_PI;
-		if (pa_delta31 < t2->pa.pattern_min || pa_delta31 > t2->pa.pattern_max)
+
+		DOBJ_PA_CHECK(p->object[0], p->object[3], p->object[1], pa_delta31,
+					t2->pa.pattern_min, t2->pa.pattern_max);
+
+		if (!pa_valid(t2, pa_delta31, flip))
 			continue;
 
 		delta = tri_diff(pa_delta12 - t0->pa.plate_actual,
@@ -1212,9 +1352,7 @@ static int try_object_as_primary(struct adb_solve *solve,
 	struct solve_runtime runtime;
 	int i, count;
 
-	runtime.num_pot_distance = 0;
-	runtime.num_pot_distance_checked = 0;
-	runtime.num_pot_pa = 0;
+	memset(&runtime, 0, sizeof(runtime));
 	runtime.solve = solve;
 
 	/* find secondary candidate adb_source_objects on magnitude */
@@ -1435,14 +1573,12 @@ int adb_solve_set_pa_delta(struct adb_solve *solve,
 int adb_solve_get_solutions(struct adb_solve *solve,
 	unsigned int solution, struct adb_solve_objects **solve_objects)
 {
-	if (solution >= solve->num_solutions)
-		return -EINVAL;
-
-	if (solve->num_solutions)
-		*solve_objects = &solve->solve_objects[solution];
-	else
+	if (solve->num_solutions == 0 || solution >= solve->num_solutions) {
 		*solve_objects = NULL;
+		return -EINVAL;
+	}
 
+	*solve_objects = &solve->solve_objects[solution];
 	return 0;
 }
 
@@ -1522,9 +1658,7 @@ int adb_solve_get_object(struct adb_solve *solve,
 	if (solve_objects->set == NULL)
 		return -EINVAL;
 
-	runtime.num_pot_distance = 0;
-	runtime.num_pot_distance_checked = 0;
-	runtime.num_pot_pa = 0;
+	memset(&runtime, 0, sizeof(runtime));
 	runtime.solve = solve;
 
 	/* calculate plate parameters for new object */

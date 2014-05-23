@@ -159,6 +159,11 @@ int hash_build_table(struct adb_table *table, int map)
 {
 	struct hash_object **hash_object;
 
+	if (table->object.count == 0) {
+		adb_error(table->db, "table has no objects to hash\n");
+		return -EINVAL;
+	}
+
 	hash_object = calloc(sizeof(struct hash_object *), table->object.count);
 	if (hash_object == NULL)
 		return -ENOMEM;
@@ -211,6 +216,8 @@ static void set_hash_string(struct adb_object_set *set, int map)
 			hash_insert_object(&set->hash.map[map], object, index);
 			object += set->table->object.bytes;
 		}
+
+		object_heads++;
 	}
 }
 
@@ -232,23 +239,25 @@ static void set_hash_int(struct adb_object_set *set, int map)
 			hash_insert_object(&set->hash.map[map], object, index);
 			object += set->table->object.bytes;
 		}
+
+		object_heads++;
 	}
 }
 
 int hash_build_set(struct adb_object_set *set, int map)
 {
 	struct hash_object **hash_object;
-	struct adb_table *table = set->table;
+
+	if (set->count == 0) {
+		adb_error(set->db, "set has no objects to hash\n");
+		return -EINVAL;
+	}
 
 	hash_object = calloc(sizeof(struct hash_object *), set->count);
 	if (hash_object == NULL)
 		return -ENOMEM;
 
 	set->hash.map[map].index = hash_object;
-	set->hash.map[map].offset = table->hash.map[map].offset;
-	set->hash.map[map].type = table->hash.map[map].type;
-	set->hash.map[map].size = table->hash.map[map].size;
-	set->hash.map[map].key = table->hash.map[map].key;
 
 	switch (set->hash.map[map].type) {
 	case ADB_CTYPE_STRING:

@@ -86,7 +86,7 @@ int htm_table_insert_object(struct htm *htm, struct adb_table *table,
 		return -EINVAL;
 	}
 
-	/* insert obejcts */
+	/* insert objects */
 	htm_insert_object_ascending(htm, table, trixel, object, object_count);
 
 	return 1;

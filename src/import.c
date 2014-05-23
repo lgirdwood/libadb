@@ -901,7 +901,7 @@ int table_import(struct adb_db *db, int table_id, char *file)
 		goto out;
 
 	/* build KD-Tree */
-	ret = import_build_kdtree(db, table, table_id);
+	ret = import_build_kdtree(db, table);
 
 out:
 	fclose(f);
@@ -1199,7 +1199,7 @@ schema:
 		return ret;
 	}
 
-	ret = table_write_trixels(db, table, table_id);
+	ret = table_write_trixels(db, table);
 	if (ret < 0) {
 		adb_error(db, "Error failed write table objects %d\n", ret);
 		return ret;

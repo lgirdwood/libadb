@@ -86,11 +86,9 @@ adb_field_import2 table_get_alt_key_import(struct adb_db *db,
 adb_field_import1 table_get_column_import(struct adb_db *db,
 	adb_ctype type);
 
-int table_write_trixels(struct adb_db *db, struct adb_table *table,
-	int table_id);
+int table_write_trixels(struct adb_db *db, struct adb_table *table);
 
-int import_build_kdtree(struct adb_db *db, struct adb_table *table,
-	int table_id);
+int import_build_kdtree(struct adb_db *db, struct adb_table *table);
 
 int import_get_object_depth_max(struct adb_table *table, float value);
 int import_get_object_depth_min(struct adb_table *table, float value);

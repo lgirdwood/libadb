@@ -37,7 +37,6 @@ struct adb_db;
 struct adb_table;
 
 struct depth_map {
-	int table_id;			/*!< our table ID at this depth */
 	float min_value;		/*!< minimum object primary key value at this depth */
 	float max_value;		/*!< maximum object primary key value at this depth */
 };
@@ -88,7 +87,7 @@ struct adb_table {
 	struct table_object object;
 
 	/* depth by depth table HTM mappings */
-	struct depth_map depth_map[ADB_MAX_TABLES];
+	struct depth_map depth_map[HTM_MAX_DEPTH];
 	int max_depth;		/*!< deepest HTM depth used by this table */
 
 	/* hashed object searching */
@@ -108,8 +107,7 @@ struct adb_table {
 
 adb_ctype table_get_column_ctype(char *type);
 int table_get_column_csize(char *type);
-int table_read_trixels(struct adb_db *db, struct adb_table *table,
-	int table_id);
+int table_read_trixels(struct adb_db *db, struct adb_table *table);
 int table_insert_object(struct adb_db *db, int table_id,
 		struct adb_object *object);
 int table_get_object_depth_max(struct adb_table *table, float value);
