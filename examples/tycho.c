@@ -39,21 +39,31 @@ struct tycho_object {
 	unsigned int HIP;
 };
 
-int tycid2_sp_insert(struct adb_object *object, int offset, char *src)
+static int tycid1_sp_insert(struct adb_object *object, int offset, char *src)
 {
 	char *dest = (char*)object + offset;
+	int i = atoi(src);
 
-	sprintf(dest, "-%s", src);
+	sprintf(dest, "%d", i);
+	return 0;
+}
+
+static int tycid2_sp_insert(struct adb_object *object, int offset, char *src)
+{
+	char *dest = (char*)object + offset;
+	int i = atoi(src);
+
+	sprintf(dest, "%s-%d", object->designation, i);
 	return 0;
 }
 
 static struct adb_schema_field tycho_fields[] = {
 	adb_member("Name", "TYCID1", struct tycho_object,
-		object.designation, ADB_CTYPE_STRING, "", 0, NULL),
+		object.designation, ADB_CTYPE_INT, "", 0, tycid1_sp_insert),
 	adb_member("Name", "TYCID2", struct tycho_object,
-		object.designation, ADB_CTYPE_STRING, "", 0, tycid2_sp_insert),
+		object.designation, ADB_CTYPE_INT, "", 0, tycid2_sp_insert),
 	adb_member("Name", "TYCID3", struct tycho_object,
-		object.designation, ADB_CTYPE_STRING, "", 0, tycid2_sp_insert),
+		object.designation, ADB_CTYPE_INT, "", 0, tycid2_sp_insert),
 	adb_member("RA", "RAdeg", struct tycho_object, \
 		object.ra,  ADB_CTYPE_DEGREES, "degrees", 0, NULL),
 	adb_member("DEC", "DEdeg", struct tycho_object, \
@@ -120,6 +130,28 @@ static int get_all(struct adb_db *db, int table_id)
 	return 0;
 }
 
+static int get2(struct adb_db *db, int table_id)
+{
+	struct adb_object_set *set;
+	int count, heads;
+
+	fprintf(stdout, "Get all objects around 1 deg FoV RA 341.0, DEC 58.0\n");
+	set = adb_table_set_new(db, table_id);
+	if (!set)
+		return -ENOMEM;
+
+	adb_table_set_constraints(set, 341.0, 58.0, 1.0, -2.0, 16.0);
+
+	heads = adb_set_get_objects(set);
+	count = adb_set_get_count(set);
+	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
+
+	get_printf(adb_set_get_head(set), heads);
+
+	adb_table_set_free(set);
+	return 0;
+}
+
 int tycho_query(char *lib_dir)
 {
 	struct adb_library *lib;
@@ -133,7 +165,7 @@ int tycho_query(char *lib_dir)
 		return -ENOMEM;
 	}
 
-	db = adb_create_db(lib, 5, 1);
+	db = adb_create_db(lib, 7, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
@@ -157,6 +189,7 @@ int tycho_query(char *lib_dir)
 
 	/* we can now perform operations on the db data !!! */
 	get_all(db, table_id);
+	get2(db, table_id);
 
 	/* were done with the db */
 table_err:
@@ -182,7 +215,7 @@ int tycho_import(char *lib_dir)
 		return -ENOMEM;
 	}
 
-	db = adb_create_db(lib, 5, 1);
+	db = adb_create_db(lib, 7, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
@@ -225,9 +258,9 @@ static int tycho_solve(char *lib_dir)
 
 static void usage(char *argv)
 {
-	fprintf(stdout, "Import: %s: -i [import dir]", argv);
-	fprintf(stdout, "Query: %s: -q [library dir]", argv);
-	fprintf(stdout, "Solve: %s: -s [library dir]", argv);
+	fprintf(stdout, "Import: %s: -i [import dir]\n", argv);
+	fprintf(stdout, "Query: %s: -q [library dir]\n", argv);
+	fprintf(stdout, "Solve: %s: -s [library dir]\n", argv);
 
 	exit(0);
 }
