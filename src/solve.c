@@ -1673,20 +1673,21 @@ int adb_solve_get_object(struct adb_solve *solve,
 
 	/* find candidate adb_source_objects on magnitude */
 	count = solve_single_object_on_magnitude(&runtime, solve_objects, pobject);
-	if (!count)
-		return 0;
+	if (count == 0)
+		goto estimate;
 
 	/* at this point we have a range of candidate stars that match the
 	 * magnitude bounds of the plate object now check for distance alignment */
 	count = solve_single_object_on_distance(&runtime, solve_objects);
-	if (!count)
-		return 0;
+	if (count == 0)
+		goto estimate;
 
 	/* At this point we have a list of objects that match on magnitude and
 	 * distance, so we finally check the objects for PA alignment*/
 	count = solve_single_object_on_pa(&runtime, solve_objects);
-	if (!count && o != NULL) {
 
+estimate:
+	if (count == 0 && o != NULL) {
 		/* nothing found so return object magnitude and position */
 		o->key = get_plate_magnitude(solve, solve_objects,
 				pobject);
