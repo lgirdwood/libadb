@@ -1345,14 +1345,7 @@ static void copy_solution(struct solve_runtime *runtime)
 			continue;
 
 		/* copy solution */
-		soln->delta_distance = runtime->pot_pa[i].delta_distance;
-		soln->delta_magnitude = runtime->pot_pa[i].delta_magnitude;
-		soln->delta_pa = runtime->pot_pa[i].delta_pa;
-		soln->rad_per_pix = runtime->pot_pa[i].rad_per_pix;
-		soln->object[0] = runtime->pot_pa[i].object[0];
-		soln->object[1] = runtime->pot_pa[i].object[1];
-		soln->object[2] = runtime->pot_pa[i].object[2];
-		soln->object[3] = runtime->pot_pa[i].object[3];
+		*soln = runtime->pot_pa[i];
 		solve->num_solutions++;
 	}
 
