@@ -207,6 +207,11 @@ static inline double tri_max(double a, double b, double c)
 	return dmax(dmax(a, b), c);
 }
 
+static inline double tri_avg(double a, double b, double c)
+{
+	return (a + b + c) / 3.0;
+}
+
 static inline double quad_max(double a, double b, double c, double d)
 {
 	return dmax(dmax(a, b), dmax(c, d));
@@ -1085,7 +1090,7 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
 
 						add_pot_on_distance(runtime, primary, &solve->source,
-							i, j, k, delta, rad_per_pixel);
+							i, j, k, delta, tri_avg(rad_per_pixel, ratio1, ratio2));
 						count++;
 					}
 				}
