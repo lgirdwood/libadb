@@ -78,6 +78,7 @@ struct adb_solve_objects {
 	double delta_magnitude;
 	double divergance;
 	double rad_per_pix;
+	int flip;
 };
 
 struct adb_solve;

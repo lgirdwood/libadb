@@ -626,6 +626,23 @@ static void create_target_single(struct adb_solve *solve,
 			(t3->pa.pattern_max - t3->pa.pattern_min) / 2.0;
 	if (t3->pa.plate_actual < 0.0)
 			t3->pa.plate_actual += 2.0 * M_PI;
+
+	/* calculate flip PA deltas where image can be fliped */
+	t0->pa_flip.plate_actual = 2.0 * M_PI - t0->pa.plate_actual;
+	t0->pa_flip.pattern_min = 2.0 * M_PI - t0->pa.pattern_min;
+	t0->pa_flip.pattern_max = 2.0 * M_PI - t0->pa.pattern_max;
+
+	t1->pa_flip.plate_actual = 2.0 * M_PI - t1->pa.plate_actual;
+	t1->pa_flip.pattern_min = 2.0 * M_PI - t1->pa.pattern_min;
+	t1->pa_flip.pattern_max = 2.0 * M_PI - t1->pa.pattern_max;
+
+	t2->pa_flip.plate_actual = 2.0 * M_PI - t2->pa.plate_actual;
+	t2->pa_flip.pattern_min = 2.0 * M_PI - t2->pa.pattern_min;
+	t2->pa_flip.pattern_max = 2.0 * M_PI - t2->pa.pattern_max;
+
+	t3->pa_flip.plate_actual = 2.0 * M_PI - t3->pa.plate_actual;
+	t3->pa_flip.pattern_min = 2.0 * M_PI - t3->pa.pattern_min;
+	t3->pa_flip.pattern_max = 2.0 * M_PI - t3->pa.pattern_max;
 }
 
 /* add matching cluster to list of potentials */
@@ -652,7 +669,7 @@ static void add_pot_on_distance(struct solve_runtime *runtime,
 
 static void add_single_pot_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
-	struct adb_source_objects *source, double delta)
+	struct adb_source_objects *source, double delta, int flip)
 {
 	struct adb_solve_objects *p;
 
@@ -660,9 +677,9 @@ static void add_single_pot_on_distance(struct solve_runtime *runtime,
 		return;
 
 	p = &runtime->pot_distance[runtime->num_pot_distance];
-
 	p->delta_distance = delta;
 	p->object[0] = primary;
+	p->flip = flip;
 	runtime->num_pot_distance++;
 }
 
@@ -949,7 +966,8 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 
 		diverge = quad_diff(diff[0], diff[1], diff[2], diff[3]);
 
-		add_single_pot_on_distance(runtime, s, &solve_objects->source, diverge);
+		add_single_pot_on_distance(runtime, s, &solve_objects->source,
+				diverge, solve_objects->flip);
 		count++;
 	}
 
@@ -1111,7 +1129,7 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 	struct adb_solve *solve = runtime->solve;
 	struct target_object *t0, *t1, *t2;
 	double pa1, pa2, pa3, pa_delta12, pa_delta23, pa_delta31, delta;
-	int i, count = 0, flip;
+	int i, count = 0;
 
 	t0 = &solve->target.secondary[0];
 	t1 = &solve->target.secondary[1];
@@ -1122,7 +1140,7 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 		i < runtime->num_pot_distance; i++) {
 
 		p = &runtime->pot_distance[i];
-		flip = 0;
+		p->flip = 0;
 
 		/* check PA for primary to each secondary object */
 		pa1 = get_equ_pa(p->object[0], p->object[1]);
@@ -1138,7 +1156,7 @@ static int solve_object_on_pa(struct solve_runtime *runtime,
 			DOBJ_PA_CHECK(p->object[0], p->object[1], p->object[2], pa_delta12,
 								t0->pa_flip.pattern_min, t0->pa_flip.pattern_max);
 			if (pa_valid(t0, pa_delta12, 1)) {
-				flip = 1;
+				p->flip = 1;
 				goto next;
 			}
 			continue;
@@ -1154,7 +1172,7 @@ next:
 		DOBJ_PA_CHECK(p->object[0], p->object[2], p->object[3], pa_delta23,
 					t1->pa.pattern_min, t1->pa.pattern_max);
 
-		if (!pa_valid(t1, pa_delta23, flip))
+		if (!pa_valid(t1, pa_delta23, p->flip))
 			continue;
 
 		/* matches delta 2 -3, now try 3 - 1 */
@@ -1165,7 +1183,7 @@ next:
 		DOBJ_PA_CHECK(p->object[0], p->object[3], p->object[1], pa_delta31,
 					t2->pa.pattern_min, t2->pa.pattern_max);
 
-		if (!pa_valid(t2, pa_delta31, flip))
+		if (!pa_valid(t2, pa_delta31, p->flip))
 			continue;
 
 		delta = tri_diff(pa_delta12 - t0->pa.plate_actual,
@@ -1198,8 +1216,7 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 		pa_delta01 = pa0 - pa1;
 		if (pa_delta01 < 0.0)
 			pa_delta01 += 2.0 * M_PI;
-		if (pa_delta01 < runtime->soln_target[0].pa.pattern_min ||
-			pa_delta01 > runtime->soln_target[0].pa.pattern_max)
+		if (!pa_valid(&runtime->soln_target[0], pa_delta01, p->flip))
 			continue;
 
 		/* check object against 1 -> 2 */
@@ -1207,8 +1224,7 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 		pa_delta12 = pa1 - pa2;
 		if (pa_delta12 < 0.0)
 			pa_delta12 += 2.0 * M_PI;
-		if (pa_delta12 < runtime->soln_target[1].pa.pattern_min ||
-			pa_delta12 > runtime->soln_target[1].pa.pattern_max)
+		if (!pa_valid(&runtime->soln_target[1], pa_delta12, p->flip))
 			continue;
 
 		/* check object against 2 -> 3 */
@@ -1216,8 +1232,7 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 		pa_delta23 = pa2 - pa3;
 		if (pa_delta23 < 0.0)
 			pa_delta23 += 2.0 * M_PI;
-		if (pa_delta23 < runtime->soln_target[2].pa.pattern_min ||
-			pa_delta23 > runtime->soln_target[2].pa.pattern_max)
+		if (!pa_valid(&runtime->soln_target[2], pa_delta23, p->flip))
 			continue;
 
 		/* check object against 3 -> 0 */
@@ -1225,8 +1240,7 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 		if (pa_delta30 < 0.0)
 			pa_delta30 += 2.0 * M_PI;
 
-		if (pa_delta30 < runtime->soln_target[3].pa.pattern_min ||
-			pa_delta30 > runtime->soln_target[3].pa.pattern_max)
+		if (!pa_valid(&runtime->soln_target[3], pa_delta30, p->flip))
 			continue;
 
 		delta = quad_diff(pa_delta01 - runtime->soln_target[0].pa.plate_actual,
