@@ -31,7 +31,7 @@
 #include "table.h"
 #include "debug.h"
 
-#define DEBUG
+//#define DEBUG
 
 #define MIN_PLATE_OBJECTS	4
 #define MAX_POTENTAL_MATCHES	256
@@ -186,8 +186,8 @@ static void debug_init(struct adb_object_set *set)
 #else
 #define debug_init(set) while (0) {}
 #define DOBJ_CHECK(stage, object)
-#define DOBJ_CHECK_DIST(stage, object, dist, min, max)
-#define DOBJ_LIST(stage, object1, object2, dist)
+#define DOBJ_CHECK_DIST(stage, object1, object2, dist, min, max, num, i)
+#define DOBJ_LIST(stage, object1, object2, dist, i)
 #define DOBJ_PA_CHECK(object0, object1, object2, delta, min, max)
 #endif
 
