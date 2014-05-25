@@ -135,9 +135,16 @@ struct adb_solve {
 
 #ifdef DEBUG
 static const struct adb_object *dobj[4] = {NULL, NULL, NULL, NULL};
+static const struct adb_object *sobj[4] = {NULL, NULL, NULL, NULL};
 
+/* debug object designations for solution */
 static const char *dnames[] = {
 		"3992-746-1", "3992-942-1", "3992-193-1", "3996-1436-1",
+};
+
+/* debug object names for single objects */
+static const char *snames[] = {
+		"3992-648-1", "3992-645-1", "3992-349-1", "3992-882-1",
 };
 
 static void debug_init(struct adb_object_set *set)
@@ -146,12 +153,24 @@ static void debug_init(struct adb_object_set *set)
 
 	adb_set_hash_key(set, ADB_FIELD_DESIGNATION);
 
-	for (i = 0; i < 4; i++) {
+	/* search for solution objects */
+	for (i = 0; i < adb_size(dnames); i++) {
 		found = adb_set_get_object(set, dnames[i], ADB_FIELD_DESIGNATION,
 			&dobj[i]);
 		if (found <= 0)
 			fprintf(stderr, "can't find %s\n", dnames[i]);
 	}
+
+	/* search for single objects */
+	for (i = 0; i < adb_size(snames); i++) {
+			found = adb_set_get_object(set, snames[i], ADB_FIELD_DESIGNATION,
+				&sobj[i]);
+			if (found <= 0)
+				fprintf(stderr, "can't find %s\n", snames[i]);
+			else
+				fprintf(stdout, "found %s mag %f\n",
+					sobj[i]->designation, sobj[i]->key);
+		}
 }
 
 #define DOBJ_CHECK(stage, object) \
@@ -184,12 +203,52 @@ static void debug_init(struct adb_object_set *set)
 						object1->designation, object0->designation, object2->designation, \
 						delta * R2D, min * R2D, max * R2D); \
 		} while (0)
+#define SOBJ_CHECK(object) \
+		do { \
+			if (object == sobj[0] || object == sobj[1] || \
+				object == sobj[2] || object == sobj[3]) \
+				runtime->debug = 1; \
+			else \
+				runtime->debug = 0;\
+		} while (0);
+#define SOBJ_CHECK_DIST(object, dist, min, max, num) \
+		do { \
+			if (runtime->debug) \
+				fprintf(stdout, "%d: object %s (%3.3f) dist %f min %f max %f\n", \
+				num, object->designation, object->key, dist, min, max); \
+		} while (0)
+#define SOBJ_FOUND(object) \
+		do { \
+			if (runtime->debug) \
+				fprintf(stdout, " *found %s\n", object->designation); \
+			if (object == sobj[0]) \
+				sobj[0] = NULL;\
+			if (object == sobj[1]) \
+				sobj[1] = NULL; \
+			if (object == sobj[2]) \
+				sobj[2] = NULL; \
+			if (object == sobj[3]) \
+				sobj[3] = NULL; \
+		} while (0);
+#define SOBJ_MAG(min, max) \
+		fprintf(stdout, "mag min %f max %f\n", min, max);
+#define SOBJ_CHECK_SET(object) \
+		do { \
+			if (object == sobj[0] || object == sobj[1] || \
+				object == sobj[2] || object == sobj[3]) \
+				fprintf(stdout, "set found: %s\n", object->designation); \
+		} while (0);
 #else
 #define debug_init(set) while (0) {}
 #define DOBJ_CHECK(stage, object)
 #define DOBJ_CHECK_DIST(stage, object1, object2, dist, min, max, num, i)
 #define DOBJ_LIST(stage, object1, object2, dist, i)
 #define DOBJ_PA_CHECK(object0, object1, object2, delta, min, max)
+#define SOBJ_CHECK(object)
+#define SOBJ_CHECK_DIST(object, dist, min, max, num)
+#define SOBJ_FOUND(object)
+#define SOBJ_MAG(min, max)
+#define SOBJ_CHECK_SET(object)
 #endif
 
 static inline double dmax(double a, double b)
@@ -901,6 +960,9 @@ static int solve_single_object_on_magnitude(struct solve_runtime *runtime,
 	end = object_get_last_with_mag(source,
 			mag_max + solve_objects->delta_magnitude, 0);
 
+	SOBJ_MAG(mag_min - solve_objects->delta_magnitude,
+			mag_max + solve_objects->delta_magnitude);
+
 	/* both out of range */
 	if (start == end)
 		return 0;
@@ -934,8 +996,14 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 
 		s = solve_objects->source.objects[i];
 
+		SOBJ_CHECK(s);
+
 		/* plate object to candidate object 0 */
 		distance = get_equ_distance(solve_objects->object[0], s) * 1000.0;
+
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[0].distance.pattern_min,
+			runtime->soln_target[0].distance.pattern_max, 1);
 
 		if (distance > runtime->soln_target[0].distance.pattern_max)
 			continue;
@@ -946,6 +1014,10 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		/* plate object to candidate object 1 */
 		distance = get_equ_distance(solve_objects->object[1], s) * 1000.0;
 
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[1].distance.pattern_min,
+			runtime->soln_target[1].distance.pattern_max, 2);
+
 		if (distance > runtime->soln_target[1].distance.pattern_max)
 			continue;
 		if (distance < runtime->soln_target[1].distance.pattern_min)
@@ -954,6 +1026,10 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 
 		/* plate object to candidate object 2 */
 		distance = get_equ_distance(solve_objects->object[2], s) * 1000.0;
+
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[2].distance.pattern_min,
+			runtime->soln_target[2].distance.pattern_max, 3);
 
 		if (distance > runtime->soln_target[2].distance.pattern_max)
 			continue;
@@ -964,6 +1040,10 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		/* plate object to candidate object 3 */
 		distance = get_equ_distance(solve_objects->object[3], s) * 1000.0;
 
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[3].distance.pattern_min,
+			runtime->soln_target[3].distance.pattern_max, 4);
+
 		if (distance > runtime->soln_target[3].distance.pattern_max)
 			continue;
 		if (distance < runtime->soln_target[3].distance.pattern_min)
@@ -971,6 +1051,8 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[3] = distance / runtime->soln_target[3].distance.plate_actual;
 
 		diverge = quad_diff(diff[0], diff[1], diff[2], diff[3]);
+
+		SOBJ_FOUND(s);
 
 		add_single_pot_on_distance(runtime, s, &solve_objects->source,
 				diverge, solve_objects->flip);
@@ -1650,6 +1732,7 @@ int adb_solve_prep_solution(struct adb_solve *solve,
 
 		for (j = 0; j < set->object_heads[i].count; j++)  {
 			solve_objects->source.objects[count++] = object;
+			SOBJ_CHECK_SET(((struct adb_object*)object));
 			object += solve->table->object.bytes;
 		}
 	}
