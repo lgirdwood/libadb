@@ -570,12 +570,32 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 
 static void object_printf(const struct adb_object *object)
 {
-	const struct sky2kv4_object *obj = (const struct sky2kv4_object *)object;
+	const struct sky2kv4_object *obj =
+		(const struct sky2kv4_object *)object;
 
 	fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
 		obj->name, obj->object.id, obj->object.ra * R2D,
 		obj->object.dec * R2D, obj->object.key,
 		obj->sp, obj->HD);
+}
+
+static void sobject_printf(struct adb_solve_object *sobject)
+{
+	const struct sky2kv4_object *obj =
+		(const struct sky2kv4_object *)sobject->object;
+
+	fprintf(stdout, "Plate object X %d Y %d ADU %d\n", sobject->pobject.x,
+		sobject->pobject.y, sobject->pobject.adu);
+
+	if (obj != NULL) {
+		fprintf(stdout, " Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
+			obj->name, obj->object.id, obj->object.ra * R2D,
+			obj->object.dec * R2D, obj->object.key,
+			obj->sp, obj->HD);
+	}
+
+	fprintf(stdout, " Estimated plate RA: %f DEC: %f Mag: %f\n", sobject->ra * R2D,
+		sobject->dec * R2D, sobject->mag);
 }
 
 /*
@@ -831,9 +851,7 @@ static int sky2k_solve(char *lib_dir)
 	struct adb_db *db;
 	struct adb_solve *solve;
 	struct adb_object_set *set;
-	struct adb_solve_objects *solve_objects;
-	const struct adb_object *object;
-	struct adb_object unknown;
+	struct adb_solve_solution *solution;
 	int ret = 0, table_id, found, i;
 
 	/* set the remote CDS server and initialise local repository/cache */
@@ -884,26 +902,27 @@ static int sky2k_solve(char *lib_dir)
 
 	/* set image tolerances */
 	adb_solve_set_magnitude_delta(solve, 0.25);
-	adb_solve_set_distance_delta(solve, 4.0);
+	adb_solve_set_distance_delta(solve, 5.0);
 	adb_solve_set_pa_delta(solve, 2.0);
 
 	start_timer();
 	found = adb_solve(solve, set, ADB_FIND_FIRST);
 	end_timer(found, 0);
-	fprintf(stdout, "found %d prospects\n", found);
+	fprintf(stdout, "found %d solutions\n", found);
 
 	/* dump first set of objects */
-	adb_solve_get_solutions(solve, 0, &solve_objects);
-	for (i = 0; i < 4; i++)
-		object_printf(solve_objects->object[i]);
+	adb_solve_get_solutions(solve, 0, &solution);
 
 	/* set FoV and mag limits for single object searches */
 	adb_solve_prep_solution(solve, 0, 2.0, 8.0);
 
 	/* get subsequent objects */
-	adb_solve_get_object(solve, solve_objects, &pobject[4],
-			&object, &unknown);
-	object_printf(object);
+	ret = adb_solve_get_objects(solve, solution, &pobject[4], 1);
+	if (ret < 0)
+		goto set_err;
+
+	for (i = 0; i < 5; i++)
+		sobject_printf(&solution->solve_object[i]);
 
 	/* were done with the db */
 	adb_solve_free(solve);
