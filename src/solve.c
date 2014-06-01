@@ -74,12 +74,12 @@ struct solve_runtime {
 	struct magnitude_range pot_magnitude;
 
 	/* potential matches after magnitude and distance checks */
-	struct adb_solve_objects pot_distance[MAX_POTENTAL_MATCHES];
+	struct adb_solve_solution pot_distance[MAX_POTENTAL_MATCHES];
 	int num_pot_distance;
 	int num_pot_distance_checked;
 
 	/* potential matches after magnitude, distance and PA */
-	struct adb_solve_objects pot_pa[MAX_POTENTAL_MATCHES];
+	struct adb_solve_solution pot_pa[MAX_POTENTAL_MATCHES];
 	int num_pot_pa;
 
 	/* target cluster */
@@ -129,7 +129,7 @@ struct adb_solve {
 	double pa_delta;
 
 	/* potential solutions from all runtimes */
-	struct adb_solve_objects solve_objects[MAX_RT_SOLUTIONS];
+	struct adb_solve_solution solution[MAX_RT_SOLUTIONS];
 	int num_solutions;
 };
 
@@ -293,7 +293,7 @@ static inline float quad_avg(float a, float b, float c, float d)
 
 static int solution_cmp(const void *o1, const void *o2)
 {
-	const struct adb_solve_objects *p1 = o1, *p2 = o2;
+	const struct adb_solve_solution *p1 = o1, *p2 = o2;
 
 	if (p1->divergance < p2->divergance)
 		return 1;
@@ -373,18 +373,19 @@ static double get_plate_mag_diff(struct adb_pobject *primary,
  * objects. Use this as basis for calculating magnitudes based on plate ADU.
  */
 static float get_plate_magnitude(struct adb_solve *solve,
-	struct adb_solve_objects *solve_objects,
+	struct adb_solve_solution *solution,
 	struct adb_pobject *primary)
 {
 	float delta[4];
-
-	delta[0] = solve_objects->object[0]->key +
+// TODO do rolling average as we detect objects
+// calculate standard deviation and flag any big differences
+	delta[0] = solution->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[0], primary);
-	delta[1] = solve_objects->object[0]->key +
+	delta[1] = solution->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[1], primary);
-	delta[2] = solve_objects->object[0]->key +
+	delta[2] = solution->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[2], primary);
-	delta[3] = solve_objects->object[0]->key +
+	delta[3] = solution->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[3], primary);
 
 	return quad_avg(delta[0], delta[1], delta[2], delta[3]);
@@ -448,7 +449,7 @@ static double get_equ_pa(const struct adb_object *o1,
 	return atan2(y, x);
 }
 
-static void plate_to_equ(struct adb_solve_objects *solve_objects,
+static void plate_to_equ(struct adb_solve_solution *solution,
 	const struct adb_object *o1, const struct adb_object *o2,
 	struct adb_pobject *p1, struct adb_pobject *p2,
 	struct adb_pobject *ptarget, double *ra_, double *dec_)
@@ -492,25 +493,25 @@ static void plate_to_equ(struct adb_solve_objects *solve_objects,
  * objects. Use this as basis for calculating RA,DEC based on plate x,y.
  */
 static void get_plate_position(struct adb_solve *solve,
-	struct adb_solve_objects *solve_objects,
+	struct adb_solve_solution *solution,
 	struct adb_pobject *primary, double *ra_, double *dec_)
 {
 	double ra[4], dec[4];
 
-	plate_to_equ(solve_objects, solve_objects->object[0],
-		solve_objects->object[1], &solve->pobject[0], &solve->pobject[1],
+	plate_to_equ(solution, solution->object[0],
+		solution->object[1], &solve->pobject[0], &solve->pobject[1],
 		primary, &ra[0], &dec[0]);
 
-	plate_to_equ(solve_objects, solve_objects->object[1],
-		solve_objects->object[2], &solve->pobject[1], &solve->pobject[2],
+	plate_to_equ(solution, solution->object[1],
+		solution->object[2], &solve->pobject[1], &solve->pobject[2],
 		primary, &ra[1], &dec[1]);
 
-	plate_to_equ(solve_objects, solve_objects->object[2],
-		solve_objects->object[3], &solve->pobject[2], &solve->pobject[3],
+	plate_to_equ(solution, solution->object[2],
+		solution->object[3], &solve->pobject[2], &solve->pobject[3],
 		primary, &ra[2], &dec[2]);
 
-	plate_to_equ(solve_objects, solve_objects->object[3],
-		solve_objects->object[0], &solve->pobject[3], &solve->pobject[0],
+	plate_to_equ(solution, solution->object[3],
+		solution->object[0], &solve->pobject[3], &solve->pobject[0],
 		primary, &ra[3], &dec[3]);
 
 	*ra_ =  quad_avg(ra[0], ra[1], ra[2], ra[3]);
@@ -609,7 +610,7 @@ static void create_target_pattern(struct adb_solve *solve)
 /* calculate object pattern variables to match against source objects */
 static void create_single_object(struct adb_solve *solve, int target,
 	struct adb_pobject *primary, struct adb_pobject *secondary,
-	struct solve_runtime *runtime, struct adb_solve_objects *solve_objects)
+	struct solve_runtime *runtime, struct adb_solve_solution *solution)
 {
 	struct target_object *t = &runtime->soln_target[target];
 
@@ -617,15 +618,15 @@ static void create_single_object(struct adb_solve *solve, int target,
 
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = get_plate_distance(primary, secondary);
-	t->distance.pattern_min = solve_objects->rad_per_pix *
+	t->distance.pattern_min = solution->rad_per_pix *
 		(t->distance.plate_actual - solve->dist_coeff);
-	t->distance.pattern_max = solve_objects->rad_per_pix *
+	t->distance.pattern_max = solution->rad_per_pix *
 		(t->distance.plate_actual + solve->dist_coeff);
 
 	/* calculate plate magnitude and min,max to primary */
 	t->mag.plate_actual = get_plate_mag_diff(primary, secondary);
-	t->mag.pattern_min = t->mag.plate_actual - solve_objects->delta_magnitude;
-	t->mag.pattern_max = t->mag.plate_actual + solve_objects->delta_magnitude;
+	t->mag.pattern_min = t->mag.plate_actual - solution->delta_magnitude;
+	t->mag.pattern_max = t->mag.plate_actual + solution->delta_magnitude;
 
 	/* calculate plate position angle to primary */
 	t->pa.plate_actual = get_plate_pa(primary, secondary);
@@ -634,7 +635,7 @@ static void create_single_object(struct adb_solve *solve, int target,
 /* create a pattern of plate targets and sort by magnitude */
 static void create_target_single(struct adb_solve *solve,
 	struct adb_pobject *pobject,
-	struct adb_solve_objects *solve_objects,
+	struct adb_solve_solution *solution,
 	struct solve_runtime *runtime)
 {
 	struct target_object *t0, *t1, *t2, *t3;
@@ -643,7 +644,7 @@ static void create_target_single(struct adb_solve *solve,
 	/* create target pattern - use pobject as primary  */
 	for (i = 0; i < solve->num_plate_objects; i++)
 		create_single_object(solve, i, pobject,
-			&solve->pobject[i], runtime, solve_objects);
+			&solve->pobject[i], runtime, solution);
 
 	/* work out PA deltas */
 	t0 = &runtime->soln_target[0];
@@ -716,7 +717,7 @@ static void add_pot_on_distance(struct solve_runtime *runtime,
 	struct adb_source_objects *source,
 	int i, int j, int k, double delta, double rad_per_pix)
 {
-	struct adb_solve_objects *p;
+	struct adb_solve_solution *p;
 
 	if (runtime->num_pot_distance >= MAX_POTENTAL_MATCHES)
 		return;
@@ -736,7 +737,7 @@ static void add_single_pot_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source, double delta, int flip)
 {
-	struct adb_solve_objects *p;
+	struct adb_solve_solution *p;
 
 	if (runtime->num_pot_distance >= MAX_POTENTAL_MATCHES)
 		return;
@@ -939,29 +940,29 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 
 /* compare pattern objects magnitude against source objects */
 static int solve_single_object_on_magnitude(struct solve_runtime *runtime,
-		struct adb_solve_objects *solve_objects,
+		struct adb_solve_solution *solution,
 		struct adb_pobject *pobject)
 {
 	struct magnitude_range *range = &runtime->pot_magnitude;
 	struct adb_solve *solve = runtime->solve;
-	struct adb_source_objects *source = &solve_objects->source;
+	struct adb_source_objects *source = &solution->source;
 	int start, end;
 	float mag_min, mag_max, plate_mag;
 
-	plate_mag = get_plate_magnitude(solve, solve_objects, pobject);
+	plate_mag = get_plate_magnitude(solve, solution, pobject);
 
-	mag_min = plate_mag - solve_objects->delta_magnitude;
-	mag_max = plate_mag + solve_objects->delta_magnitude;
+	mag_min = plate_mag - solution->delta_magnitude;
+	mag_max = plate_mag + solution->delta_magnitude;
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
-			mag_min - solve_objects->delta_magnitude, 0);
+			mag_min - solution->delta_magnitude, 0);
 
 	end = object_get_last_with_mag(source,
-			mag_max + solve_objects->delta_magnitude, 0);
+			mag_max + solution->delta_magnitude, 0);
 
-	SOBJ_MAG(mag_min - solve_objects->delta_magnitude,
-			mag_max + solve_objects->delta_magnitude);
+	SOBJ_MAG(mag_min - solution->delta_magnitude,
+			mag_max + solution->delta_magnitude);
 
 	/* both out of range */
 	if (start == end)
@@ -981,7 +982,7 @@ static int solve_single_object_on_magnitude(struct solve_runtime *runtime,
 }
 
 static int solve_single_object_on_distance(struct solve_runtime *runtime,
-	struct adb_solve_objects *solve_objects)
+	struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
 	struct magnitude_range *range = &runtime->pot_magnitude;
@@ -994,12 +995,12 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 	/* check t0 candidates */
 	for (i = range->start[0]; i < range->end[0]; i++) {
 
-		s = solve_objects->source.objects[i];
+		s = solution->source.objects[i];
 
 		SOBJ_CHECK(s);
 
 		/* plate object to candidate object 0 */
-		distance = get_equ_distance(solve_objects->object[0], s) * 1000.0;
+		distance = get_equ_distance(solution->object[0], s) * 1000.0;
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[0].distance.pattern_min,
@@ -1012,7 +1013,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[0] = distance / runtime->soln_target[0].distance.plate_actual;
 
 		/* plate object to candidate object 1 */
-		distance = get_equ_distance(solve_objects->object[1], s) * 1000.0;
+		distance = get_equ_distance(solution->object[1], s) * 1000.0;
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[1].distance.pattern_min,
@@ -1025,7 +1026,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[1] = distance / runtime->soln_target[1].distance.plate_actual;
 
 		/* plate object to candidate object 2 */
-		distance = get_equ_distance(solve_objects->object[2], s) * 1000.0;
+		distance = get_equ_distance(solution->object[2], s) * 1000.0;
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[2].distance.pattern_min,
@@ -1038,7 +1039,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[2] = distance / runtime->soln_target[2].distance.plate_actual;
 
 		/* plate object to candidate object 3 */
-		distance = get_equ_distance(solve_objects->object[3], s) * 1000.0;
+		distance = get_equ_distance(solution->object[3], s) * 1000.0;
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[3].distance.pattern_min,
@@ -1054,8 +1055,8 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 
 		SOBJ_FOUND(s);
 
-		add_single_pot_on_distance(runtime, s, &solve_objects->source,
-				diverge, solve_objects->flip);
+		add_single_pot_on_distance(runtime, s, &solution->source,
+				diverge, solution->flip);
 		count++;
 	}
 
@@ -1185,7 +1186,7 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 
 /* add matching cluster to list of potentials */
 static void add_pot_on_pa(struct solve_runtime *runtime,
-		struct adb_solve_objects *p, double delta)
+		struct adb_solve_solution *p, double delta)
 {
 	if (runtime->num_pot_pa >= MAX_ACTUAL_MATCHES)
 		return;
@@ -1213,7 +1214,7 @@ static inline int pa_valid(struct target_object *t, double delta, int flip)
 static int solve_object_on_pa(struct solve_runtime *runtime,
 	const struct adb_object *primary, int idx)
 {
-	struct adb_solve_objects *p;
+	struct adb_solve_solution *p;
 	struct adb_solve *solve = runtime->solve;
 	struct target_object *t0, *t1, *t2;
 	double pa1, pa2, pa3, pa_delta12, pa_delta23, pa_delta31, delta;
@@ -1286,9 +1287,9 @@ next:
 }
 
 static int solve_single_object_on_pa(struct solve_runtime *runtime,
-	struct adb_solve_objects *solve_objects)
+	struct adb_solve_solution *solution)
 {
-	struct adb_solve_objects *p;
+	struct adb_solve_solution *p;
 	double pa0, pa1, pa2, pa3;
 	double pa_delta01, pa_delta12, pa_delta23, pa_delta30, delta;
 	int i, count = 0;
@@ -1299,8 +1300,8 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 		p = &runtime->pot_distance[i];
 
 		/* check object against 0 -> 1 */
-		pa0 = get_equ_pa(p->object[0], solve_objects->object[0]);
-		pa1 = get_equ_pa(p->object[0], solve_objects->object[1]);
+		pa0 = get_equ_pa(p->object[0], solution->object[0]);
+		pa1 = get_equ_pa(p->object[0], solution->object[1]);
 		pa_delta01 = pa0 - pa1;
 		if (pa_delta01 < 0.0)
 			pa_delta01 += 2.0 * M_PI;
@@ -1308,7 +1309,7 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 			continue;
 
 		/* check object against 1 -> 2 */
-		pa2 = get_equ_pa(p->object[0], solve_objects->object[2]);
+		pa2 = get_equ_pa(p->object[0], solution->object[2]);
 		pa_delta12 = pa1 - pa2;
 		if (pa_delta12 < 0.0)
 			pa_delta12 += 2.0 * M_PI;
@@ -1316,7 +1317,7 @@ static int solve_single_object_on_pa(struct solve_runtime *runtime,
 			continue;
 
 		/* check object against 2 -> 3 */
-		pa3 = get_equ_pa(p->object[0], solve_objects->object[3]);
+		pa3 = get_equ_pa(p->object[0], solution->object[3]);
 		pa_delta23 = pa2 - pa3;
 		if (pa_delta23 < 0.0)
 			pa_delta23 += 2.0 * M_PI;
@@ -1346,7 +1347,7 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime,
 	int pot, int idx)
 {
 	struct adb_solve *solve = runtime->solve;
-	struct adb_solve_objects *s = &runtime->pot_pa[pot];
+	struct adb_solve_solution *s = &runtime->pot_pa[pot];
 	double plate_diff, db_diff;
 
 	plate_diff = get_plate_mag_diff(&solve->pobject[idx],
@@ -1377,7 +1378,7 @@ static void calc_cluster_divergence(struct solve_runtime *runtime)
 }
 
 static void calc_object_divergence(struct solve_runtime *runtime,
-		struct adb_solve_objects *solve_objects,
+		struct adb_solve_solution *solution,
 		struct adb_pobject *pobject)
 {
 	int i;
@@ -1385,7 +1386,7 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	/* calculate differences in magnitude from DB and plate objects */
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		runtime->pot_pa[i].delta_magnitude =
-			fabs(get_plate_magnitude(runtime->solve, solve_objects, pobject) -
+			fabs(get_plate_magnitude(runtime->solve, solution, pobject) -
 			runtime->pot_pa[0].object[0]->key);
 
 		runtime->pot_pa[i].divergance =
@@ -1396,13 +1397,13 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 }
 
 static int is_solution_dupe(struct adb_solve *solve,
-		struct adb_solve_objects *soln)
+		struct adb_solve_solution *soln)
 {
-	struct adb_solve_objects *s;
+	struct adb_solve_solution *s;
 	int i;
 
 	for (i = 0; i < solve->num_solutions; i++) {
-		s = &solve->solve_objects[i];
+		s = &solve->solution[i];
 		if (s->object[0] == soln->object[0] &&
 			s->object[1] == soln->object[1] &&
 			s->object[2] == soln->object[2] &&
@@ -1415,7 +1416,7 @@ static int is_solution_dupe(struct adb_solve *solve,
 static void copy_solution(struct solve_runtime *runtime)
 {
 	struct adb_solve *solve = runtime->solve;
-	struct adb_solve_objects *soln;
+	struct adb_solve_solution *soln;
 	int i;
 
 	pthread_mutex_lock(&solve->mutex);
@@ -1427,7 +1428,7 @@ static void copy_solution(struct solve_runtime *runtime)
 	}
 
 	for (i = 0; i < runtime->num_pot_pa; i++) {
-		soln = &solve->solve_objects[solve->num_solutions];
+		soln = &solve->solution[solve->num_solutions];
 
 		if (is_solution_dupe(solve, &runtime->pot_pa[i]))
 			continue;
@@ -1491,8 +1492,8 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 	if (count >= MAX_RT_SOLUTIONS)
 		count = MAX_RT_SOLUTIONS - 1;
 
-	qsort(solve->solve_objects, count,
-			sizeof(struct adb_solve_objects), solution_cmp);
+	qsort(solve->solution, count,
+			sizeof(struct adb_solve_solution), solution_cmp);
 
 	return count;
 }
@@ -1518,8 +1519,8 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 /* #pragma omp cancellation point for */
 
 	/* it's possible we may have > 1 solution so order them */
-	qsort(solve->solve_objects, count,
-		sizeof(struct adb_solve_objects), solution_cmp);
+	qsort(solve->solution, count,
+		sizeof(struct adb_solve_solution), solution_cmp);
 
 	return count;
 }
@@ -1668,42 +1669,42 @@ int adb_solve_set_pa_delta(struct adb_solve *solve,
 }
 
 int adb_solve_get_solutions(struct adb_solve *solve,
-	unsigned int solution, struct adb_solve_objects **solve_objects)
+	unsigned int index, struct adb_solve_solution **solution)
 {
-	if (solve->num_solutions == 0 || solution >= solve->num_solutions) {
-		*solve_objects = NULL;
+	if (solve->num_solutions == 0 || index >= solve->num_solutions) {
+		*solution = NULL;
 		return -EINVAL;
 	}
 
-	*solve_objects = &solve->solve_objects[solution];
+	*solution = &solve->solution[index];
 	return 0;
 }
 
 int adb_solve_prep_solution(struct adb_solve *solve,
-		unsigned int solution, double fov, double mag_limit)
+		unsigned int index, double fov, double mag_limit)
 {
-	struct adb_solve_objects *solve_objects;
+	struct adb_solve_solution *solution;
 	struct adb_object_set *set;
 	double centre_ra, centre_dec;
 	int object_heads, i, count = 0, j;
 
-	if (solution >= solve->num_solutions)
+	if (index >= solve->num_solutions)
 		return -EINVAL;
 
-	solve_objects = &solve->solve_objects[solution];
-	set = solve_objects->set;
+	solution = &solve->solution[index];
+	set = solution->set;
 
 	//if (set)
 	//	free(set);
 
-	centre_ra = solve_objects->object[0]->ra;
-	centre_dec = solve_objects->object[0]->dec;
+	centre_ra = solution->object[0]->ra;
+	centre_dec = solution->object[0]->dec;
 
 	/* create new set based on image fov and mag limits */
 	set = adb_table_set_new(solve->db, solve->table->id);
 	if (!set)
 		return -ENOMEM;
-	solve_objects->set = set;
+	solution->set = set;
 
 	adb_table_set_constraints(set, centre_ra * R2D, centre_dec *R2D,
 			fov, -10.0, mag_limit);
@@ -1712,16 +1713,16 @@ int adb_solve_prep_solution(struct adb_solve *solve,
 	object_heads = adb_set_get_objects(set);
 	if (object_heads <= 0) {
 		free(set);
-		solve_objects->set = NULL;
+		solution->set = NULL;
 		return object_heads;
 	}
 
 	/* allocate space for adb_source_objects */
-	solve_objects->source.objects =
+	solution->source.objects =
 		calloc(set->count, sizeof(struct adb_object *));
-	if (solve_objects->source.objects == NULL) {
+	if (solution->source.objects == NULL) {
 		free(set);
-		solve_objects->set = NULL;
+		solution->set = NULL;
 		return -ENOMEM;
 	}
 
@@ -1731,69 +1732,111 @@ int adb_solve_prep_solution(struct adb_solve *solve,
 		const void *object = set->object_heads[i].objects;
 
 		for (j = 0; j < set->object_heads[i].count; j++)  {
-			solve_objects->source.objects[count++] = object;
+			solution->source.objects[count++] = object;
 			SOBJ_CHECK_SET(((struct adb_object*)object));
 			object += solve->table->object.bytes;
 		}
 	}
 
 	/* sort adb_source_objects on magnitude */
-	qsort(solve_objects->source.objects, set->count,
+	qsort(solution->source.objects, set->count,
 		sizeof(struct adb_object *), object_cmp);
-	solve_objects->source.num_objects = count;
+	solution->source.num_objects = count;
 
 	return 0;
 }
 
-int adb_solve_get_object(struct adb_solve *solve,
-	struct adb_solve_objects *solve_objects,
-	struct adb_pobject *pobject, const struct adb_object **object,
-	struct adb_object *o)
+static int get_object(struct adb_solve *solve,
+	struct adb_solve_solution *solution,
+	struct adb_pobject *pobject, int index)
 {
 	struct solve_runtime runtime;
+	struct adb_solve_object *sobject = &solution->solve_object[index];
 	int count = 0;
 
-	if (solve_objects->set == NULL)
+	if (solution->set == NULL)
 		return -EINVAL;
-
+printf("solving for X %d Y %d ADU %d\n", pobject->x, pobject->y, pobject->adu);
 	memset(&runtime, 0, sizeof(runtime));
 	runtime.solve = solve;
 
 	/* calculate plate parameters for new object */
-	create_target_single(solve, pobject, solve_objects, &runtime);
+	create_target_single(solve, pobject, solution, &runtime);
 
 	/* find candidate adb_source_objects on magnitude */
-	count = solve_single_object_on_magnitude(&runtime, solve_objects, pobject);
+	count = solve_single_object_on_magnitude(&runtime, solution, pobject);
 	if (count == 0)
 		goto estimate;
 
 	/* at this point we have a range of candidate stars that match the
 	 * magnitude bounds of the plate object now check for distance alignment */
-	count = solve_single_object_on_distance(&runtime, solve_objects);
+	count = solve_single_object_on_distance(&runtime, solution);
 	if (count == 0)
 		goto estimate;
 
 	/* At this point we have a list of objects that match on magnitude and
 	 * distance, so we finally check the objects for PA alignment*/
-	count = solve_single_object_on_pa(&runtime, solve_objects);
+	count = solve_single_object_on_pa(&runtime, solution);
 
 estimate:
-	if (count == 0 && o != NULL) {
-		/* nothing found so return object magnitude and position */
-		o->key = get_plate_magnitude(solve, solve_objects,
-				pobject);
-		get_plate_position(solve, solve_objects, pobject,
-			&o->ra, &o->dec);
+	/* nothing found so return object magnitude and position */
+	sobject->mag = get_plate_magnitude(solve, solution, pobject);
+	get_plate_position(solve, solution, pobject,
+			&sobject->ra, &sobject->dec);
+	if (count == 0)
 		return 0;
-	}
 
-	calc_object_divergence(&runtime, solve_objects, pobject);
+	calc_object_divergence(&runtime, solution, pobject);
 
 	/* it's possible we may have > 1 solution so order them */
-	qsort(solve->solve_objects, count,
-		sizeof(struct adb_solve_objects), solution_cmp);
+	qsort(solve->solution, count,
+		sizeof(struct adb_solve_solution), solution_cmp);
 
 	/* assign closest object */
-	*object = runtime.pot_pa[0].object[0];
+	sobject->object = runtime.pot_pa[0].object[0];
+	return count;
+}
+
+int adb_solve_get_objects(struct adb_solve *solve,
+	struct adb_solve_solution *solution,
+	struct adb_pobject *pobjects, int num_pobjects)
+{
+	int i, j, count = 0, ret;
+
+	if (solution->solve_object)
+		free(solution->solve_object);
+
+	solution->solve_object = calloc(sizeof(struct adb_solve_object),
+		num_pobjects + solve->num_plate_objects);
+	if (solution->solve_object == NULL)
+		return -ENOMEM;
+
+	/* copy existing plate solutions */
+	for (i = 0; i < solve->num_plate_objects; i++) {
+		solution->solve_object[i].object = solution->object[i];
+		solution->solve_object[i].pobject = solve->pobject[i];
+
+		solution->solve_object[i].mag = get_plate_magnitude(solve, solution,
+			&solve->pobject[i]);
+		get_plate_position(solve, solution, &solve->pobject[i],
+			&solution->solve_object[i].ra, &solution->solve_object[i].dec);
+	}
+
+	/* solve each object */
+	for (i = 0, j = solve->num_plate_objects; i < num_pobjects; i++, j++) {
+		ret = get_object(solve, solution, &pobjects[i], j);
+		if (ret < 0) {
+			free(solution->solve_object);
+			solution->solve_object = NULL;
+			return ret;
+		} else
+			count += ret;
+		solution->solve_object[j].pobject = pobjects[i];
+	}
+
+	/* recalculate magnitude for each object in image */
+
+	/* calculate mean, sigma and flag any objects that dont match catalog */
+
 	return count;
 }

@@ -61,11 +61,25 @@ struct adb_source_objects {
 	int num_objects;
 };
 
-/*! \struct adb_solve_objects
- * \brief Solved objects
+/*! \struct adb_solve_solution
+ * \brief Solved object
  * \ingroup solve
  */
-struct adb_solve_objects {
+struct adb_solve_object {
+	const struct adb_object *object;
+	struct adb_pobject pobject;
+
+	/* object properties from image */
+	double ra;
+	double dec;
+	float mag;
+};
+
+/*! \struct adb_solve_solution
+ * \brief Solver solution
+ * \ingroup solve
+ */
+struct adb_solve_solution {
 	/* in order of brightness */
 	const struct adb_object *object[ADB_NUM_TARGETS];
 
@@ -73,12 +87,17 @@ struct adb_solve_objects {
 	struct adb_source_objects source;
 	struct adb_object_set *set;
 
+	/* solution delta to db */
 	double delta_pa;
 	double delta_distance;
 	double delta_magnitude;
 	double divergance;
 	double rad_per_pix;
 	int flip;
+
+	/* solved objects */
+	struct adb_solve_object *solve_object;
+	int num_solved_objects;
 };
 
 struct adb_solve;
@@ -132,7 +151,7 @@ int adb_solve(struct adb_solve *solve, struct adb_object_set *set,
 		enum adb_find find);
 
 int adb_solve_get_solutions(struct adb_solve *solve,
-	unsigned int solution, struct adb_solve_objects **solve_objects);
+	unsigned int solution, struct adb_solve_solution **solutions);
 
 /*! \fn int adb_solve_get_object(struct adb_solve *solve,
 		struct adb_solve_objects *solve_objects,
@@ -140,10 +159,9 @@ int adb_solve_get_solutions(struct adb_solve *solve,
  * \brief Execute a search
  * \ingroup search
  */
-int adb_solve_get_object(struct adb_solve *solve,
-	struct adb_solve_objects *solve_objects,
-	struct adb_pobject *pobject, const struct adb_object **object,
-	struct adb_object *o);
+int adb_solve_get_objects(struct adb_solve *solve,
+	struct adb_solve_solution *solution,
+	struct adb_pobject *pobjects, int num_pobjects);
 
 int adb_solve_prep_solution(struct adb_solve *solve,
 		unsigned int solution, double fov, double mag_limit);
