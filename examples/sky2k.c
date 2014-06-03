@@ -594,8 +594,8 @@ static void sobject_printf(struct adb_solve_object *sobject)
 			obj->sp, obj->HD);
 	}
 
-	fprintf(stdout, " Estimated plate RA: %f DEC: %f Mag: %f\n", sobject->ra * R2D,
-		sobject->dec * R2D, sobject->mag);
+	fprintf(stdout, " Estimated plate RA: %f DEC: %f Mag: %f\n",
+		sobject->ra * R2D, sobject->dec * R2D, sobject->mag);
 }
 
 /*
@@ -837,7 +837,7 @@ lib_err:
 
 /* Pleiades M45 plate objects */
 static struct adb_pobject pobject[] = {
-	//{513, 434, 408725},  /* Alcyone 25 - RA 3h47m29s DEC 24d06m18s Mag 2.86 */
+	{513, 434, 408725},  /* Alcyone 25 - RA 3h47m29s DEC 24d06m18s Mag 2.86 */
 	{141, 545, 123643},  /* 1 Atlas 27  - RA 3h49m09s DEC 24d03m12s Mag 3.62 */
 	{1049, 197, 128424}, /* P Electra 17 - RA 3h44m52s DEC 24d06m48s Mag 3.70 */
 	{956, 517, 106906},  /* 2 Maia 20   - RA 3h45m49s DEC 24d22m03s Mag 3.86 */
@@ -852,7 +852,7 @@ static int sky2k_solve(char *lib_dir)
 	struct adb_solve *solve;
 	struct adb_object_set *set;
 	struct adb_solve_solution *solution;
-	int ret = 0, table_id, found, i;
+	int ret = 0, table_id, found, i, j;
 
 	/* set the remote CDS server and initialise local repository/cache */
 	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
@@ -885,7 +885,7 @@ static int sky2k_solve(char *lib_dir)
 		goto set_err;
 
 	/* set sky area constraints for solver */
-	adb_table_set_constraints(set, 60.0, 30.0, 90.0, -2.0, 5.0);
+	adb_table_set_constraints(set, 57.0, 24.0, 5.0, -2.0, 5.0);
 
 	/* we can now solve images */
 	solve = adb_solve_new(db, table_id);
@@ -899,6 +899,7 @@ static int sky2k_solve(char *lib_dir)
 	adb_solve_add_plate_object(solve, &pobject[1]);
 	adb_solve_add_plate_object(solve, &pobject[2]);
 	adb_solve_add_plate_object(solve, &pobject[3]);
+	adb_solve_add_plate_object(solve, &pobject[4]);
 
 	/* set image tolerances */
 	adb_solve_set_magnitude_delta(solve, 0.25);
@@ -909,21 +910,28 @@ static int sky2k_solve(char *lib_dir)
 	found = adb_solve(solve, set, ADB_FIND_FIRST);
 	end_timer(found, 0);
 	fprintf(stdout, "found %d solutions\n", found);
+	if (found == 0)
+		goto out;
 
-	/* dump first set of objects */
-	adb_solve_get_solutions(solve, 0, &solution);
+	for (i = 0; i < found; i++) {
 
-	/* set FoV and mag limits for single object searches */
-	adb_solve_prep_solution(solve, 0, 2.0, 8.0);
+		/* dump first set of objects */
+		adb_solve_get_solutions(solve, i, &solution);
 
-	/* get subsequent objects */
-	ret = adb_solve_get_objects(solve, solution, &pobject[4], 1);
-	if (ret < 0)
-		goto set_err;
+		/* set FoV and mag limits for single object searches */
+		adb_solve_prep_solution(solve, i, 2.0, 8.0);
 
-	for (i = 0; i < 5; i++)
-		sobject_printf(&solution->solve_object[i]);
+		fprintf(stdout, "Solution %d score %f\n", i, solution->divergance);
 
+		/* get subsequent objects */
+		ret = adb_solve_get_objects(solve, solution, &pobject[5], 1);
+		if (ret < 0)
+			goto set_err;
+
+		for (j = 0; j < 5; j++)
+			sobject_printf(&solution->solve_object[j]);
+	}
+out:
 	/* were done with the db */
 	adb_solve_free(solve);
 
