@@ -111,6 +111,8 @@ struct adb_solve {
 	/* plate objects */
 	struct adb_pobject pobject[ADB_NUM_TARGETS];
 	int num_plate_objects;
+	int plate_idx_start;
+	int plate_idx_end;
 
 	/* detected objects */
 	const struct adb_object **detected_objects;
@@ -546,16 +548,16 @@ static void create_pattern_object(struct adb_solve *solve, int target,
 static void create_target_pattern(struct adb_solve *solve)
 {
 	struct target_object *t0, *t1, *t2;
-	int i;
+	int i, j;
 
 	/* sort plate object on brightness */
 	qsort(solve->pobject, solve->num_plate_objects,
 		sizeof(struct adb_pobject), plate_object_cmp);
 
 	/* create target pattern */
-	for (i = 1; i < solve->num_plate_objects; i++)
-		create_pattern_object(solve, i - 1, &solve->pobject[0],
-			&solve->pobject[i]);
+	for (i = solve->plate_idx_start + 1, j = 0; i < solve->plate_idx_end; i++, j++)
+		create_pattern_object(solve, j,
+			&solve->pobject[solve->plate_idx_start], &solve->pobject[i]);
 
 	/* work out PA deltas */
 	t0 = &solve->target.secondary[0];
@@ -639,11 +641,11 @@ static void create_target_single(struct adb_solve *solve,
 	struct solve_runtime *runtime)
 {
 	struct target_object *t0, *t1, *t2, *t3;
-	int i;
+	int i, j;
 
 	/* create target pattern - use pobject as primary  */
-	for (i = 0; i < solve->num_plate_objects; i++)
-		create_single_object(solve, i, pobject,
+	for (i = solve->plate_idx_start, j = 0; i < solve->plate_idx_end; i++, j++)
+		create_single_object(solve, j, pobject,
 			&solve->pobject[i], runtime, solution);
 
 	/* work out PA deltas */
@@ -773,18 +775,21 @@ static int build_and_sort_object_set(struct adb_solve *solve,
 		const void *object = set->object_heads[i].objects;
 
 		for (j = 0; j < set->object_heads[i].count; j++)  {
+			const struct adb_object *o = object;
 
-			source->objects[count++] = object;
+			if (o->key <= solve->constraint.min_mag &&
+				o->key >= solve->constraint.max_mag)
+				source->objects[count++] = object;
 			object += solve->table->object.bytes;
 		}
 	}
 
 	/* sort adb_source_objects on magnitude */
-	qsort(source->objects, set->count, sizeof(struct adb_object *),
+	qsort(source->objects, count, sizeof(struct adb_object *),
 		object_cmp);
 	source->num_objects = count;
 
-	return set->count;
+	return count;
 }
 
 /* binary search the set for magnitude head */
@@ -1397,18 +1402,19 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 }
 
 static int is_solution_dupe(struct adb_solve *solve,
-		struct adb_solve_solution *soln)
+		struct adb_solve_solution *s1)
 {
-	struct adb_solve_solution *s;
+	struct adb_solve_solution *s2;
 	int i;
 
 	for (i = 0; i < solve->num_solutions; i++) {
-		s = &solve->solution[i];
-		if (s->object[0] == soln->object[0] &&
-			s->object[1] == soln->object[1] &&
-			s->object[2] == soln->object[2] &&
-			s->object[3] == soln->object[3])
+		s2 = &solve->solution[i];
+		if (s2->object[0] == s1->object[0] &&
+			s2->object[1] == s1->object[1] &&
+			s2->object[2] == s1->object[2] &&
+			s2->object[3] == s1->object[3]) {
 			return 1;
+		}
 	}
 	return 0;
 }
@@ -1492,9 +1498,6 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 	if (count >= MAX_RT_SOLUTIONS)
 		count = MAX_RT_SOLUTIONS - 1;
 
-	qsort(solve->solution, count,
-			sizeof(struct adb_solve_solution), solution_cmp);
-
 	return count;
 }
 
@@ -1517,10 +1520,6 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 		}
 	}
 /* #pragma omp cancellation point for */
-
-	/* it's possible we may have > 1 solution so order them */
-	qsort(solve->solution, count,
-		sizeof(struct adb_solve_solution), solution_cmp);
 
 	return count;
 }
@@ -1624,7 +1623,7 @@ int adb_solve_constraint(struct adb_solve *solve,
 int adb_solve(struct adb_solve *solve,
 		struct adb_object_set *set, enum adb_find find)
 {
-	int ret;
+	int ret, i, count = 0;
 
 	/* do we have enough plate adb_source_objects to solve */
 	if (solve->num_plate_objects < MIN_PLATE_OBJECTS) {
@@ -1633,18 +1632,40 @@ int adb_solve(struct adb_solve *solve,
 		return -EINVAL;
 	}
 
-	create_target_pattern(solve);
-
 	ret = build_and_sort_object_set(solve, set, &solve->source);
 	if (ret <= 0) {
 		adb_error(solve->db, "cant get trixels %d\n", ret);
 		return ret;
 	}
 
-	if (find == ADB_FIND_ALL)
-		return solve_plate_cluster_for_set_all(solve, set);
-	else
-		return solve_plate_cluster_for_set_first(solve, set);
+	for (i = 0; i <= solve->num_plate_objects - MIN_PLATE_OBJECTS; i++) {
+
+		solve->plate_idx_start = i;
+		solve->plate_idx_end = MIN_PLATE_OBJECTS + i;
+
+		adb_info(solve->db, ADB_LOG_SOLVE, "solving plate objects %d -> %d from %d\n",
+			solve->plate_idx_start, solve->plate_idx_end - 1,
+			solve->num_plate_objects);
+
+		create_target_pattern(solve);
+
+		if (find == ADB_FIND_ALL)
+			ret = solve_plate_cluster_for_set_all(solve, set);
+		else
+			ret = solve_plate_cluster_for_set_first(solve, set);
+
+		if (ret < 0)
+			return ret;
+		count += ret;
+	}
+
+	/* it's possible we may have > 1 solution so order them */
+	qsort(solve->solution, solve->num_solutions,
+		sizeof(struct adb_solve_solution), solution_cmp);
+
+	adb_info(solve->db, ADB_LOG_SOLVE, "Total %d solutions\n",
+		solve->num_solutions);
+	return solve->num_solutions;
 }
 
 int adb_solve_set_magnitude_delta(struct adb_solve *solve,
@@ -1756,7 +1777,7 @@ static int get_object(struct adb_solve *solve,
 
 	if (solution->set == NULL)
 		return -EINVAL;
-printf("solving for X %d Y %d ADU %d\n", pobject->x, pobject->y, pobject->adu);
+
 	memset(&runtime, 0, sizeof(runtime));
 	runtime.solve = solve;
 
@@ -1813,6 +1834,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 
 	/* copy existing plate solutions */
 	for (i = 0; i < solve->num_plate_objects; i++) {
+
 		solution->solve_object[i].object = solution->object[i];
 		solution->solve_object[i].pobject = solve->pobject[i];
 
@@ -1824,6 +1846,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 
 	/* solve each object */
 	for (i = 0, j = solve->num_plate_objects; i < num_pobjects; i++, j++) {
+
 		ret = get_object(solve, solution, &pobjects[i], j);
 		if (ret < 0) {
 			free(solution->solve_object);
@@ -1837,6 +1860,5 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* recalculate magnitude for each object in image */
 
 	/* calculate mean, sigma and flag any objects that dont match catalog */
-
 	return count;
 }
