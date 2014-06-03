@@ -548,7 +548,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 	adb_htm_debug(htm, ADB_LOG_HTM_GET,
 		"htm clip depths: min %d max %d fov %d\n",
 		set->min_depth, set->max_depth, set->fov_depth);
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f at ", set->fov * R2D);
+	adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f\n", set->fov * R2D);
 
 	set->count = object_count;
 	set->head_count = head_count;
