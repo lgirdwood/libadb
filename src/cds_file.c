@@ -288,11 +288,11 @@ out:
 static int table_concat_files(struct adb_table *table, const char *ext)
 {
 	struct adb_db *db = table->db;
-	char ofile[1024];
+	char ofile[1024], nfile[1024];
 	struct dirent *dent;
 	FILE *ofd;
 	DIR *dir;
-	int res;
+	int res, ret;
 
 	/* open local directory */
 	dir = opendir(table->path.local);
@@ -301,8 +301,12 @@ static int table_concat_files(struct adb_table *table, const char *ext)
 		return -EIO;
 	}
 
+	/*delete stale file */
+	sprintf(nfile, "%s%s%s", table->path.local, table->path.file, ext);
+	unlink(nfile);
+
 	/* open output file */
-	sprintf(ofile, "%s%s%s", table->path.local, table->path.file, ext);
+	sprintf(ofile, "%s%s%s.tmp", table->path.local, table->path.file, ext);
 	ofd = fopen(ofile, "w");
 	if (ofd == NULL) {
 		adb_error(db, "Error can't open output file %s for writing\n", ofile);
@@ -328,6 +332,10 @@ static int table_concat_files(struct adb_table *table, const char *ext)
 		if (strstr(dent->d_name, ".db"))
 			continue;
 
+		/* discard if tmp */
+		if (strstr(dent->d_name, ".tmp"))
+			continue;
+
 		/* found matching file */
 		if (strncmp(table->path.file, dent->d_name, strlen(table->path.file)))
 			continue;
@@ -342,7 +350,12 @@ static int table_concat_files(struct adb_table *table, const char *ext)
 	closedir(dir);
 	fclose(ofd);
 
-	return 0;
+	/* remove .tmp from name */
+	ret = rename(ofile, nfile);
+	if (ret < 0)
+		adb_error(db, "error: %d failed to rename tmp file %s t %s\n", -errno,
+			ofile, nfile);
+	return ret;
 }
 
 int cds_get_dataset(struct adb_db *db, struct adb_table *table,
