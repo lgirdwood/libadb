@@ -1833,7 +1833,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		return -ENOMEM;
 
 	/* copy existing plate solutions */
-	for (i = 0; i < solve->num_plate_objects; i++) {
+	for (i = 0; i < solve->plate_idx_end; i++) {
 
 		solution->solve_object[i].object = solution->object[i];
 		solution->solve_object[i].pobject = solve->pobject[i];
@@ -1842,9 +1842,22 @@ int adb_solve_get_objects(struct adb_solve *solve,
 			&solve->pobject[i]);
 		get_plate_position(solve, solution, &solve->pobject[i],
 			&solution->solve_object[i].ra, &solution->solve_object[i].dec);
+		count++;
 	}
 
-	/* solve each object */
+	/* find initial plate objects remaining that are not used in solution  */
+	for (i = solve->plate_idx_end; i < solve->num_plate_objects; i++) {
+		ret = get_object(solve, solution, &solve->pobject[i], i);
+		if (ret < 0) {
+			free(solution->solve_object);
+			solution->solve_object = NULL;
+			return ret;
+		} else
+			count += ret;
+		solution->solve_object[i].pobject = pobjects[i];
+	}
+
+	/* solve each new plate object */
 	for (i = 0, j = solve->num_plate_objects; i < num_pobjects; i++, j++) {
 
 		ret = get_object(solve, solution, &pobjects[i], j);
