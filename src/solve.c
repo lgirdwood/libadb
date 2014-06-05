@@ -383,11 +383,11 @@ static float get_plate_magnitude(struct adb_solve *solve,
 // calculate standard deviation and flag any big differences
 	delta[0] = solution->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[0], primary);
-	delta[1] = solution->object[0]->key +
+	delta[1] = solution->object[1]->key +
 		get_plate_mag_diff(&solve->pobject[1], primary);
-	delta[2] = solution->object[0]->key +
+	delta[2] = solution->object[2]->key +
 		get_plate_mag_diff(&solve->pobject[2], primary);
-	delta[3] = solution->object[0]->key +
+	delta[3] = solution->object[3]->key +
 		get_plate_mag_diff(&solve->pobject[3], primary);
 
 	return quad_avg(delta[0], delta[1], delta[2], delta[3]);
