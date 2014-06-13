@@ -1838,10 +1838,12 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		solution->solve_object[i].object = solution->object[i];
 		solution->solve_object[i].pobject = solve->pobject[i];
 
-		solution->solve_object[i].mag = get_plate_magnitude(solve, solution,
-			&solve->pobject[i]);
-		get_plate_position(solve, solution, &solve->pobject[i],
-			&solution->solve_object[i].ra, &solution->solve_object[i].dec);
+		if (solution->solve_object[i].object == NULL) {
+			solution->solve_object[i].mag =
+				get_plate_magnitude(solve, solution, &solve->pobject[i]);
+			get_plate_position(solve, solution, &solve->pobject[i],
+				&solution->solve_object[i].ra, &solution->solve_object[i].dec);
+		}
 		count++;
 	}
 
