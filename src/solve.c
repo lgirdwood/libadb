@@ -451,6 +451,17 @@ static double get_equ_pa(const struct adb_object *o1,
 	return atan2(y, x);
 }
 
+static inline double equ_quad(double pa)
+{
+	double pa_ = pa;
+
+	if (pa > M_PI * 2.0)
+		pa_ = pa - (M_PI * 2.0);
+	if  (pa < 0.0)
+		pa_ = pa + (M_PI * 2.0);
+	return pa_;
+}
+
 static void plate_to_equ(struct adb_solve_solution *solution,
 	const struct adb_object *o1, const struct adb_object *o2,
 	struct adb_pobject *p1, struct adb_pobject *p2,
@@ -462,9 +473,9 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	double ra, dec, mid_dec;
 
 	/* delta PA between plate and equ */
-	plate_pa = get_plate_pa(p1, p2);
-	equ_pa = get_equ_pa(o1, o2);
-	delta_pa = plate_pa + equ_pa;
+	plate_pa = equ_quad(get_plate_pa(p1, p2));
+	equ_pa = equ_quad(get_equ_pa(o1, o2));
+	delta_pa = plate_pa - equ_pa;
 
 	/* delta distance between plate and equ */
 	plate_dist = get_plate_distance(p1, p2);
@@ -472,12 +483,12 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	rad_per_1kpixel = equ_dist / plate_dist;
 
 	/* EQU PA between object1 and target */
-	target_pa = get_plate_pa(p1, ptarget);
+	target_pa = equ_quad(get_plate_pa(p1, ptarget));
 	target_pa -= delta_pa;
 
 	/* EQU dist between object1 and target */
 	target_dist = get_plate_distance(p1, ptarget);
-	target_dist *= rad_per_pixel;
+	target_dist *= rad_per_1kpixel;
 
 	/* middle declination of line */
 	mid_dec = o1->dec + ((o2->dec - o1->dec) / 2.0);
@@ -486,7 +497,8 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	 * RHS of sky is decreasing in RA.
 	 */
 	ra = -cos(target_pa) * target_dist / cos(mid_dec);
-	dec = sin(target_pa) * target_dist;
+	dec = -sin(target_pa) * target_dist;
+
 	*ra_ = ra + o1->ra;
 	*dec_ = dec + o1->dec;
 }
