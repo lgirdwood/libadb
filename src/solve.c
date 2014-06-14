@@ -458,7 +458,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 {
 	double plate_pa, equ_pa, delta_pa;
 	double plate_dist, equ_dist;
-	double rad_per_pixel, target_pa, target_dist;
+	double rad_per_1kpixel, target_pa, target_dist;
 	double ra, dec, mid_dec;
 
 	/* delta PA between plate and equ */
@@ -469,7 +469,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	/* delta distance between plate and equ */
 	plate_dist = get_plate_distance(p1, p2);
 	equ_dist = get_equ_distance(o1, o2);
-	rad_per_pixel = equ_dist / plate_dist;
+	rad_per_1kpixel = equ_dist / plate_dist;
 
 	/* EQU PA between object1 and target */
 	target_pa = get_plate_pa(p1, ptarget);
@@ -620,9 +620,9 @@ static void create_single_object(struct adb_solve *solve, int target,
 
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = get_plate_distance(primary, secondary);
-	t->distance.pattern_min = solution->rad_per_pix *
+	t->distance.pattern_min = solution->rad_per_1kpix *
 		(t->distance.plate_actual - solve->dist_coeff);
-	t->distance.pattern_max = solution->rad_per_pix *
+	t->distance.pattern_max = solution->rad_per_1kpix *
 		(t->distance.plate_actual + solve->dist_coeff);
 
 	/* calculate plate magnitude and min,max to primary */
@@ -717,7 +717,7 @@ static void create_target_single(struct adb_solve *solve,
 static void add_pot_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source,
-	int i, int j, int k, double delta, double rad_per_pix)
+	int i, int j, int k, double delta, double rad_per_1kpix)
 {
 	struct adb_solve_solution *p;
 
@@ -731,7 +731,7 @@ static void add_pot_on_distance(struct solve_runtime *runtime,
 	p->object[2] = source->objects[j];
 	p->object[3] = source->objects[k];
 	p->delta_distance = delta;
-	p->rad_per_pix = rad_per_pix;
+	p->rad_per_1kpix = rad_per_1kpix;
 	runtime->num_pot_distance++;
 }
 
@@ -1077,7 +1077,7 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 	struct adb_solve *solve = runtime->solve;
 	struct magnitude_range *range = &runtime->pot_magnitude;
 	int i, j, k, count = 0;
-	double distance0, distance1, distance2, rad_per_pixel;
+	double distance0, distance1, distance2, rad_per_1kpixel;
 	double t1_min, t1_max, t2_max, t2_min;
 
 	/* check distance ratio for each matching candidate against targets */
@@ -1106,11 +1106,11 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 		if (distance0 > solve->constraint.max_fov1k)
 			continue;
 
-		rad_per_pixel = distance0 / t0->distance.plate_actual;
+		rad_per_1kpixel = distance0 / t0->distance.plate_actual;
 
 		/* use ratio based on t0 <-> primary distance for t1 */
-		t1_min = t1->distance.pattern_min * rad_per_pixel;
-		t1_max = t1->distance.pattern_max * rad_per_pixel;
+		t1_min = t1->distance.pattern_min * rad_per_1kpixel;
+		t1_max = t1->distance.pattern_max * rad_per_1kpixel;
 
 		DOBJ_CHECK_DIST(1, primary, s[0], distance0, 0.0, 0.0,
 				range->end[0] - range->start[0], i);
@@ -1141,8 +1141,8 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 			/* is this t1 candidate within t0 primary ratio */
 			if (distance1 >= t1_min && distance1 <= t1_max) {
 
-				t2_min = t2->distance.pattern_min * rad_per_pixel;
-				t2_max = t2->distance.pattern_max * rad_per_pixel;
+				t2_min = t2->distance.pattern_min * rad_per_1kpixel;
+				t2_max = t2->distance.pattern_max * rad_per_1kpixel;
 
 				/* check t2 candidates */
 				for (k = range->start[2]; k < range->end[2]; k++) {
@@ -1175,10 +1175,10 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 						ratio1 = distance1 / t1->distance.plate_actual;
 						ratio2 = distance2 / t2->distance.plate_actual;
 
-						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
+						delta = tri_diff(rad_per_1kpixel, ratio1, ratio2);
 
 						add_pot_on_distance(runtime, primary, &solve->source,
-							i, j, k, delta, tri_avg(rad_per_pixel, ratio1, ratio2));
+							i, j, k, delta, tri_avg(rad_per_1kpixel, ratio1, ratio2));
 						count++;
 					}
 				}

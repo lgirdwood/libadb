@@ -92,7 +92,7 @@ struct adb_solve_solution {
 	double delta_distance;
 	double delta_magnitude;
 	double divergance;
-	double rad_per_pix;
+	double rad_per_1kpix;
 	int flip;
 
 	/* solved objects */
