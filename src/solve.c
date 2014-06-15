@@ -1827,6 +1827,7 @@ estimate:
 
 	/* assign closest object */
 	sobject->object = runtime.pot_pa[0].object[0];
+	solution->num_solved_objects++;
 	return count;
 }
 
@@ -1854,6 +1855,8 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		get_plate_position(solve, solution, &solve->pobject[i],
 			&solution->solve_object[i].ra, &solution->solve_object[i].dec);
 
+		if (solution->solve_object[i].object)
+			solution->num_solved_objects++;
 		count++;
 	}
 
