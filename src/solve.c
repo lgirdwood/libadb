@@ -393,6 +393,91 @@ static float get_plate_magnitude(struct adb_solve *solve,
 	return quad_avg(delta[0], delta[1], delta[2], delta[3]);
 }
 
+static float get_plate_mag_mean(struct adb_solve_solution *solution,
+	int target)
+{
+	float mean = 0.0, plate_delta, db_delta;
+	int count = 0, i;
+
+	for (i = 0; i < solution->num_solved_objects; i++) {
+
+		/* dont compare object against itself */
+		if (i == target)
+			continue;
+
+		if (solution->solve_object[i].object == NULL)
+			continue;
+
+		plate_delta = get_plate_mag_diff(
+			&solution->solve_object[target].pobject,
+			&solution->solve_object[i].pobject);
+
+		db_delta = solution->solve_object[i].object->key -
+			solution->solve_object[target].object->key;
+
+		mean += db_delta - plate_delta;
+		count++;
+	}
+
+	mean /= count;
+	return mean;
+}
+
+static float get_plate_mag_sigma(struct adb_solve_solution *solution,
+	int target, float mean)
+{
+	float plate_delta, db_delta, diff, sigma = 0.0;
+	int count = 0, i;
+
+	for (i = 0; i < solution->num_solved_objects; i++) {
+
+		/* dont compare object against itself */
+		if (i == target)
+			continue;
+
+		if (solution->solve_object[i].object == NULL)
+			continue;
+
+		plate_delta = get_plate_mag_diff(
+			&solution->solve_object[target].pobject,
+			&solution->solve_object[i].pobject);
+
+		db_delta = solution->solve_object[i].object->key -
+			solution->solve_object[target].object->key;
+
+		diff = db_delta - plate_delta;
+		diff -= mean;
+		diff *= diff;
+		sigma += diff;
+		count++;
+	}
+
+	sigma /= count;
+	return sqrtf(sigma);
+}
+
+static void calc_solved_plate_magnitudes(struct adb_solve *solve,
+	struct adb_solve_solution *solution)
+{
+	int i;
+
+	/* compare each detected object against other detected objects */
+	for (i = 0; i < solution->num_solved_objects; i++) {
+
+		if (solution->solve_object[i].object == NULL)
+				continue;
+
+		solution->solve_object[i].mean = get_plate_mag_mean(solution, i);
+
+		solution->solve_object[i].mag =
+			solution->solve_object[i].object->key +
+			solution->solve_object[i].mean;
+
+		solution->solve_object[i].sigma =
+			get_plate_mag_sigma(solution, i, solution->solve_object[i].mean);
+	}
+}
+
 /* position angle in radians relative to plate north */
 static double get_plate_pa(struct adb_pobject *primary,
 	struct adb_pobject *secondary)
@@ -1886,6 +1971,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	}
 
 	/* recalculate magnitude for each object in image */
+	calc_solved_plate_magnitudes(solve, solution);
 
 	/* calculate mean, sigma and flag any objects that dont match catalog */
 	return count;

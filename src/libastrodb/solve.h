@@ -73,6 +73,10 @@ struct adb_solve_object {
 	double ra;
 	double dec;
 	float mag;
+
+	/* estimated magnitude */
+	float mean;
+	float sigma;
 };
 
 /*! \struct adb_solve_solution
