@@ -408,6 +408,11 @@ static float get_plate_mag_mean(struct adb_solve_solution *solution,
 		if (solution->solve_object[i].object == NULL)
 			continue;
 
+		/* ignore any object with mean difference > sigma */
+		if (fabsf(solution->solve_object[i].mean) >
+			solution->solve_object[i].sigma)
+			continue;
+
 		plate_delta = get_plate_mag_diff(
 			&solution->solve_object[target].pobject,
 			&solution->solve_object[i].pobject);
@@ -456,7 +461,7 @@ static float get_plate_mag_sigma(struct adb_solve_solution *solution,
 	return sqrtf(sigma);
 }
 
-static void calc_solved_plate_magnitudes(struct adb_solve *solve,
+static void calc_solved_plate_magnitude(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
 	int i;
@@ -476,6 +481,16 @@ static void calc_solved_plate_magnitudes(struct adb_solve *solve,
 		solution->solve_object[i].sigma =
 			get_plate_mag_sigma(solution, i, solution->solve_object[i].mean);
 	}
+}
+
+static void calc_solved_plate_magnitudes(struct adb_solve *solve,
+	struct adb_solve_solution *solution)
+{
+	/* run magnitude comparison twice to rule out any stars that differ
+	 * greatly from their source catalog magnitude values.
+	 */
+	calc_solved_plate_magnitude(solve, solution);
+	calc_solved_plate_magnitude(solve, solution);
 }
 
 /* position angle in radians relative to plate north */
