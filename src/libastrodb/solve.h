@@ -102,6 +102,8 @@ struct adb_solve_solution {
 	/* solved objects */
 	struct adb_solve_object *solve_object;
 	int num_solved_objects;
+	int num_unsolved_objects;
+	int total_objects;
 };
 
 struct adb_solve;

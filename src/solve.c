@@ -1935,7 +1935,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *pobjects, int num_pobjects)
 {
-	int i, j, count = 0, ret;
+	int i, j, ret;
 
 	if (solution->solve_object)
 		free(solution->solve_object);
@@ -1957,7 +1957,8 @@ int adb_solve_get_objects(struct adb_solve *solve,
 
 		if (solution->solve_object[i].object)
 			solution->num_solved_objects++;
-		count++;
+		else
+			solution->num_unsolved_objects++;
 	}
 
 	/* find initial plate objects remaining that are not used in solution  */
@@ -1967,8 +1968,11 @@ int adb_solve_get_objects(struct adb_solve *solve,
 			free(solution->solve_object);
 			solution->solve_object = NULL;
 			return ret;
-		} else
-			count += ret;
+		} else if (ret == 0)
+			solution->num_unsolved_objects++;
+		else
+			solution->num_solved_objects++;
+
 		solution->solve_object[i].pobject = pobjects[i];
 	}
 
@@ -1980,14 +1984,19 @@ int adb_solve_get_objects(struct adb_solve *solve,
 			free(solution->solve_object);
 			solution->solve_object = NULL;
 			return ret;
-		} else
-			count += ret;
+		} else if (ret == 0)
+			solution->num_unsolved_objects++;
+		else
+			solution->num_solved_objects++;
+
 		solution->solve_object[j].pobject = pobjects[i];
 	}
+
+	solution->total_objects = solution->num_solved_objects +
+		solution->num_unsolved_objects;
 
 	/* recalculate magnitude for each object in image */
 	calc_solved_plate_magnitudes(solve, solution);
 
-	/* calculate mean, sigma and flag any objects that dont match catalog */
-	return count;
+	return solution->total_objects;
 }
