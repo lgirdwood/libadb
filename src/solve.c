@@ -379,8 +379,7 @@ static float get_plate_magnitude(struct adb_solve *solve,
 	struct adb_pobject *primary)
 {
 	float delta[4];
-// TODO do rolling average as we detect objects
-// calculate standard deviation and flag any big differences
+
 	delta[0] = solution->object[0]->key +
 		get_plate_mag_diff(&solve->pobject[0], primary);
 	delta[1] = solution->object[1]->key +
@@ -459,6 +458,52 @@ static float get_plate_mag_sigma(struct adb_solve_solution *solution,
 
 	sigma /= count;
 	return sqrtf(sigma);
+}
+
+static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
+	struct adb_solve_solution *solution, int target)
+{
+	struct adb_solve_object *solve_object;
+	int i, count = 0;
+	float mean = 0.0;
+
+	/* compare plate object to solved objects */
+	for (i = 0; i < solution->total_objects; i++) {
+		solve_object = &solution->solve_object[i];
+
+		/* skip if the object is unsolved */
+		if (solve_object->object == NULL)
+				continue;
+
+		/* make sure solved object is close to catalog mag */
+		if (fabsf(solve_object->mean) > solve_object->sigma)
+			continue;
+
+		mean += solve_object->mag + get_plate_mag_diff(&solve_object->pobject,
+			&solution->solve_object[target].pobject);
+		count++;
+	}
+
+	solution->solve_object[target].mag = mean / count;
+}
+
+static void calc_unsolved_plate_magnitudes(struct adb_solve *solve,
+	struct adb_solve_solution *solution)
+{
+	struct adb_solve_object *solve_object;
+	int i;
+
+	/* compare each detected object against other detected objects */
+	for (i = 0; i < solution->total_objects; i++) {
+
+		solve_object = &solution->solve_object[i];
+
+		/* skip if the object is unsolved */
+		if (solve_object->object)
+				continue;
+
+		calc_unsolved_plate_magnitude(solve, solution, i);
+	}
 }
 
 static void calc_solved_plate_magnitude(struct adb_solve *solve,
@@ -1997,6 +2042,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 
 	/* recalculate magnitude for each object in image */
 	calc_solved_plate_magnitudes(solve, solution);
+	calc_unsolved_plate_magnitudes(solve, solution);
 
 	return solution->total_objects;
 }
