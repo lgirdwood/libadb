@@ -398,7 +398,7 @@ static float get_plate_mag_mean(struct adb_solve_solution *solution,
 	float mean = 0.0, plate_delta, db_delta;
 	int count = 0, i;
 
-	for (i = 0; i < solution->num_solved_objects; i++) {
+	for (i = 0; i < solution->total_objects; i++) {
 
 		/* dont compare object against itself */
 		if (i == target)
@@ -433,7 +433,7 @@ static float get_plate_mag_sigma(struct adb_solve_solution *solution,
 	float plate_delta, db_delta, diff, sigma = 0.0;
 	int count = 0, i;
 
-	for (i = 0; i < solution->num_solved_objects; i++) {
+	for (i = 0; i < solution->total_objects; i++) {
 
 		/* dont compare object against itself */
 		if (i == target)
@@ -512,7 +512,7 @@ static void calc_solved_plate_magnitude(struct adb_solve *solve,
 	int i;
 
 	/* compare each detected object against other detected objects */
-	for (i = 0; i < solution->num_solved_objects; i++) {
+	for (i = 0; i < solution->total_objects; i++) {
 
 		if (solution->solve_object[i].object == NULL)
 				continue;
@@ -1972,7 +1972,6 @@ estimate:
 
 	/* assign closest object */
 	sobject->object = runtime.pot_pa[0].object[0];
-	solution->num_solved_objects++;
 	return count;
 }
 
