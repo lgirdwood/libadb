@@ -1580,6 +1580,7 @@ static void copy_solution(struct solve_runtime *runtime)
 {
 	struct adb_solve *solve = runtime->solve;
 	struct adb_solve_solution *soln;
+	struct adb_db *db;
 	int i;
 
 	pthread_mutex_lock(&solve->mutex);
@@ -1592,12 +1593,14 @@ static void copy_solution(struct solve_runtime *runtime)
 
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		soln = &solve->solution[solve->num_solutions];
+		db = soln->db;
 
 		if (is_solution_dupe(solve, &runtime->pot_pa[i]))
 			continue;
 
 		/* copy solution */
 		*soln = runtime->pot_pa[i];
+		soln->db = db;
 		solve->num_solutions++;
 	}
 
@@ -1684,6 +1687,7 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 {
 	struct adb_solve *solve;
+	int i;
 
 	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return NULL;
@@ -1708,6 +1712,9 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 	solve->constraint.max_fov = 90.0 * D2R;
 	solve->constraint.max_fov = 90.0 * D2R * 1000.0;
 	solve->num_solutions = 0;
+
+	for (i = 0; i < MAX_RT_SOLUTIONS; i++)
+		solve->solution[i].db = db;
 
 	return solve;
 }
@@ -1858,28 +1865,28 @@ int adb_solve_get_solutions(struct adb_solve *solve,
 	return 0;
 }
 
-int adb_solve_prep_solution(struct adb_solve *solve,
-		unsigned int index, double fov, double mag_limit)
+int adb_solve_prep_solution(struct adb_solve_solution *solution,
+		double fov, double mag_limit, int table_id)
 {
-	struct adb_solve_solution *solution;
+	struct adb_table *table;
 	struct adb_object_set *set;
 	double centre_ra, centre_dec;
 	int object_heads, i, count = 0, j;
 
-	if (index >= solve->num_solutions)
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
+	table = &solution->db->table[table_id];
 
-	solution = &solve->solution[index];
+	/* check for existing set and free it */
 	set = solution->set;
-
-	//if (set)
-	//	free(set);
+	if (set)
+		free(set);
 
 	centre_ra = solution->object[0]->ra;
 	centre_dec = solution->object[0]->dec;
 
 	/* create new set based on image fov and mag limits */
-	set = adb_table_set_new(solve->db, solve->table->id);
+	set = adb_table_set_new(solution->db, table_id);
 	if (!set)
 		return -ENOMEM;
 	solution->set = set;
@@ -1912,7 +1919,7 @@ int adb_solve_prep_solution(struct adb_solve *solve,
 		for (j = 0; j < set->object_heads[i].count; j++)  {
 			solution->source.objects[count++] = object;
 			SOBJ_CHECK_SET(((struct adb_object*)object));
-			object += solve->table->object.bytes;
+			object += table->object.bytes;
 		}
 	}
 
@@ -1936,6 +1943,7 @@ static int get_object(struct adb_solve *solve,
 		return -EINVAL;
 
 	memset(&runtime, 0, sizeof(runtime));
+	memset(sobject, 0, sizeof(*sobject));
 	runtime.solve = solve;
 
 	/* calculate plate parameters for new object */
@@ -1981,13 +1989,15 @@ int adb_solve_get_objects(struct adb_solve *solve,
 {
 	int i, j, ret;
 
-	if (solution->solve_object)
-		free(solution->solve_object);
-
-	solution->solve_object = calloc(sizeof(struct adb_solve_object),
-		num_pobjects + solve->num_plate_objects);
+	/* reallocate memory for new pobjects */
+	solution->solve_object = realloc(solution->solve_object,
+		sizeof(struct adb_solve_object) *
+		(num_pobjects + solve->num_plate_objects + solution->total_objects));
 	if (solution->solve_object == NULL)
 		return -ENOMEM;
+
+	if (solution->total_objects)
+		goto find_new;
 
 	/* copy existing plate solutions */
 	for (i = 0; i < solve->plate_idx_end; i++) {
@@ -2020,8 +2030,12 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		solution->solve_object[i].pobject = pobjects[i];
 	}
 
+find_new:
+	solution->total_objects = solution->num_solved_objects +
+		solution->num_unsolved_objects;
+
 	/* solve each new plate object */
-	for (i = 0, j = solve->num_plate_objects; i < num_pobjects; i++, j++) {
+	for (i = 0, j = solution->total_objects; i < num_pobjects; i++, j++) {
 
 		ret = get_object(solve, solution, &pobjects[i], j);
 		if (ret < 0) {

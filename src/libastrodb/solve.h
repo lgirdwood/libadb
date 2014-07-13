@@ -90,6 +90,7 @@ struct adb_solve_solution {
 	/* source object storage */
 	struct adb_source_objects source;
 	struct adb_object_set *set;
+	struct adb_db *db;
 
 	/* solution delta to db */
 	double delta_pa;
@@ -169,8 +170,8 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *pobjects, int num_pobjects);
 
-int adb_solve_prep_solution(struct adb_solve *solve,
-		unsigned int solution, double fov, double mag_limit);
+int adb_solve_prep_solution(struct adb_solve_solution *solution,
+	double fov, double mag_limit, int table_id);
 
 #ifdef __cplusplus
 };

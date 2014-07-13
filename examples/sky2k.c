@@ -919,7 +919,7 @@ static int sky2k_solve(char *lib_dir)
 		adb_solve_get_solutions(solve, i, &solution);
 
 		/* set FoV and mag limits for single object searches */
-		adb_solve_prep_solution(solve, i, 2.0, 8.0);
+		adb_solve_prep_solution(solution, 2.0, 8.0, table_id);
 
 		fprintf(stdout, "Solution %d score %f\n", i, solution->divergance);
 
