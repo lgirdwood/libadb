@@ -1933,10 +1933,9 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 
 static int get_object(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
-	struct adb_pobject *pobject, int index)
+	struct adb_pobject *pobject, struct adb_solve_object *sobject)
 {
 	struct solve_runtime runtime;
-	struct adb_solve_object *sobject = &solution->solve_object[index];
 	int count = 0;
 
 	if (solution->set == NULL)
@@ -1983,7 +1982,7 @@ estimate:
 	return count;
 }
 
-int adb_solve_get_objects(struct adb_solve *solve,
+static int solve_get_objects_soln(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *pobjects, int num_pobjects)
 {
@@ -1992,12 +1991,12 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* reallocate memory for new pobjects */
 	solution->solve_object = realloc(solution->solve_object,
 		sizeof(struct adb_solve_object) *
-		(num_pobjects + solve->num_plate_objects + solution->total_objects));
+		(num_pobjects + solve->num_plate_objects));
 	if (solution->solve_object == NULL)
 		return -ENOMEM;
 
-	if (solution->total_objects)
-		goto find_new;
+	solution->num_solved_objects = 0;
+	solution->num_unsolved_objects = 0;
 
 	/* copy existing plate solutions */
 	for (i = 0; i < solve->plate_idx_end; i++) {
@@ -2017,7 +2016,8 @@ int adb_solve_get_objects(struct adb_solve *solve,
 
 	/* find initial plate objects remaining that are not used in solution  */
 	for (i = solve->plate_idx_end; i < solve->num_plate_objects; i++) {
-		ret = get_object(solve, solution, &solve->pobject[i], i);
+		ret = get_object(solve, solution, &solve->pobject[i],
+			&solution->solve_object[i]);
 		if (ret < 0) {
 			free(solution->solve_object);
 			solution->solve_object = NULL;
@@ -2030,14 +2030,14 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		solution->solve_object[i].pobject = pobjects[i];
 	}
 
-find_new:
-	solution->total_objects = solution->num_solved_objects +
-		solution->num_unsolved_objects;
+	solution->total_objects = solution->num_unsolved_objects +
+		solution->num_solved_objects;
 
 	/* solve each new plate object */
 	for (i = 0, j = solution->total_objects; i < num_pobjects; i++, j++) {
 
-		ret = get_object(solve, solution, &pobjects[i], j);
+		ret = get_object(solve, solution, &pobjects[i],
+			&solution->solve_object[j]);
 		if (ret < 0) {
 			free(solution->solve_object);
 			solution->solve_object = NULL;
@@ -2057,5 +2057,62 @@ find_new:
 	calc_solved_plate_magnitudes(solve, solution);
 	calc_unsolved_plate_magnitudes(solve, solution);
 
-	return solution->total_objects;
+	return solution->num_solved_objects;
+}
+
+static int solve_get_objects_non_soln(struct adb_solve *solve,
+	struct adb_solve_solution *solution,
+	struct adb_pobject *pobjects, int num_pobjects)
+{
+	int i, ret;
+
+	/* reallocate memory for new pobjects */
+	solution->solve_object = realloc(solution->solve_object,
+		sizeof(struct adb_solve_object) * num_pobjects);
+	if (solution->solve_object == NULL)
+		return -ENOMEM;
+
+	solution->num_solved_objects = 0;
+	solution->num_unsolved_objects = 0;
+
+	/* solve each new plate object */
+	for (i = 0; i < num_pobjects; i++) {
+
+		ret = get_object(solve, solution, &pobjects[i],
+			&solution->solve_object[i]);
+		if (ret < 0) {
+			free(solution->solve_object);
+			solution->solve_object = NULL;
+			return ret;
+		} else if (ret == 0)
+			solution->num_unsolved_objects++;
+		else
+			solution->num_solved_objects++;
+
+		solution->solve_object[i].pobject = pobjects[i];
+	}
+
+	solution->total_objects = solution->num_solved_objects +
+		solution->num_unsolved_objects;
+
+	/* recalculate magnitude for each object in image */
+	calc_solved_plate_magnitudes(solve, solution);
+	calc_unsolved_plate_magnitudes(solve, solution);
+
+	return solution->num_solved_objects;
+}
+
+int adb_solve_get_objects(struct adb_solve *solve,
+	struct adb_solve_solution *solution,
+	struct adb_pobject *pobjects, int num_pobjects)
+{
+	/* check whether we are getting objects for the same table as the db
+	 * or a new table.
+	 */
+	if (solve->solution != solution)
+		return solve_get_objects_non_soln(solve, solution, pobjects,
+			num_pobjects);
+	else
+		return solve_get_objects_soln(solve, solution, pobjects,
+			num_pobjects);
 }
