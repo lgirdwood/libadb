@@ -112,6 +112,7 @@ struct adb_library *adb_open_library(const char *host,
 	return lib;
 
 err:
+	free(lib->host);
 	free(lib->local);
 	free(lib->remote);
 	free(lib);
@@ -128,6 +129,7 @@ void adb_close_library(struct adb_library * lib)
 {
 	free(lib->remote);
 	free(lib->local);
+	free(lib->host);
 	free(lib);
 }
 
