@@ -79,6 +79,15 @@ struct adb_solve_object {
 	float sigma;
 };
 
+struct adb_reference_object {
+	const struct adb_object *object;
+	struct adb_pobject pobject;
+
+	/* estimated magnitude */
+	float mean;
+	float sigma;
+};
+
 /*! \struct adb_solve_solution
  * \brief Solver solution
  * \ingroup solve
@@ -86,6 +95,7 @@ struct adb_solve_object {
 struct adb_solve_solution {
 	/* in order of brightness */
 	const struct adb_object *object[ADB_NUM_TARGETS];
+	struct adb_pobject pobject[ADB_NUM_TARGETS];
 
 	/* source object storage */
 	struct adb_source_objects source;
@@ -105,6 +115,10 @@ struct adb_solve_solution {
 	int num_solved_objects;
 	int num_unsolved_objects;
 	int total_objects;
+
+	/* reference objects */
+	struct adb_reference_object *ref;
+	int num_ref_objects;
 };
 
 struct adb_solve;
