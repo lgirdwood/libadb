@@ -46,6 +46,5 @@ examples/ngc
 lntest/libnovaconfig
 lntest/lntest
 
-doxyfile
 doc/man/*
 doc/html/*
