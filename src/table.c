@@ -198,6 +198,10 @@ int adb_table_close(struct adb_db *db, int table_id)
 
 	hash_free_maps(table);
 	free(table->objects);
+	free(table->cds.class);
+	free(table->cds.index);
+	free(table->path.local);
+	free(table->path.file);
 	table_put_id(db, table_id);
 	return 0;
 }
