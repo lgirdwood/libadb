@@ -116,9 +116,6 @@ struct adb_solve {
 	int plate_idx_start;
 	int plate_idx_end;
 
-	/* detected objects */
-	const struct adb_object **detected_objects;
-
 	struct solve_constraint constraint;
 
 	/* target cluster */
