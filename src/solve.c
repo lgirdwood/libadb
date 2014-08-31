@@ -1781,6 +1781,19 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 
 void adb_solve_free(struct adb_solve *solve)
 {
+	struct adb_solve_solution *solution;
+	int i;
+
+	/* free each solution */
+	for (i = 0; i < MAX_RT_SOLUTIONS; i++) {
+		solution = &solve->solution[i];
+
+		adb_table_set_free(solution->set);
+		free(solution->solve_object);
+		free(solution->ref);
+		free(solution->source.objects);
+	}
+
 	free(solve->source.objects);
 	free(solve);
 }
@@ -1941,7 +1954,7 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 	/* check for existing set and free it */
 	set = solution->set;
 	if (set)
-		free(set);
+		adb_table_set_free(set);
 
 	centre_ra = solution->object[0]->ra;
 	centre_dec = solution->object[0]->dec;
