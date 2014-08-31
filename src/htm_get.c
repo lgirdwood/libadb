@@ -625,6 +625,9 @@ int adb_table_set_constraints(struct adb_object_set *set,
  */
 void adb_table_set_free(struct adb_object_set *set)
 {
+	if (set == NULL)
+		return;
+
 	free(set->object_heads);
 	free(set->trixels);
 	free(set);
