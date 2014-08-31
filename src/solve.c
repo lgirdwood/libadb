@@ -718,13 +718,23 @@ static int add_reference_object(struct adb_solve_solution *soln,
 			return 0;
 	}
 
+	/* add new reference object to end */
 	soln->ref = realloc(soln->ref,
 		sizeof(struct adb_reference_object) * (soln->num_ref_objects + 1));
 	if (soln->ref == NULL)
 		return -ENOMEM;
 
 	soln->ref[soln->num_ref_objects].object = object;
+	soln->ref[soln->num_ref_objects].mean = 0.0;
+	soln->ref[soln->num_ref_objects].sigma = 0.0;
 	soln->ref[soln->num_ref_objects++].pobject = *pobject;
+
+	/* calculate new mean and sigma for reference objects */
+	for (i = 0; i < soln->num_ref_objects; i++) {
+		soln->ref[i].mean = get_plate_mag_mean(soln, i);
+		soln->ref[i].sigma = get_plate_mag_sigma(soln, i, soln->ref[i].mean);
+	}
+
 	return 0;
 }
 
