@@ -924,11 +924,15 @@ static int sky2k_solve(char *lib_dir)
 		fprintf(stdout, "Solution %d score %f\n", i, solution->divergance);
 
 		/* get subsequent objects */
-		ret = adb_solve_get_objects(solve, solution, &pobject[5], 1);
+		ret = adb_solve_add_pobjects(solve, solution, pobject, 6);
 		if (ret < 0)
 			goto set_err;
 
-		for (j = 0; j < 5; j++)
+		ret = adb_solve_get_objects(solve, solution);
+		if (ret < 0)
+			goto set_err;
+
+		for (j = 0; j < 6; j++)
 			sobject_printf(&solution->solve_object[j]);
 	}
 out:

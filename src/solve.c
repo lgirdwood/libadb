@@ -431,6 +431,7 @@ static float get_plate_mag_mean(struct adb_solve_solution *solution,
 	return mean;
 }
 
+/* TODO: investigate speedup with only 4 ref objects found in soln */
 /* compare plate object brightness against the brightness of all the refernce
  * plate objects and then use the average differences to calculate magnitude
  * sigma */
@@ -470,6 +471,7 @@ static float get_plate_mag_sigma(struct adb_solve_solution *solution,
 	return sqrtf(sigma);
 }
 
+/* TODO: investigate speedup with only 4 ref objects found in soln */
 /* calculate the magnitude of an unsolved plate object */
 static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
 	struct adb_solve_solution *solution, int target)
@@ -518,7 +520,7 @@ static void calc_unsolved_plate_magnitudes(struct adb_solve *solve,
 	}
 }
 
-/* calculate the magnitude, mag mdelta mean and mag delta sigma
+/* calculate the magnitude, mag delta mean and mag delta sigma
  * of a solved plate object */
 static void calc_solved_plate_magnitude(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
@@ -526,7 +528,7 @@ static void calc_solved_plate_magnitude(struct adb_solve *solve,
 	int i;
 
 	/* compare each detected object against reference objects */
-	for (i = 0; i < solution->total_objects; i++) {
+	for (i = 0; i < solution->num_ref_objects; i++) {
 
 		/* ignore objects that are unsolved */
 		if (solution->solve_object[i].object == NULL)
@@ -949,10 +951,10 @@ static void add_pot_on_distance(struct solve_runtime *runtime,
 	p->object[1] = source->objects[i];
 	p->object[2] = source->objects[j];
 	p->object[3] = source->objects[k];
-	p->pobject[0] = solve->pobject[solve->plate_idx_start];
-	p->pobject[1] = solve->pobject[solve->plate_idx_start + 1];
-	p->pobject[2] = solve->pobject[solve->plate_idx_start + 2];
-	p->pobject[3] = solve->pobject[solve->plate_idx_start + 3];
+	p->soln_pobject[0] = solve->pobject[solve->plate_idx_start];
+	p->soln_pobject[1] = solve->pobject[solve->plate_idx_start + 1];
+	p->soln_pobject[2] = solve->pobject[solve->plate_idx_start + 2];
+	p->soln_pobject[3] = solve->pobject[solve->plate_idx_start + 3];
 	p->delta_distance = delta;
 	p->rad_per_1kpix = rad_per_1kpix;
 	runtime->num_pot_distance++;
@@ -971,7 +973,6 @@ static void add_single_pot_on_distance(struct solve_runtime *runtime,
 	p = &runtime->pot_distance[runtime->num_pot_distance];
 	p->delta_distance = delta;
 	p->object[0] = primary;
-	//p->pobject[0] = solve->pobject[solve->plate_idx_start];
 	p->flip = flip;
 	runtime->num_pot_distance++;
 }
@@ -2031,9 +2032,24 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 	/* use the 4 solution objects as first reference objects */
 	for (i = 0; i < 4; i++)
 		add_reference_object(solution, solution->object[i],
-			&solution->pobject[i]);
+			&solution->soln_pobject[i]);
 
 	return 0;
+}
+
+static int get_solve_plate(struct adb_solve_solution *solution,
+		struct adb_pobject *pobject)
+{
+	int i;
+
+	for (i = 0; i < solution->num_pobjects; i++) {
+		if (solution->soln_pobject[i].adu == pobject->adu &&
+			solution->soln_pobject[i].x == pobject->x &&
+			solution->soln_pobject[i].y == pobject->y)
+			return i;
+	}
+
+	return -1;
 }
 
 /* get object or estimated object magnitude & position for plate object */
@@ -2042,7 +2058,7 @@ static int get_object(struct adb_solve *solve,
 	struct adb_pobject *pobject, struct adb_solve_object *sobject)
 {
 	struct solve_runtime runtime;
-	int count = 0;
+	int count = 0, plate;
 
 	if (solution->set == NULL)
 		return -EINVAL;
@@ -2050,6 +2066,16 @@ static int get_object(struct adb_solve *solve,
 	memset(&runtime, 0, sizeof(runtime));
 	memset(sobject, 0, sizeof(*sobject));
 	runtime.solve = solve;
+
+	/* check if pobject is solve object from solution */
+	if (solve->solution == solution) {
+		plate = get_solve_plate(solution, pobject);
+
+		if (plate >= 0) {
+			sobject->object = solution->object[plate];
+			return 1;
+		}
+	}
 
 	/* calculate plate parameters for new object */
 	create_target_single(solve, pobject, solution, &runtime);
@@ -2092,140 +2118,75 @@ estimate:
 	return count;
 }
 
-/* get objects using same solution */
-static int solve_get_objects_soln(struct adb_solve *solve,
-	struct adb_solve_solution *solution,
-	struct adb_pobject *pobjects, int num_pobjects)
-{
-	int i, j, ret;
-
-	/* reallocate memory for new pobjects */
-	solution->solve_object = realloc(solution->solve_object,
-		sizeof(struct adb_solve_object) *
-		(num_pobjects + solve->num_plate_objects));
-	if (solution->solve_object == NULL)
-		return -ENOMEM;
-
-	solution->num_solved_objects = 0;
-	solution->num_unsolved_objects = 0;
-
-	/* copy existing plate solutions */
-	for (i = 0; i < solve->plate_idx_end; i++) {
-
-		solution->solve_object[i].object = solution->object[i];
-		solution->solve_object[i].pobject = solve->pobject[i];
-		solution->solve_object[i].mag =
-			get_plate_magnitude(solve, solution, &solve->pobject[i]);
-		get_plate_position(solve, solution, &solve->pobject[i],
-			&solution->solve_object[i].ra, &solution->solve_object[i].dec);
-
-		if (solution->solve_object[i].object)
-			solution->num_solved_objects++;
-		else
-			solution->num_unsolved_objects++;
-	}
-
-	/* find initial plate objects remaining that are not used in solution  */
-	for (i = solve->plate_idx_end; i < solve->num_plate_objects; i++) {
-		ret = get_object(solve, solution, &solve->pobject[i],
-			&solution->solve_object[i]);
-		if (ret < 0) {
-			free(solution->solve_object);
-			solution->solve_object = NULL;
-			return ret;
-		} else if (ret == 0)
-			solution->num_unsolved_objects++;
-		else
-			solution->num_solved_objects++;
-
-		solution->solve_object[i].pobject = pobjects[i];
-	}
-
-	solution->total_objects = solution->num_unsolved_objects +
-		solution->num_solved_objects;
-
-	/* solve each new plate object */
-	for (i = 0, j = solution->total_objects; i < num_pobjects; i++, j++) {
-
-		ret = get_object(solve, solution, &pobjects[i],
-			&solution->solve_object[j]);
-		if (ret < 0) {
-			free(solution->solve_object);
-			solution->solve_object = NULL;
-			return ret;
-		} else if (ret == 0)
-			solution->num_unsolved_objects++;
-		else
-			solution->num_solved_objects++;
-
-		solution->solve_object[j].pobject = pobjects[i];
-	}
-
-	solution->total_objects = solution->num_solved_objects +
-		solution->num_unsolved_objects;
-
-	/* recalculate magnitude for each object in image */
-	calc_solved_plate_magnitudes(solve, solution);
-	calc_unsolved_plate_magnitudes(solve, solution);
-
-	return solution->num_solved_objects;
-}
-
-/* get objects using a different solution */
-static int solve_get_objects_non_soln(struct adb_solve *solve,
-	struct adb_solve_solution *solution,
-	struct adb_pobject *pobjects, int num_pobjects)
-{
-	int i, ret;
-
-	/* reallocate memory for new pobjects */
-	solution->solve_object = realloc(solution->solve_object,
-		sizeof(struct adb_solve_object) * num_pobjects);
-	if (solution->solve_object == NULL)
-		return -ENOMEM;
-
-	solution->num_solved_objects = 0;
-	solution->num_unsolved_objects = 0;
-
-	/* solve each new plate object */
-	for (i = 0; i < num_pobjects; i++) {
-
-		ret = get_object(solve, solution, &pobjects[i],
-			&solution->solve_object[i]);
-		if (ret < 0) {
-			free(solution->solve_object);
-			solution->solve_object = NULL;
-			return ret;
-		} else if (ret == 0)
-			solution->num_unsolved_objects++;
-		else
-			solution->num_solved_objects++;
-
-		solution->solve_object[i].pobject = pobjects[i];
-	}
-
-	solution->total_objects = solution->num_solved_objects +
-		solution->num_unsolved_objects;
-
-	/* recalculate magnitude for each object in image */
-	calc_solved_plate_magnitudes(solve, solution);
-	calc_unsolved_plate_magnitudes(solve, solution);
-
-	return solution->num_solved_objects;
-}
-
 /* get plate objects or estimates of plate object position and magnitude */
 int adb_solve_get_objects(struct adb_solve *solve,
-	struct adb_solve_solution *solution,
-	struct adb_pobject *pobjects, int num_pobjects)
+	struct adb_solve_solution *solution)
 {
-	/* check whether we are getting objects for the same table as the db
-	 * or a new table.
-	 */
-	if (solve->solution != solution)
-		return solve_get_objects_non_soln(solve, solution, pobjects,
-			num_pobjects);
-	else
-		return solve_get_objects_soln(solve, solution, pobjects,
-			num_pobjects);
+	int i, ret, fail = 0;
+
+	if (solution->num_pobjects == 0)
+		return 0;
+
+	/* reallocate memory for new solved objects */
+	solution->solve_object = realloc(solution->solve_object,
+		sizeof(struct adb_solve_object) * solution->num_pobjects);
+	if (solution->solve_object == NULL)
+		return -ENOMEM;
+
+	solution->num_solved_objects = 0;
+	solution->num_unsolved_objects = 0;
+
+	/* solve each new plate object */
+#pragma omp parallel for schedule(dynamic, 10)
+	for (i = 0; i < solution->num_pobjects; i++) {
+		ret = get_object(solve, solution, &solution->pobjects[i],
+			&solution->solve_object[i]);
+
+		if (ret < 0) {
+			fail = 1;
+			continue;
+		} else if (ret == 0)
+			solution->num_unsolved_objects++;
+		else
+			solution->num_solved_objects++;
+
+		solution->solve_object[i].pobject = solution->pobjects[i];
+	}
+
+	if (fail) {
+		free(solution->solve_object);
+		solution->solve_object = NULL;
+		return ret;
+	}
+
+	solution->total_objects = solution->num_solved_objects +
+		solution->num_unsolved_objects;
+
+	/* recalculate magnitude for each object in image */
+	calc_solved_plate_magnitudes(solve, solution);
+	calc_unsolved_plate_magnitudes(solve, solution);
+
+	return solution->num_solved_objects;
+}
+
+int adb_solve_add_pobjects(struct adb_solve *solve,
+		struct adb_solve_solution *solution,
+		struct adb_pobject *pobjects, int num_pobjects)
+{
+	int i, j;
+
+	/* reallocate memory for new solved objects */
+	solution->pobjects = realloc(solution->pobjects,
+			sizeof(struct adb_solve_object) *
+			(solution->num_pobjects + num_pobjects));
+	if (solution->pobjects == NULL)
+			return -ENOMEM;
+
+	for (i = solution->num_pobjects, j = 0;
+			i < solution->num_pobjects + num_pobjects; i++, j++) {
+		solution->pobjects[i] = pobjects[j];
+	}
+
+	solution->num_pobjects += num_pobjects;
+	return 0;
 }

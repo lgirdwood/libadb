@@ -93,9 +93,13 @@ struct adb_reference_object {
  * \ingroup solve
  */
 struct adb_solve_solution {
-	/* in order of brightness */
+	/* objects and plate objects used to find solution */
 	const struct adb_object *object[ADB_NUM_TARGETS];
-	struct adb_pobject pobject[ADB_NUM_TARGETS];
+	struct adb_pobject soln_pobject[ADB_NUM_TARGETS];
+
+	/* plate objects to solve */
+	int num_pobjects;
+	struct adb_pobject *pobjects;
 
 	/* source object storage */
 	struct adb_source_objects source;
@@ -110,13 +114,13 @@ struct adb_solve_solution {
 	double rad_per_1kpix;
 	int flip;
 
-	/* solved objects */
+	/* solved objects from current table */
 	struct adb_solve_object *solve_object;
 	int num_solved_objects;
 	int num_unsolved_objects;
 	int total_objects;
 
-	/* reference objects */
+	/* reference objects - total solved objects - can come from any table */
 	struct adb_reference_object *ref;
 	int num_ref_objects;
 };
@@ -181,8 +185,11 @@ int adb_solve_get_solutions(struct adb_solve *solve,
  * \ingroup search
  */
 int adb_solve_get_objects(struct adb_solve *solve,
-	struct adb_solve_solution *solution,
-	struct adb_pobject *pobjects, int num_pobjects);
+	struct adb_solve_solution *solution);
+
+int adb_solve_add_pobjects(struct adb_solve *solve,
+		struct adb_solve_solution *solution,
+		struct adb_pobject *pobjects, int num_pobjects);
 
 int adb_solve_prep_solution(struct adb_solve_solution *solution,
 	double fov, double mag_limit, int table_id);
