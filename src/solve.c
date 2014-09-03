@@ -1671,7 +1671,23 @@ static void copy_solution(struct solve_runtime *runtime)
 		/* copy solution */
 		*soln = runtime->pot_pa[i];
 		soln->db = db;
+
+		adb_info(db, ADB_LOG_SOLVE, "Adding solution %d\n",
+			solve->num_solutions);
+		adb_info(db, ADB_LOG_SOLVE, " plate 0: X %d Y %d ADU %d\n",
+			soln->soln_pobject[0].x, soln->soln_pobject[0].y,
+			soln->soln_pobject[0].adu);
+		adb_info(db, ADB_LOG_SOLVE, " plate 1: X %d Y %d ADU %d\n",
+			soln->soln_pobject[1].x, soln->soln_pobject[1].y,
+			soln->soln_pobject[1].adu);
+		adb_info(db, ADB_LOG_SOLVE, " plate 2: X %d Y %d ADU %d\n",
+			soln->soln_pobject[2].x, soln->soln_pobject[2].y,
+			soln->soln_pobject[2].adu);
+		adb_info(db, ADB_LOG_SOLVE, " plate 3: X %d Y %d ADU %d\n",
+			soln->soln_pobject[3].x, soln->soln_pobject[3].y,
+			soln->soln_pobject[3].adu);
 		solve->num_solutions++;
+
 	}
 
 	pthread_mutex_unlock(&solve->mutex);
