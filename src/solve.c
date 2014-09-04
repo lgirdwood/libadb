@@ -2190,3 +2190,9 @@ int adb_solve_add_pobjects(struct adb_solve *solve,
 	solution->num_pobjects += num_pobjects;
 	return 0;
 }
+
+int adb_solve_get_pobject_count(struct adb_solve *solve,
+		struct adb_solve_solution *solution)
+{
+	return solution->num_pobjects;
+}

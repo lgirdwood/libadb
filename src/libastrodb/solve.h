@@ -194,6 +194,9 @@ int adb_solve_add_pobjects(struct adb_solve *solve,
 int adb_solve_prep_solution(struct adb_solve_solution *solution,
 	double fov, double mag_limit, int table_id);
 
+int adb_solve_get_pobject_count(struct adb_solve *solve,
+		struct adb_solve_solution *solution);
+
 #ifdef __cplusplus
 };
 #endif
