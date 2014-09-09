@@ -711,20 +711,26 @@ static int add_reference_object(struct adb_solve_solution *soln,
 	const struct adb_object *object, struct adb_pobject *pobject)
 {
 	struct adb_reference_object *ref;
+	struct adb_solve *solve = soln->solve;
 	int i;
+	pthread_mutex_lock(&solve->mutex);
 
 	/* first check to see if object is already present */
 	for (i = 0; i < soln->num_ref_objects; i++) {
 		ref = &soln->ref[i];
-		if (ref->object == object)
+		if (ref->object == object) {
+			pthread_mutex_unlock(&solve->mutex);
 			return 0;
+		}
 	}
 
 	/* add new reference object to end */
 	soln->ref = realloc(soln->ref,
 		sizeof(struct adb_reference_object) * (soln->num_ref_objects + 1));
-	if (soln->ref == NULL)
+	if (soln->ref == NULL) {
+		pthread_mutex_unlock(&solve->mutex);
 		return -ENOMEM;
+	}
 
 	soln->ref[soln->num_ref_objects].object = object;
 	soln->ref[soln->num_ref_objects].mean = 0.0;
@@ -737,6 +743,7 @@ static int add_reference_object(struct adb_solve_solution *soln,
 		soln->ref[i].sigma = get_plate_mag_sigma(soln, i, soln->ref[i].mean);
 	}
 
+	pthread_mutex_unlock(&solve->mutex);
 	return 0;
 }
 
@@ -1671,6 +1678,7 @@ static void copy_solution(struct solve_runtime *runtime)
 
 		/* copy solution */
 		*soln = runtime->pot_pa[i];
+		soln->solve = solve;
 		soln->db = db;
 
 		adb_info(db, ADB_LOG_SOLVE, "Adding solution %d\n",
@@ -1800,8 +1808,10 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 	solve->constraint.max_fov = 90.0 * D2R * 1000.0;
 	solve->num_solutions = 0;
 
-	for (i = 0; i < MAX_RT_SOLUTIONS; i++)
+	for (i = 0; i < MAX_RT_SOLUTIONS; i++) {
 		solve->solution[i].db = db;
+		solve->solution[i].solve = solve;
+	}
 
 	return solve;
 }

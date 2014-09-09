@@ -93,6 +93,8 @@ struct adb_reference_object {
  * \ingroup solve
  */
 struct adb_solve_solution {
+	struct adb_solve *solve;
+
 	/* objects and plate objects used to find solution */
 	const struct adb_object *object[ADB_NUM_TARGETS];
 	struct adb_pobject soln_pobject[ADB_NUM_TARGETS];
