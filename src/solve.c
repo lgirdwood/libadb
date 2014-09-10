@@ -713,6 +713,7 @@ static int add_reference_object(struct adb_solve_solution *soln,
 	struct adb_reference_object *ref;
 	struct adb_solve *solve = soln->solve;
 	int i;
+
 	pthread_mutex_lock(&solve->mutex);
 
 	/* first check to see if object is already present */
@@ -722,14 +723,6 @@ static int add_reference_object(struct adb_solve_solution *soln,
 			pthread_mutex_unlock(&solve->mutex);
 			return 0;
 		}
-	}
-
-	/* add new reference object to end */
-	soln->ref = realloc(soln->ref,
-		sizeof(struct adb_reference_object) * (soln->num_ref_objects + 1));
-	if (soln->ref == NULL) {
-		pthread_mutex_unlock(&solve->mutex);
-		return -ENOMEM;
 	}
 
 	soln->ref[soln->num_ref_objects].object = object;
@@ -2039,6 +2032,16 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 		sizeof(struct adb_object *), object_cmp);
 	solution->source.num_objects = count;
 
+	/* allocate initial reference objects */
+	solution->ref = realloc(solution->ref,
+			sizeof(struct adb_reference_object) *
+			(solution->num_ref_objects + 4 + solution->num_pobjects));
+	if (solution->ref == NULL) {
+		free(set);
+		solution->set = NULL;
+		return -ENOMEM;
+	}
+
 	/* use the 4 solution objects as first reference objects */
 	for (i = 0; i < 4; i++)
 		add_reference_object(solution, solution->object[i],
@@ -2185,12 +2188,21 @@ int adb_solve_add_pobjects(struct adb_solve *solve,
 {
 	int i, j;
 
-	/* reallocate memory for new solved objects */
+	/* reallocate memory for new plate objects */
 	solution->pobjects = realloc(solution->pobjects,
-			sizeof(struct adb_solve_object) *
-			(solution->num_pobjects + num_pobjects));
+		sizeof(struct adb_solve_object) *
+		(solution->num_pobjects + num_pobjects));
 	if (solution->pobjects == NULL)
-			return -ENOMEM;
+		return -ENOMEM;
+
+	/* add new reference object to end */
+	solution->ref = realloc(solution->ref,
+		sizeof(struct adb_reference_object) *
+		(solution->num_ref_objects + num_pobjects + solution->num_pobjects));
+	if (solution->ref == NULL) {
+		free(solution->pobjects);
+		return -ENOMEM;
+	}
 
 	for (i = solution->num_pobjects, j = 0;
 			i < solution->num_pobjects + num_pobjects; i++, j++) {
