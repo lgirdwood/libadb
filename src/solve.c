@@ -105,6 +105,13 @@ struct solve_constraint {
 	double max_fov1k;
 };
 
+struct solve_tolerance {
+	/* tuning coefficients */
+	double dist;
+	double mag;
+	double pa;
+};
+
 struct adb_solve {
 	struct adb_db *db;
 	struct adb_table *table;
@@ -124,10 +131,7 @@ struct adb_solve {
 	/* source object set */
 	struct adb_source_objects source;
 
-	/* tuning coefficients */
-	double dist_coeff;
-	double mag_delta;
-	double pa_delta;
+	struct solve_tolerance tolerance;
 
 	/* potential solutions from all runtimes */
 	struct adb_solve_solution solution[MAX_RT_SOLUTIONS];
@@ -674,8 +678,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 /* calculate the average difference between plate position values and solution
  * objects. Use this as basis for calculating RA,DEC based on plate x,y.
  */
-static void get_plate_position(struct adb_solve *solve,
-	struct adb_solve_solution *solution,
+static void get_plate_position(struct adb_solve_solution *solution,
 	struct adb_pobject *primary, double *ra_, double *dec_)
 {
 	struct adb_reference_object *ref, *refn;
@@ -751,14 +754,14 @@ static void create_pattern_object(struct adb_solve *solve, int target,
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = get_plate_distance(primary, secondary);
 	t->distance.pattern_min =
-		t->distance.plate_actual - solve->dist_coeff;
+		t->distance.plate_actual - solve->tolerance.dist;
 	t->distance.pattern_max =
-		t->distance.plate_actual + solve->dist_coeff;
+		t->distance.plate_actual + solve->tolerance.dist;
 
 	/* calculate plate magnitude and min,max to primary */
 	t->mag.plate_actual = get_plate_mag_diff(primary, secondary);
-	t->mag.pattern_min = t->mag.plate_actual - solve->mag_delta;
-	t->mag.pattern_max = t->mag.plate_actual + solve->mag_delta;
+	t->mag.pattern_min = t->mag.plate_actual - solve->tolerance.mag;
+	t->mag.pattern_max = t->mag.plate_actual + solve->tolerance.mag;
 
 	/* calculate plate position angle to primary */
 	t->pa.plate_actual = get_plate_pa(primary, secondary);
@@ -779,7 +782,7 @@ static void create_target_pattern(struct adb_solve *solve)
 		create_pattern_object(solve, j,
 			&solve->pobject[solve->plate_idx_start], &solve->pobject[i]);
 
-	/* work out PA deltas */
+	/* work out PA tolerances */
 	t0 = &solve->target.secondary[0];
 	t1 = &solve->target.secondary[1];
 	t2 = &solve->target.secondary[2];
@@ -787,20 +790,20 @@ static void create_target_pattern(struct adb_solve *solve)
 	t0->pa.pattern_min = t1->pa.plate_actual - t0->pa.plate_actual;
 	if (t0->pa.pattern_min < 0.0)
 		t0->pa.pattern_min += 2.0 * M_PI;
-	t0->pa.pattern_max = t0->pa.pattern_min + solve->pa_delta;
-	t0->pa.pattern_min -= solve->pa_delta;
+	t0->pa.pattern_max = t0->pa.pattern_min + solve->tolerance.pa;
+	t0->pa.pattern_min -= solve->tolerance.pa;
 
 	t1->pa.pattern_min = t2->pa.plate_actual - t1->pa.plate_actual;
 	if (t1->pa.pattern_min < 0.0)
 		t1->pa.pattern_min += 2.0 * M_PI;
-	t1->pa.pattern_max = t1->pa.pattern_min + solve->pa_delta;
-	t1->pa.pattern_min -= solve->pa_delta;
+	t1->pa.pattern_max = t1->pa.pattern_min + solve->tolerance.pa;
+	t1->pa.pattern_min -= solve->tolerance.pa;
 
 	t2->pa.pattern_min = t0->pa.plate_actual - t2->pa.plate_actual;
 	if (t2->pa.pattern_min < 0.0)
 		t2->pa.pattern_min += 2.0 * M_PI;
-	t2->pa.pattern_max = t2->pa.pattern_min + solve->pa_delta;
-	t2->pa.pattern_min -= solve->pa_delta;
+	t2->pa.pattern_max = t2->pa.pattern_min + solve->tolerance.pa;
+	t2->pa.pattern_min -= solve->tolerance.pa;
 
 	t0->pa.plate_actual = t0->pa.pattern_min +
 			(t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
@@ -815,7 +818,7 @@ static void create_target_pattern(struct adb_solve *solve)
 	if (t2->pa.plate_actual < 0.0)
 			t2->pa.plate_actual += 2.0 * M_PI;
 
-	/* calculate flip PA deltas where image can be fliped */
+	/* calculate flip PA tolerances where image can be fliped */
 	t0->pa_flip.plate_actual = 2.0 * M_PI - t0->pa.plate_actual;
 	t0->pa_flip.pattern_min = 2.0 * M_PI - t0->pa.pattern_min;
 	t0->pa_flip.pattern_max = 2.0 * M_PI - t0->pa.pattern_max;
@@ -841,14 +844,14 @@ static void create_single_object(struct adb_solve *solve, int target,
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = get_plate_distance(primary, secondary);
 	t->distance.pattern_min = solution->rad_per_1kpix *
-		(t->distance.plate_actual - solve->dist_coeff);
+		(t->distance.plate_actual - solve->tolerance.dist);
 	t->distance.pattern_max = solution->rad_per_1kpix *
-		(t->distance.plate_actual + solve->dist_coeff);
+		(t->distance.plate_actual + solve->tolerance.dist);
 
 	/* calculate plate magnitude and min,max to primary */
 	t->mag.plate_actual = get_plate_mag_diff(primary, secondary);
-	t->mag.pattern_min = t->mag.plate_actual - solution->delta_magnitude;
-	t->mag.pattern_max = t->mag.plate_actual + solution->delta_magnitude;
+	t->mag.pattern_min = t->mag.plate_actual - solve->tolerance.mag;
+	t->mag.pattern_max = t->mag.plate_actual + solve->tolerance.mag;
 
 	/* calculate plate position angle to primary */
 	t->pa.plate_actual = get_plate_pa(primary, secondary);
@@ -868,7 +871,7 @@ static void create_target_single(struct adb_solve *solve,
 		create_single_object(solve, j, pobject,
 			&solve->pobject[i], runtime, solution);
 
-	/* work out PA deltas */
+	/* work out PA tolerances */
 	t0 = &runtime->soln_target[0];
 	t1 = &runtime->soln_target[1];
 	t2 = &runtime->soln_target[2];
@@ -877,26 +880,26 @@ static void create_target_single(struct adb_solve *solve,
 	t0->pa.pattern_min = t1->pa.plate_actual - t0->pa.plate_actual;
 	if (t0->pa.pattern_min < 0.0)
 		t0->pa.pattern_min += 2.0 * M_PI;
-	t0->pa.pattern_max = t0->pa.pattern_min + solve->pa_delta;
-	t0->pa.pattern_min -= solve->pa_delta;
+	t0->pa.pattern_max = t0->pa.pattern_min + solve->tolerance.pa;
+	t0->pa.pattern_min -= solve->tolerance.pa;
 
 	t1->pa.pattern_min = t2->pa.plate_actual - t1->pa.plate_actual;
 	if (t1->pa.pattern_min < 0.0)
 		t1->pa.pattern_min += 2.0 * M_PI;
-	t1->pa.pattern_max = t1->pa.pattern_min + solve->pa_delta;
-	t1->pa.pattern_min -= solve->pa_delta;
+	t1->pa.pattern_max = t1->pa.pattern_min + solve->tolerance.pa;
+	t1->pa.pattern_min -= solve->tolerance.pa;
 
 	t2->pa.pattern_min = t3->pa.plate_actual - t2->pa.plate_actual;
 	if (t2->pa.pattern_min < 0.0)
 		t2->pa.pattern_min += 2.0 * M_PI;
-	t2->pa.pattern_max = t2->pa.pattern_min + solve->pa_delta;
-	t2->pa.pattern_min -= solve->pa_delta;
+	t2->pa.pattern_max = t2->pa.pattern_min + solve->tolerance.pa;
+	t2->pa.pattern_min -= solve->tolerance.pa;
 
 	t3->pa.pattern_min = t0->pa.plate_actual - t3->pa.plate_actual;
 	if (t3->pa.pattern_min < 0.0)
 		t3->pa.pattern_min += 2.0 * M_PI;
-	t3->pa.pattern_max = t3->pa.pattern_min + solve->pa_delta;
-	t3->pa.pattern_min -= solve->pa_delta;
+	t3->pa.pattern_max = t3->pa.pattern_min + solve->tolerance.pa;
+	t3->pa.pattern_min -= solve->tolerance.pa;
 
 	t0->pa.plate_actual = t0->pa.pattern_min +
 			(t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
@@ -915,7 +918,7 @@ static void create_target_single(struct adb_solve *solve,
 	if (t3->pa.plate_actual < 0.0)
 			t3->pa.plate_actual += 2.0 * M_PI;
 
-	/* calculate flip PA deltas where image can be fliped */
+	/* calculate flip PA tolerances where image can be fliped */
 	t0->pa_flip.plate_actual = 2.0 * M_PI - t0->pa.plate_actual;
 	t0->pa_flip.pattern_min = 2.0 * M_PI - t0->pa.pattern_min;
 	t0->pa_flip.pattern_max = 2.0 * M_PI - t0->pa.pattern_max;
@@ -1146,7 +1149,7 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 
 	/* get search start position */
 	pos = object_get_first_on_mag(source,
-		primary->key - solve->mag_delta, 0);
+		primary->key - solve->tolerance.mag, 0);
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
@@ -1879,7 +1882,7 @@ int adb_solve_constraint(struct adb_solve *solve,
 /*! \fn int adb_solve_get_results(struct adb_solve *solve,
 				struct adb_object_set *set,
 				const struct adb_object **objects[],
-				double dist_coeff, double mag_coeff,
+				double delta.dist, double mag_coeff,
 				double pa_coeff)
 * \param image Image
 * \param num_scales Number of wavelet scales.
@@ -1938,21 +1941,21 @@ int adb_solve(struct adb_solve *solve,
 int adb_solve_set_magnitude_delta(struct adb_solve *solve,
 		double delta_mag)
 {
-	solve->mag_delta = delta_mag;
+	solve->tolerance.mag = delta_mag;
 	return 0;
 }
 
 int adb_solve_set_distance_delta(struct adb_solve *solve,
 		double delta_pixels)
 {
-	solve->dist_coeff = delta_pixels;
+	solve->tolerance.dist = delta_pixels;
 	return 0;
 }
 
 int adb_solve_set_pa_delta(struct adb_solve *solve,
 		double delta_degrees)
 {
-	solve->pa_delta = delta_degrees * D2R;
+	solve->tolerance.pa = delta_degrees * D2R;
 	return 0;
 }
 
@@ -2115,8 +2118,7 @@ static int get_object(struct adb_solve *solve,
 estimate:
 	/* nothing found so return object magnitude and position */
 	sobject->mag = get_plate_magnitude(solve, solution, pobject);
-	get_plate_position(solve, solution, pobject,
-			&sobject->ra, &sobject->dec);
+	get_plate_position(solution, pobject, &sobject->ra, &sobject->dec);
 	if (count == 0)
 		return 0;
 

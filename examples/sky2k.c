@@ -921,7 +921,8 @@ static int sky2k_solve(char *lib_dir)
 		/* set FoV and mag limits for single object searches */
 		adb_solve_prep_solution(solution, 2.0, 8.0, table_id);
 
-		fprintf(stdout, "Solution %d score %f\n", i, solution->divergance);
+		fprintf(stdout, "Solution %d score %f\n", i,
+				adb_solution_divergence(solution));
 
 		/* get subsequent objects */
 		ret = adb_solve_add_pobjects(solve, solution, pobject, 6);
@@ -933,7 +934,7 @@ static int sky2k_solve(char *lib_dir)
 			goto set_err;
 
 		for (j = 0; j < 6; j++)
-			sobject_printf(&solution->solve_object[j]);
+			sobject_printf(adb_solution_get_object(solution, j));
 	}
 out:
 	/* were done with the db */
