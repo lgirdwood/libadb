@@ -105,7 +105,7 @@ struct adb_solve_solution {
 	struct adb_db *db;
 
 	/* solution delta to db */
-	struct solve_tolerance tolerance;
+	struct solve_tolerance delta;
 	double divergance;
 	double rad_per_1kpix;
 	int flip;
@@ -991,7 +991,7 @@ static void add_pot_on_distance(struct solve_runtime *runtime,
 	p->soln_pobject[1] = solve->pobject[solve->plate_idx_start + 1];
 	p->soln_pobject[2] = solve->pobject[solve->plate_idx_start + 2];
 	p->soln_pobject[3] = solve->pobject[solve->plate_idx_start + 3];
-	p->tolerance.dist = delta;
+	p->delta.dist = delta;
 	p->rad_per_1kpix = rad_per_1kpix;
 	runtime->num_pot_distance++;
 }
@@ -1007,7 +1007,7 @@ static void add_single_pot_on_distance(struct solve_runtime *runtime,
 		return;
 
 	p = &runtime->pot_distance[runtime->num_pot_distance];
-	p->tolerance.dist = delta;
+	p->delta.dist = delta;
 	p->object[0] = primary;
 	p->flip = flip;
 	runtime->num_pot_distance++;
@@ -1220,18 +1220,18 @@ static int solve_single_object_on_magnitude(struct solve_runtime *runtime,
 
 	plate_mag = get_plate_magnitude(solve, solution, pobject);
 
-	mag_min = plate_mag - solution->tolerance.mag;
-	mag_max = plate_mag + solution->tolerance.mag;
+	mag_min = plate_mag - solution->delta.mag;
+	mag_max = plate_mag + solution->delta.mag;
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
-			mag_min - solution->tolerance.mag, 0);
+			mag_min - solution->delta.mag, 0);
 
 	end = object_get_last_with_mag(source,
-			mag_max + solution->tolerance.mag, 0);
+			mag_max + solution->delta.mag, 0);
 
 	SOBJ_MAG(mag_min - solution->tolerance.mag,
-			mag_max + solution->tolerance.mag);
+			mag_max + solution->delta.mag);
 
 	/* both out of range */
 	if (start == end)
@@ -1460,7 +1460,7 @@ static void add_pot_on_pa(struct solve_runtime *runtime,
 	if (runtime->num_pot_pa >= MAX_ACTUAL_MATCHES)
 		return;
 
-	p->tolerance.pa = delta;
+	p->delta.pa = delta;
 	runtime->pot_pa[runtime->num_pot_pa++] = *p;
 }
 
@@ -1634,15 +1634,15 @@ static void calc_cluster_divergence(struct solve_runtime *runtime)
 
 	/* calculate differences in magnitude from DB and plate objects */
 	for (i = 0; i < runtime->num_pot_pa; i++) {
-		runtime->pot_pa[i].tolerance.mag =
+		runtime->pot_pa[i].delta.mag =
 			(calc_magnitude_deltas(runtime, i, 0) +
 			calc_magnitude_deltas(runtime, i, 1) +
 			calc_magnitude_deltas(runtime, i, 2)) / 3.0;
 
 		runtime->pot_pa[i].divergance =
-			runtime->pot_pa[i].tolerance.mag * DELTA_MAG_COEFF +
-			runtime->pot_pa[i].tolerance.dist * DELTA_DIST_COEFF +
-			runtime->pot_pa[i].tolerance.pa * DELTA_PA_COEFF;
+			runtime->pot_pa[i].delta.mag * DELTA_MAG_COEFF +
+			runtime->pot_pa[i].delta.dist * DELTA_DIST_COEFF +
+			runtime->pot_pa[i].delta.pa * DELTA_PA_COEFF;
 	}
 }
 
@@ -1654,14 +1654,14 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 
 	/* calculate differences in magnitude from DB and plate objects */
 	for (i = 0; i < runtime->num_pot_pa; i++) {
-		runtime->pot_pa[i].tolerance.mag =
+		runtime->pot_pa[i].delta.mag =
 			fabs(get_plate_magnitude(runtime->solve, solution, pobject) -
 			runtime->pot_pa[0].object[0]->key);
 
 		runtime->pot_pa[i].divergance =
-			runtime->pot_pa[i].tolerance.mag * DELTA_MAG_COEFF +
-			runtime->pot_pa[i].tolerance.dist * DELTA_DIST_COEFF +
-			runtime->pot_pa[i].tolerance.pa * DELTA_PA_COEFF;
+			runtime->pot_pa[i].delta.mag * DELTA_MAG_COEFF +
+			runtime->pot_pa[i].delta.dist * DELTA_DIST_COEFF +
+			runtime->pot_pa[i].delta.pa * DELTA_PA_COEFF;
 	}
 }
 
