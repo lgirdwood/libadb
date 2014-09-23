@@ -166,6 +166,11 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 int adb_solve_get_pobject_count(struct adb_solve *solve,
 		struct adb_solve_solution *solution);
 
+double adb_solution_divergence(struct adb_solve_solution *solution);
+
+struct adb_solve_object *adb_solution_get_object(
+	struct adb_solve_solution *solution, int index);
+
 #ifdef __cplusplus
 };
 #endif

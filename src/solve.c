@@ -2253,3 +2253,17 @@ int adb_solve_get_pobject_count(struct adb_solve *solve,
 {
 	return solution->num_pobjects;
 }
+
+double adb_solution_divergence(struct adb_solve_solution *solution)
+{
+	return solution->divergance;
+}
+
+struct adb_solve_object *adb_solution_get_object(
+	struct adb_solve_solution *solution, int index)
+{
+	if (index >= solution->num_pobjects)
+		return NULL;
+
+	return &solution->solve_object[index];
+}
