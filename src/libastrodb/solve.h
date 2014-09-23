@@ -92,41 +92,8 @@ struct adb_reference_object {
  * \brief Solver solution
  * \ingroup solve
  */
-struct adb_solve_solution {
-	struct adb_solve *solve;
 
-	/* objects and plate objects used to find solution */
-	const struct adb_object *object[ADB_NUM_TARGETS];
-	struct adb_pobject soln_pobject[ADB_NUM_TARGETS];
-
-	/* plate objects to solve */
-	int num_pobjects;
-	struct adb_pobject *pobjects;
-
-	/* source object storage */
-	struct adb_source_objects source;
-	struct adb_object_set *set;
-	struct adb_db *db;
-
-	/* solution delta to db */
-	double delta_pa;
-	double delta_distance;
-	double delta_magnitude;
-	double divergance;
-	double rad_per_1kpix;
-	int flip;
-
-	/* solved objects from current table */
-	struct adb_solve_object *solve_object;
-	int num_solved_objects;
-	int num_unsolved_objects;
-	int total_objects;
-
-	/* reference objects - total solved objects - can come from any table */
-	struct adb_reference_object *ref;
-	int num_ref_objects;
-};
-
+struct adb_solve_solution;
 struct adb_solve;
 
 /*! \fn adb_search* adb_search_new(adb_table *table);
