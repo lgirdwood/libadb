@@ -51,8 +51,8 @@ AC_CHECK_FUNCS([bzero gettimeofday memmove mkdir strdup strstr strtol], , [AC_MS
 AC_CHECK_LIB([m], [sqrtf], , [AC_MSG_ERROR([Need sqrtf])])
 
 # Checks for libraries.
-AC_CHECK_LIB([ftp], [FtpInit])
-AC_CHECK_LIB([z], [gzopen])
+AC_CHECK_LIB([ftp], [FtpInit], , [AC_MSG_ERROR([Missing ftplib-dev])])
+AC_CHECK_LIB([z], [gzopen], , [AC_MSG_ERROR([Missing zlib1g-dev])])
 
 AC_DEFINE([_GNU_SOURCE], [], [Description])
 
