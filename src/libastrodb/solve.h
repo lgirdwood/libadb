@@ -171,6 +171,9 @@ double adb_solution_divergence(struct adb_solve_solution *solution);
 struct adb_solve_object *adb_solution_get_object(
 	struct adb_solve_solution *solution, int index);
 
+void adb_solve_image_set_properties(struct adb_solve *solve, int width,
+		int height,  double ra, double dec);
+
 #ifdef __cplusplus
 };
 #endif

@@ -169,6 +169,12 @@ struct adb_solve {
 	/* potential solutions from all runtimes */
 	struct adb_solve_solution solution[MAX_RT_SOLUTIONS];
 	int num_solutions;
+
+	/* plate properties */
+	int plate_width;
+	int plate_height;
+	double plate_ra;
+	double plate_dec;
 };
 
 #ifdef DEBUG
@@ -1990,6 +1996,15 @@ int adb_solve_set_pa_delta(struct adb_solve *solve,
 {
 	solve->tolerance.pa = delta_degrees * D2R;
 	return 0;
+}
+
+void adb_solve_image_set_properties(struct adb_solve *solve, int width,
+		int height,  double ra, double dec)
+{
+	solve->plate_width = width;
+	solve->plate_height = height;
+	solve->plate_ra = ra * D2R;
+	solve->plate_dec = dec * D2R;
 }
 
 int adb_solve_get_solutions(struct adb_solve *solve,
