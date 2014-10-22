@@ -84,8 +84,8 @@ struct adb_reference_object {
 	struct adb_pobject pobject;
 
 	/* estimated magnitude */
-	float mean;
-	float sigma;
+	float mag_mean;
+	float mag_sigma;
 };
 
 /*! \struct adb_solve_solution

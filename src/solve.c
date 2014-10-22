@@ -450,7 +450,7 @@ static float get_plate_mag_mean(struct adb_solve_solution *solution,
 			continue;
 
 		/* ignore any object with mean difference > sigma */
-		if (fabsf(ref->mean) > ref->sigma)
+		if (fabsf(ref->mag_mean) > ref->mag_sigma)
 			continue;
 
 		/* difference between plate objects */
@@ -523,7 +523,7 @@ static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
 
 		/* make sure solved object is close to catalog mag */
 		/* otherwise reject it for magnitude calculation */
-		if (fabsf(ref->mean) > ref->sigma)
+		if (fabsf(ref->mag_mean) > ref->mag_sigma)
 			continue;
 
 		/* calculate mean difference in magnitude */
@@ -762,14 +762,14 @@ static int add_reference_object(struct adb_solve_solution *soln,
 	}
 
 	soln->ref[soln->num_ref_objects].object = object;
-	soln->ref[soln->num_ref_objects].mean = 0.0;
-	soln->ref[soln->num_ref_objects].sigma = 0.0;
+	soln->ref[soln->num_ref_objects].mag_mean = 0.0;
+	soln->ref[soln->num_ref_objects].mag_sigma = 0.0;
 	soln->ref[soln->num_ref_objects++].pobject = *pobject;
 
 	/* calculate new mean and sigma for reference objects */
 	for (i = 0; i < soln->num_ref_objects; i++) {
-		soln->ref[i].mean = get_plate_mag_mean(soln, i);
-		soln->ref[i].sigma = get_plate_mag_sigma(soln, i, soln->ref[i].mean);
+		soln->ref[i].mag_mean = get_plate_mag_mean(soln, i);
+		soln->ref[i].mag_sigma = get_plate_mag_sigma(soln, i, soln->ref[i].mag_mean);
 	}
 
 	pthread_mutex_unlock(&solve->mutex);
