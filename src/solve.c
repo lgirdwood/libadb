@@ -2137,6 +2137,7 @@ static int get_object(struct adb_solve *solve,
 
 		if (plate >= 0) {
 			sobject->object = solution->object[plate];
+			get_plate_position(solution, pobject, &sobject->ra, &sobject->dec);
 			return 1;
 		}
 	}
