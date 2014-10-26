@@ -85,7 +85,6 @@ struct solve_constraint {
 	double max_mag;
 	double min_fov;
 	double max_fov;
-	double max_fov1k;
 };
 
 struct adb_solve_solution {
@@ -107,7 +106,7 @@ struct adb_solve_solution {
 	/* solution delta to db */
 	struct solve_tolerance delta;
 	double divergance;
-	double rad_per_1kpix;
+	double rad_per_pix;
 	int flip;
 
 	/* solved objects from current table */
@@ -680,7 +679,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 {
 	double plate_pa, equ_pa, delta_pa;
 	double plate_dist, equ_dist;
-	double rad_per_1kpixel, target_pa, target_dist;
+	double rad_per_pixel, target_pa, target_dist;
 	double ra, dec, mid_dec;
 
 	/* delta PA between plate and equ */
@@ -691,7 +690,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	/* delta distance between plate and equ */
 	plate_dist = get_plate_distance(p1, p2);
 	equ_dist = get_equ_distance(o1, o2);
-	rad_per_1kpixel = equ_dist / plate_dist;
+	rad_per_pixel = equ_dist / plate_dist;
 
 	/* EQU PA between object1 and target */
 	target_pa = equ_quad(get_plate_pa(p1, ptarget));
@@ -699,7 +698,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 
 	/* EQU dist between object1 and target */
 	target_dist = get_plate_distance(p1, ptarget);
-	target_dist *= rad_per_1kpixel;
+	target_dist *= rad_per_pixel;
 
 	/* middle declination of line */
 	mid_dec = o1->dec + ((o2->dec - o1->dec) / 2.0);
@@ -882,9 +881,9 @@ static void create_single_object(struct adb_solve *solve, int target,
 
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = get_plate_distance(primary, secondary);
-	t->distance.pattern_min = solution->rad_per_1kpix *
+	t->distance.pattern_min = solution->rad_per_pix *
 		(t->distance.plate_actual - solve->tolerance.dist);
-	t->distance.pattern_max = solution->rad_per_1kpix *
+	t->distance.pattern_max = solution->rad_per_pix *
 		(t->distance.plate_actual + solve->tolerance.dist);
 
 	/* calculate plate magnitude and min,max to primary */
@@ -979,7 +978,7 @@ static void create_target_single(struct adb_solve *solve,
 static void add_pot_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source,
-	int i, int j, int k, double delta, double rad_per_1kpix)
+	int i, int j, int k, double delta, double rad_per_pix)
 {
 	struct adb_solve *solve = runtime->solve;
 	struct adb_solve_solution *p;
@@ -998,7 +997,7 @@ static void add_pot_on_distance(struct solve_runtime *runtime,
 	p->soln_pobject[2] = solve->pobject[solve->plate_idx_start + 2];
 	p->soln_pobject[3] = solve->pobject[solve->plate_idx_start + 3];
 	p->delta.dist = delta;
-	p->rad_per_1kpix = rad_per_1kpix;
+	p->rad_per_pix = rad_per_pix;
 	runtime->num_pot_distance++;
 }
 
@@ -1275,7 +1274,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		SOBJ_CHECK(s);
 
 		/* plate object to candidate object 0 */
-		distance = get_equ_distance(solution->object[0], s) * 1000.0;
+		distance = get_equ_distance(solution->object[0], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[0].distance.pattern_min,
@@ -1288,7 +1287,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[0] = distance / runtime->soln_target[0].distance.plate_actual;
 
 		/* plate object to candidate object 1 */
-		distance = get_equ_distance(solution->object[1], s) * 1000.0;
+		distance = get_equ_distance(solution->object[1], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[1].distance.pattern_min,
@@ -1301,7 +1300,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[1] = distance / runtime->soln_target[1].distance.plate_actual;
 
 		/* plate object to candidate object 2 */
-		distance = get_equ_distance(solution->object[2], s) * 1000.0;
+		distance = get_equ_distance(solution->object[2], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[2].distance.pattern_min,
@@ -1314,7 +1313,7 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[2] = distance / runtime->soln_target[2].distance.plate_actual;
 
 		/* plate object to candidate object 3 */
-		distance = get_equ_distance(solution->object[3], s) * 1000.0;
+		distance = get_equ_distance(solution->object[3], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[3].distance.pattern_min,
@@ -1347,7 +1346,7 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 	struct adb_solve *solve = runtime->solve;
 	struct magnitude_range *range = &runtime->pot_magnitude;
 	int i, j, k, count = 0;
-	double distance0, distance1, distance2, rad_per_1kpixel;
+	double distance0, distance1, distance2, rad_per_pixel;
 	double t1_min, t1_max, t2_max, t2_min;
 
 	/* check distance ratio for each matching candidate against targets */
@@ -1370,17 +1369,17 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 		if (not_within_fov_fast(solve, primary, s[0]))
 			continue;
 
-		distance0 = get_equ_distance(primary, s[0]) * 1000.0;
+		distance0 = get_equ_distance(primary, s[0]);
 
 		/* rule out any distances > FOV */
-		if (distance0 > solve->constraint.max_fov1k)
+		if (distance0 > solve->constraint.max_fov)
 			continue;
 
-		rad_per_1kpixel = distance0 / t0->distance.plate_actual;
+		rad_per_pixel = distance0 / t0->distance.plate_actual;
 
 		/* use ratio based on t0 <-> primary distance for t1 */
-		t1_min = t1->distance.pattern_min * rad_per_1kpixel;
-		t1_max = t1->distance.pattern_max * rad_per_1kpixel;
+		t1_min = t1->distance.pattern_min * rad_per_pixel;
+		t1_max = t1->distance.pattern_max * rad_per_pixel;
 
 		DOBJ_CHECK_DIST(1, primary, s[0], distance0, 0.0, 0.0,
 				range->end[0] - range->start[0], i);
@@ -1397,12 +1396,12 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 			if (not_within_fov_fast(solve, primary, s[1]))
 				continue;
 
-			distance1 = get_equ_distance(primary, s[1]) * 1000.0;
+			distance1 = get_equ_distance(primary, s[1]);
 
 			DOBJ_LIST(2, primary, s[1], distance1, j);
 
 			/* rule out any distances > FOV */
-			if (distance1 > solve->constraint.max_fov1k)
+			if (distance1 > solve->constraint.max_fov)
 				continue;
 
 			DOBJ_CHECK_DIST(2, primary, s[1], distance1, t1_min, t1_max,
@@ -1411,8 +1410,8 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 			/* is this t1 candidate within t0 primary ratio */
 			if (distance1 >= t1_min && distance1 <= t1_max) {
 
-				t2_min = t2->distance.pattern_min * rad_per_1kpixel;
-				t2_max = t2->distance.pattern_max * rad_per_1kpixel;
+				t2_min = t2->distance.pattern_min * rad_per_pixel;
+				t2_max = t2->distance.pattern_max * rad_per_pixel;
 
 				/* check t2 candidates */
 				for (k = range->start[2]; k < range->end[2]; k++) {
@@ -1426,12 +1425,12 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 					if (not_within_fov_fast(solve, primary, s[2]))
 						continue;
 
-					distance2 = get_equ_distance(primary, s[2]) * 1000.0;
+					distance2 = get_equ_distance(primary, s[2]);
 
 					DOBJ_LIST(3, primary, s[2], distance2, k);
 
 					/* rule out any distances > FOV */
-					if (distance2 > solve->constraint.max_fov1k)
+					if (distance2 > solve->constraint.max_fov)
 						continue;
 
 					DOBJ_CHECK_DIST(3, primary, s[2], distance2, t2_min, t2_max, 0, k);
@@ -1445,10 +1444,10 @@ static int solve_object_on_distance(struct solve_runtime *runtime,
 						ratio1 = distance1 / t1->distance.plate_actual;
 						ratio2 = distance2 / t2->distance.plate_actual;
 
-						delta = tri_diff(rad_per_1kpixel, ratio1, ratio2);
+						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
 
 						add_pot_on_distance(runtime, primary, &solve->source,
-							i, j, k, delta, tri_avg(rad_per_1kpixel, ratio1, ratio2));
+							i, j, k, delta, tri_avg(rad_per_pixel, ratio1, ratio2));
 						count++;
 					}
 				}
@@ -1840,7 +1839,6 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 	solve->constraint.max_mag = -2.0;
 	solve->constraint.min_fov = 0.1 * D2R;
 	solve->constraint.max_fov = 90.0 * D2R;
-	solve->constraint.max_fov = 90.0 * D2R * 1000.0;
 	solve->num_solutions = 0;
 
 	for (i = 0; i < MAX_RT_SOLUTIONS; i++) {
@@ -1901,7 +1899,6 @@ int adb_solve_constraint(struct adb_solve *solve,
 	case ADB_CONSTRAINT_FOV:
 		solve->constraint.min_fov = min * D2R;
 		solve->constraint.max_fov = max * D2R;
-		solve->constraint.max_fov1k = max * D2R * 1000.0;
 		break;
 	case ADB_CONSTRAINT_RA:
 		solve->constraint.min_ra = min * D2R;
