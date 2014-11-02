@@ -87,6 +87,19 @@ struct solve_constraint {
 	double max_fov;
 };
 
+struct adb_reference_object {
+	const struct adb_object *object;
+	struct adb_pobject pobject;
+	int id;
+
+	/* estimated magnitude */
+	float mag_mean;
+	float mag_sigma;
+
+	int clip_mag;
+	int clip_posn;
+};
+
 struct adb_solve_solution {
 	struct adb_solve *solve;
 
@@ -421,22 +434,25 @@ static float get_plate_magnitude(struct adb_solve *solve,
 {
 	struct adb_reference_object *ref;
 	double mag = 0.0;
-	int i;
+	int i, count = 0;
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects; i++) {
 		ref = &solution->ref[i];
 
+		if (ref->clip_mag)
+			continue;
+
 		mag += ref->object->key +
 			get_plate_mag_diff(&ref->pobject, primary);
 	}
 
-	return mag / solution->num_ref_objects;
+	return mag / (float)count;
 }
 
 /* compare plate object brightness against the brightness of all the reference
  * plate objects and then use the average differences to calculate magnitude */
-static float get_plate_mag_mean(struct adb_solve_solution *solution,
+static float get_ref_mag_delta_mean(struct adb_solve_solution *solution,
 	int target)
 {
 	struct adb_reference_object *ref, *reft;
@@ -455,7 +471,7 @@ static float get_plate_mag_mean(struct adb_solve_solution *solution,
 			continue;
 
 		/* ignore any object with mean difference > sigma */
-		if (fabsf(ref->mag_mean) > ref->mag_sigma)
+		if (ref->clip_mag)
 			continue;
 
 		/* difference between plate objects */
@@ -477,7 +493,7 @@ static float get_plate_mag_mean(struct adb_solve_solution *solution,
 /* compare plate object brightness against the brightness of all the refernce
  * plate objects and then use the average differences to calculate magnitude
  * sigma */
-static float get_plate_mag_sigma(struct adb_solve_solution *solution,
+static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 	int target, float mean)
 {
 	struct adb_reference_object *ref, *reft;
@@ -493,6 +509,10 @@ static float get_plate_mag_sigma(struct adb_solve_solution *solution,
 		/* dont compare object against itself */
 		if (ref->pobject.x == reft->pobject.x &&
 			ref->pobject.y == reft->pobject.y)
+			continue;
+
+		/* ignore any object with mean difference > sigma */
+		if (ref->clip_mag)
 			continue;
 
 		/* mag difference between target and solved plate object */
@@ -513,6 +533,64 @@ static float get_plate_mag_sigma(struct adb_solve_solution *solution,
 	return sqrtf(sigma);
 }
 
+static void calc_plate_magnitude(struct adb_solve *solve,
+	struct adb_solve_solution *solution)
+{
+	struct adb_reference_object *ref;
+	int i, count = 0, tries = 10, lastcount;
+	float mean_sigma = 0.0, sigma_sigma = 0.0, t, clip;
+
+	do {
+
+		lastcount = count;
+		count = 0;
+
+		/* calc mean delta per reference target */
+		for (i = 0; i < solution->num_ref_objects; i++) {
+				ref = &solution->ref[i];
+
+				if (ref->clip_mag)
+						continue;
+
+				ref->mag_mean = get_ref_mag_delta_mean(solution, i);
+				ref->mag_sigma = get_ref_mag_delta_sigma(solution, i, ref->mag_mean);
+				mean_sigma += ref->mag_sigma;
+				count++;
+		}
+
+		mean_sigma /= count;
+
+		count = 0;
+		for (i = 0; i < solution->num_ref_objects; i++) {
+			ref = &solution->ref[i];
+
+			if (ref->clip_mag)
+				continue;
+
+			t = ref->mag_sigma - mean_sigma;
+			t *=t;
+			sigma_sigma += t;
+			count++;
+		}
+
+		sigma_sigma /= count;
+		sigma_sigma = sqrtf(sigma_sigma);
+		clip = mean_sigma + sigma_sigma;
+
+		count = 0;
+		for (i = 0; i < solution->num_ref_objects; i++) {
+						ref = &solution->ref[i];
+
+						if (ref->mag_sigma >= clip) {
+							ref->clip_mag = 1;
+							count++;
+						}
+		}
+
+		/* clip targets outside sigma */
+	} while (count != lastcount && --tries);
+}
+
 /* TODO: investigate speedup with only 4 ref objects found in soln */
 /* calculate the magnitude of an unsolved plate object */
 static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
@@ -528,7 +606,7 @@ static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
 
 		/* make sure solved object is close to catalog mag */
 		/* otherwise reject it for magnitude calculation */
-		if (fabsf(ref->mag_mean) > ref->mag_sigma)
+		if (ref->clip_mag)
 			continue;
 
 		/* calculate mean difference in magnitude */
@@ -567,34 +645,27 @@ static void calc_unsolved_plate_magnitudes(struct adb_solve *solve,
 static void calc_solved_plate_magnitude(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
-	int i;
+	struct adb_reference_object *ref;
+	int i, idx;
 
 	/* compare each detected object against reference objects */
 	for (i = 0; i < solution->num_ref_objects; i++) {
 
+		ref = &solution->ref[i];
+		idx = ref->id;
+
 		/* ignore objects that are unsolved */
-		if (solution->solve_object[i].object == NULL)
-				continue;
+		if (solution->solve_object[idx].object == NULL)
+			continue;
 
-		solution->solve_object[i].mean = get_plate_mag_mean(solution, i);
+		solution->solve_object[idx].mean = get_ref_mag_delta_mean(solution, i);
 
-		solution->solve_object[i].mag =
-			solution->solve_object[i].object->key +
-			solution->solve_object[i].mean;
-
-		solution->solve_object[i].sigma =
-			get_plate_mag_sigma(solution, i, solution->solve_object[i].mean);
+		solution->solve_object[idx].mag =
+			solution->solve_object[idx].object->key +
+			solution->solve_object[idx].mean;
+		solution->solve_object[idx].sigma =
+			get_ref_mag_delta_sigma(solution, i, solution->solve_object[idx].mean);
 	}
-}
-
-static void calc_solved_plate_magnitudes(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
-{
-	/* run magnitude comparison twice to rule out any stars that differ
-	 * greatly from their source catalog magnitude values.
-	 */
-	calc_solved_plate_magnitude(solve, solution);
-	calc_solved_plate_magnitude(solve, solution);
 }
 
 /* position angle in radians relative to plate north */
@@ -765,7 +836,7 @@ static void get_plate_position(struct adb_solve_solution *solution,
 }
 
 /* add a reference object to the solution */
-static int add_reference_object(struct adb_solve_solution *soln,
+static int add_reference_object(struct adb_solve_solution *soln, int id,
 	const struct adb_object *object, struct adb_pobject *pobject)
 {
 	struct adb_reference_object *ref;
@@ -786,13 +857,8 @@ static int add_reference_object(struct adb_solve_solution *soln,
 	soln->ref[soln->num_ref_objects].object = object;
 	soln->ref[soln->num_ref_objects].mag_mean = 0.0;
 	soln->ref[soln->num_ref_objects].mag_sigma = 0.0;
+	soln->ref[soln->num_ref_objects].id = id;
 	soln->ref[soln->num_ref_objects++].pobject = *pobject;
-
-	/* calculate new mean and sigma for reference objects */
-	for (i = 0; i < soln->num_ref_objects; i++) {
-		soln->ref[i].mag_mean = get_plate_mag_mean(soln, i);
-		soln->ref[i].mag_sigma = get_plate_mag_sigma(soln, i, soln->ref[i].mag_mean);
-	}
 
 	pthread_mutex_unlock(&solve->mutex);
 	return 0;
@@ -2107,11 +2173,6 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 		return -ENOMEM;
 	}
 
-	/* use the 4 solution objects as first reference objects */
-	for (i = 0; i < 4; i++)
-		add_reference_object(solution, solution->object[i],
-			&solution->soln_pobject[i]);
-
 	return 0;
 }
 
@@ -2131,7 +2192,7 @@ static int get_solve_plate(struct adb_solve_solution *solution,
 }
 
 /* get object or estimated object magnitude & position for plate object */
-static int get_object(struct adb_solve *solve,
+static int get_object(struct adb_solve *solve, int object_id,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *pobject, struct adb_solve_object *sobject)
 {
@@ -2152,6 +2213,7 @@ static int get_object(struct adb_solve *solve,
 		if (plate >= 0) {
 			sobject->object = solution->object[plate];
 			get_plate_position(solution, pobject, &sobject->ra, &sobject->dec);
+			add_reference_object(solution, object_id, sobject->object, pobject);
 			return 1;
 		}
 	}
@@ -2162,28 +2224,22 @@ static int get_object(struct adb_solve *solve,
 	/* find candidate adb_source_objects on magnitude */
 	count = solve_single_object_on_magnitude(&runtime, solution, pobject);
 	if (count == 0)
-		goto estimate;
+		return 0;
 
 	/* at this point we have a range of candidate stars that match the
 	 * magnitude bounds of the plate object now check for distance alignment */
 	count = solve_single_object_on_distance(&runtime, solution);
 	if (count == 0)
-		goto estimate;
+		return 0;
 
 	/* At this point we have a list of objects that match on magnitude and
 	 * distance, so we finally check the objects for PA alignment*/
 	count = solve_single_object_on_pa(&runtime, solution);
-	if (count > 0) {
-		/* add object as reference */
-		add_reference_object(solution, runtime.pot_pa[0].object[0], pobject);
-	}
-
-estimate:
-	/* nothing found so return object magnitude and position */
-	sobject->mag = get_plate_magnitude(solve, solution, pobject);
-	get_plate_position(solution, pobject, &sobject->ra, &sobject->dec);
 	if (count == 0)
 		return 0;
+
+	/* add object as reference */
+	add_reference_object(solution, object_id, runtime.pot_pa[0].object[0], pobject);
 
 	calc_object_divergence(&runtime, solution, pobject);
 
@@ -2217,7 +2273,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* solve each new plate object */
 #pragma omp parallel for schedule(dynamic, 10)
 	for (i = 0; i < solution->num_pobjects; i++) {
-		ret = get_object(solve, solution, &solution->pobjects[i],
+		ret = get_object(solve, i, solution, &solution->pobjects[i],
 			&solution->solve_object[i]);
 
 		if (ret < 0) {
@@ -2240,8 +2296,10 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	solution->total_objects = solution->num_solved_objects +
 		solution->num_unsolved_objects;
 
+	calc_plate_magnitude(solve, solution);
+
 	/* recalculate magnitude for each object in image */
-	calc_solved_plate_magnitudes(solve, solution);
+	calc_solved_plate_magnitude(solve, solution);
 	calc_unsolved_plate_magnitudes(solve, solution);
 
 	return solution->num_solved_objects;

@@ -79,15 +79,6 @@ struct adb_solve_object {
 	float sigma;
 };
 
-struct adb_reference_object {
-	const struct adb_object *object;
-	struct adb_pobject pobject;
-
-	/* estimated magnitude */
-	float mag_mean;
-	float mag_sigma;
-};
-
 /*! \struct adb_solve_solution
  * \brief Solver solution
  * \ingroup solve
