@@ -709,8 +709,25 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	ra = -cos(target_pa) * target_dist / cos(mid_dec);
 	dec = -sin(target_pa) * target_dist;
 
-	*ra_ = ra + o1->ra;
-	*dec_ = dec + o1->dec;
+	/* make sure DEC is -90.0 .. 90.0 */
+	dec = dec + o1->dec;
+	if (dec > M_PI_2) {
+		dec = M_PI_2 - (dec - M_PI_2);
+		ra += M_PI; /* swap sides */
+	} else if (dec < -M_PI_2) {
+		dec = -M_PI_2 - (dec + M_PI_2);
+		ra += M_PI; /* swap sides */
+	}
+
+	/* make sure RA is between 0..360 */
+	ra = ra + o1->ra;
+	if (ra > 2.0 * M_PI)
+		ra -= 2.0 * M_PI;
+	if (ra < 0.0)
+		ra += 2.0 * M_PI;
+
+	*ra_ = ra;
+	*dec_ = dec;
 }
 
 /* calculate the average difference between plate position values and solution
