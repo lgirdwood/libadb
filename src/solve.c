@@ -97,7 +97,7 @@ struct adb_reference_object {
 	float mag_sigma;
 
 	/* estimated position */
-	double posn_mean;
+	double dist_mean;
 	double posn_sigma;
 
 	int clip_mag;
@@ -547,6 +547,9 @@ static void calc_plate_magnitude_coefficients(struct adb_solve *solve,
 	int i, count = 0, tries = 10, lastcount;
 	float mean_sigma = 0.0, sigma_sigma = 0.0, t, clip;
 
+	if (solution->num_ref_objects < 3)
+		return;
+
 	do {
 
 		lastcount = count;
@@ -565,9 +568,13 @@ static void calc_plate_magnitude_coefficients(struct adb_solve *solve,
 				count++;
 		}
 
+		if (count == 0)
+			return;
+
 		mean_sigma /= count;
 
 		count = 0;
+		sigma_sigma = 0.0;
 		for (i = 0; i < solution->num_ref_objects; i++) {
 			ref = &solution->ref[i];
 
@@ -579,6 +586,9 @@ static void calc_plate_magnitude_coefficients(struct adb_solve *solve,
 			sigma_sigma += t;
 			count++;
 		}
+
+		if (count == 0)
+			return;
 
 		sigma_sigma /= count;
 		sigma_sigma = sqrtf(sigma_sigma);
@@ -861,6 +871,38 @@ static void get_plate_position(struct adb_solve_solution *solution,
 {
 	struct adb_reference_object *ref, *refn;
 	double ra_sum = 0.0, dec_sum = 0.0, ra, dec;
+	int i, j, count = 0;
+
+	/* get RA, DEC for each reference object */
+	for (i = 0; i < solution->num_ref_objects; i++) {
+		for (j = i + 1; j < solution->num_ref_objects; j++) {
+			ref = &solution->ref[i];
+			refn = &solution->ref[j];
+
+			if (ref->clip_posn || refn->clip_posn)
+					continue;
+
+			plate_to_equ(solution, ref->object, refn->object,
+						&ref->pobject, &refn->pobject, primary, &ra, &dec);
+
+			ra_sum += ra;
+			dec_sum += dec;
+			count++;
+		}
+	}
+
+	*ra_ = ra_sum / count;
+	*dec_ = dec_sum / count;
+}
+
+/* calculate the average difference between plate position values and solution
+ * objects. Use this as basis for calculating RA,DEC based on plate x,y.
+ */
+static void get_plate_position2(struct adb_solve_solution *solution,
+	struct adb_pobject *primary, double *ra_, double *dec_)
+{
+	struct adb_reference_object *ref, *refn;
+	double ra_sum = 0.0, dec_sum = 0.0, ra, dec;
 	int i, count = 0;
 
 	/* get RA, DEC for each reference object */
@@ -902,60 +944,45 @@ calc:
 static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
 	int target)
 {
-	struct adb_reference_object *ref, *refn, *reft;
-	double ra_delta = 0.0, dec_delta = 0.0, ra, dec, mean = 0.0;
+	struct adb_reference_object *ref, *reft;
+	double mean = 0.0, plate_dist, equ_dist, rad_per_pixel;
 	int i, count = 0;
 
 	reft = &solution->ref[target];
 
 	/* get RA, DEC for each reference object */
-	for (i = 0; i < solution->num_ref_objects - 1; i++) {
+	for (i = 0; i < solution->num_ref_objects; i++) {
 		ref = &solution->ref[i];
-		refn = &solution->ref[i + 1];
 
-		if (ref->clip_posn || refn->clip_posn)
+		if (ref->clip_posn || i == target)
 			continue;
 
-		/* get estimated EQU position */
-		plate_to_equ(solution, ref->object, refn->object,
-			&ref->pobject, &refn->pobject, &reft->pobject, &ra, &dec);
+		/* dont compare object against itself */
+		if (ref->pobject.x == reft->pobject.x &&
+			ref->pobject.y == reft->pobject.y)
+			continue;
 
-		/* store RA, DEC delta */
-		ra_delta =  ra - reft->object->ra;
-		dec_delta = dec - reft->object->dec;
-		mean += sqrtf(ra_delta * ra_delta + dec_delta * dec_delta);
+		/* get plate distance */
+		plate_dist = get_plate_distance(&reft->pobject, &ref->pobject);
 
+		/* get equ distance */
+		equ_dist = get_equ_distance(reft->object, ref->object);
+
+		/* get plate/equ ratio */
+		rad_per_pixel = equ_dist / plate_dist;
+
+		mean += rad_per_pixel;
 		count++;
 	}
 
-	/* get final RA, DEC */
-	ref = &solution->ref[solution->num_ref_objects - 1];
-	refn = &solution->ref[0];
-	if (ref->clip_posn || refn->clip_posn)
-		goto calc;
-
-	plate_to_equ(solution, ref->object, refn->object,
-			&ref->pobject, &refn->pobject, &reft->pobject, &ra, &dec);
-
-	/* store RA, DEC delta */
-	ra_delta =  ra - reft->object->ra;
-	dec_delta = dec - reft->object->dec;
-	mean += sqrtf(ra_delta * ra_delta + dec_delta * dec_delta);
-
-	count++;
-
-calc:
 	return mean / (double) count;
 }
 
-/* compare plate object brightness against the brightness of all the refernce
- * plate objects and then use the average differences to calculate magnitude
- * sigma */
 static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
 	int target, double mean)
 {
-	struct adb_reference_object *ref, *refn, *reft;
-	double ra_delta = 0.0, dec_delta = 0.0, ra, dec, delta, sigma = 0.0;
+	struct adb_reference_object *ref, *reft;
+	double sigma = 0.0, plate_dist, equ_dist, rad_per_pixel;
 	int i, count = 0;
 
 	reft = &solution->ref[target];
@@ -963,47 +990,31 @@ static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects - 1; i++) {
 		ref = &solution->ref[i];
-		refn = &solution->ref[i + 1];
 
-		if (ref->clip_posn || refn->clip_posn)
+		if (ref->clip_posn || i == target)
 			continue;
 
-		/* get estimated EQU position */
-		plate_to_equ(solution, ref->object, refn->object,
-			&ref->pobject, &refn->pobject, &reft->pobject, &ra, &dec);
+		/* dont compare object against itself */
+		if (ref->pobject.x == reft->pobject.x &&
+			ref->pobject.y == reft->pobject.y)
+			continue;
 
-		/* store RA, DEC delta */
-		ra_delta =  ra - reft->object->ra;
-		dec_delta = dec - reft->object->dec;
-		delta = sqrtf(ra_delta * ra_delta + dec_delta * dec_delta);
+		/* get plate distance */
+		plate_dist = get_plate_distance(&reft->pobject, &ref->pobject);
 
-		delta -= reft->posn_mean;
-		delta *= delta;
-		sigma += delta;
+		/* get equ distance */
+		equ_dist = get_equ_distance(reft->object, ref->object);
+
+		/* get plate/equ ratio */
+		rad_per_pixel = equ_dist / plate_dist;
+
+		rad_per_pixel -= reft->dist_mean;
+		rad_per_pixel *= rad_per_pixel;
+		sigma += rad_per_pixel;
 		count++;
 	}
 
-	/* get final RA, DEC */
-	ref = &solution->ref[solution->num_ref_objects - 1];
-	refn = &solution->ref[0];
-	if (ref->clip_posn || refn->clip_posn)
-		goto calc;
-
-	plate_to_equ(solution, ref->object, refn->object,
-			&ref->pobject, &refn->pobject, &reft->pobject, &ra, &dec);
-
-	/* store RA, DEC delta */
-	ra_delta =  ra - reft->object->ra;
-	dec_delta = dec - reft->object->dec;
-	delta = sqrtf(ra_delta * ra_delta + dec_delta * dec_delta);
-
-	delta -= reft->posn_mean;
-	delta *= delta;
-	sigma += delta;
-	count++;
-
-calc:
-	sigma /= count;
+	sigma /= (double)count;
 	return sqrtf(sigma);
 }
 
@@ -1013,6 +1024,11 @@ static void clip_plate_position_coefficients(struct adb_solve *solve,
 	struct adb_reference_object *ref;
 	int i, count = 0, tries = 10, lastcount;
 	double mean_sigma = 0.0, sigma_sigma = 0.0, t, clip;
+printf("num refs %d\n", solution->num_ref_objects);
+
+	/* we need at least 3 reference objects */
+	if (solution->num_ref_objects < 3)
+		return;
 
 	do {
 
@@ -1026,16 +1042,21 @@ static void clip_plate_position_coefficients(struct adb_solve *solve,
 				if (ref->clip_posn)
 						continue;
 
-				ref->posn_mean = get_ref_posn_delta_mean(solution, i);
-				ref->posn_sigma = get_ref_posn_delta_sigma(solution, i, ref->posn_mean);
+				ref->dist_mean = get_ref_posn_delta_mean(solution, i);
+				ref->posn_sigma = get_ref_posn_delta_sigma(solution, i, ref->dist_mean);
+
 				mean_sigma += ref->posn_sigma;
 				count++;
 		}
+
+		if (count == 0)
+			return;
 
 		mean_sigma /= count;
 
 		/* calc sigm sigma delta per target */
 		count = 0;
+		sigma_sigma = 0.0;
 		for (i = 0; i < solution->num_ref_objects; i++) {
 			ref = &solution->ref[i];
 
@@ -1048,10 +1069,13 @@ static void clip_plate_position_coefficients(struct adb_solve *solve,
 			count++;
 		}
 
+		if (count == 0)
+			return;
+
 		sigma_sigma /= count;
 		sigma_sigma = sqrtf(sigma_sigma);
 		clip = mean_sigma + sigma_sigma;
-
+printf("sigsig %e clip %e count %d\n\n", sigma_sigma, clip, count);
 		count = 0;
 		/* clip objects outside sigma */
 		for (i = 0; i < solution->num_ref_objects; i++) {
@@ -1090,6 +1114,8 @@ static int add_reference_object(struct adb_solve_solution *soln, int id,
 	soln->ref[soln->num_ref_objects].mag_mean = 0.0;
 	soln->ref[soln->num_ref_objects].mag_sigma = 0.0;
 	soln->ref[soln->num_ref_objects].id = id;
+	soln->ref[soln->num_ref_objects].clip_mag = 0;
+	soln->ref[soln->num_ref_objects].clip_posn = 0;
 	soln->ref[soln->num_ref_objects++].pobject = *pobject;
 
 	pthread_mutex_unlock(&solve->mutex);
