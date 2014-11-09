@@ -2528,7 +2528,7 @@ static int get_object(struct adb_solve *solve, int object_id,
 int adb_solve_get_objects(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
-	int i, ret, fail = 0;
+	int i, ret, fail = 0, num_solved = 0, num_unsolved = 0;
 
 	if (solution->num_pobjects == 0)
 		return 0;
@@ -2552,9 +2552,9 @@ int adb_solve_get_objects(struct adb_solve *solve,
 			fail = 1;
 			continue;
 		} else if (ret == 0)
-			solution->num_unsolved_objects++;
+			num_unsolved++;
 		else
-			solution->num_solved_objects++;
+			num_solved++;
 
 		solution->solve_object[i].pobject = solution->pobjects[i];
 	}
@@ -2564,6 +2564,9 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		solution->solve_object = NULL;
 		return ret;
 	}
+
+	solution->num_solved_objects = num_solved;
+	solution->num_unsolved_objects = num_unsolved;
 
 	solution->total_objects = solution->num_solved_objects +
 		solution->num_unsolved_objects;
