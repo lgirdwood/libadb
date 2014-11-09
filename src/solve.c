@@ -195,6 +195,8 @@ struct adb_solve {
 
 static void get_plate_position(struct adb_solve_solution *solution,
 	struct adb_pobject *primary, double *ra_, double *dec_);
+static void get_equ_position(struct adb_solve_solution *solution,
+	double ra, double dec, int *x_, int *y_);
 
 #ifdef DEBUG
 static const struct adb_object *dobj[4] = {NULL, NULL, NULL, NULL};
@@ -799,6 +801,80 @@ static inline double equ_quad(double pa)
 	if  (pa < 0.0)
 		pa_ = pa + (M_PI * 2.0);
 	return pa_;
+}
+
+static void equ_to_plate(struct adb_solve_solution *solution,
+	const struct adb_object *o1, const struct adb_object *o2,
+	struct adb_pobject *p1, struct adb_pobject *p2,
+	double ra, double dec, int *x_, int *y_)
+{
+	struct adb_object otarget;
+	double plate_pa, equ_pa, delta_pa;
+	double plate_dist, equ_dist;
+	double rad_per_pixel, target_pa, target_dist;
+
+	/* delta PA between plate and equ */
+	plate_pa = equ_quad(get_plate_pa(p1, p2));
+	equ_pa = equ_quad(get_equ_pa(o1, o2));
+	delta_pa = plate_pa - equ_pa;
+
+	/* delta distance between plate and equ */
+	plate_dist = get_plate_distance(p1, p2);
+	equ_dist = get_equ_distance(o1, o2);
+	rad_per_pixel = equ_dist / plate_dist;
+
+	/* plate PA between object1 and target */
+	otarget.ra = ra;
+	otarget.dec = dec;
+	target_pa = equ_quad(get_equ_pa(o1, &otarget));
+	target_pa += delta_pa;
+
+	/* EQU dist between object1 and target */
+	target_dist = get_equ_distance(o1, &otarget);
+	target_dist /= rad_per_pixel;
+
+	/* add angle and distance onto P1 */
+	*x_ = p1->x - cos(target_pa) * target_dist;
+	*y_ = p1->y - sin(target_pa) * target_dist;
+}
+
+/* calculate the average difference between plate position values and solution
+ * objects. Use this as basis for calculating RA,DEC based on plate x,y.
+ */
+static void get_equ_position(struct adb_solve_solution *solution,
+	double ra, double dec, int *x_, int *y_)
+{
+	struct adb_reference_object *ref, *refn;
+	int x_sum = 0, y_sum = 0, i, j, count = 0, x, y;
+
+	/* get RA, DEC for each reference object */
+	for (i = 0; i < solution->num_ref_objects; i++) {
+		for (j = 0; j < solution->num_ref_objects; j++) {
+			ref = &solution->ref[i];
+			refn = &solution->ref[j];
+
+			if (j == i)
+				continue;
+
+			if (ref->clip_posn || refn->clip_posn)
+					continue;
+
+			/* dont compare objects against itself */
+			if (ref->pobject.x == refn->pobject.x &&
+				ref->pobject.y == refn->pobject.y)
+					continue;
+
+			equ_to_plate(solution, ref->object, refn->object,
+						&ref->pobject, &refn->pobject, ra, dec, &x, &y);
+
+			x_sum += x;
+			y_sum += y;
+			count++;
+		}
+	}
+
+	*x_ = x_sum / count;
+	*y_ = y_sum / count;
 }
 
 /* convert plate coordinates to EQU coordinates by comparing plate object
