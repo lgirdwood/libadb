@@ -910,50 +910,6 @@ static void get_plate_position(struct adb_solve_solution *solution,
 	*dec_ = dec_sum / count;
 }
 
-/* calculate the average difference between plate position values and solution
- * objects. Use this as basis for calculating RA,DEC based on plate x,y.
- */
-static void get_plate_position2(struct adb_solve_solution *solution,
-	struct adb_pobject *primary, double *ra_, double *dec_)
-{
-	struct adb_reference_object *ref, *refn;
-	double ra_sum = 0.0, dec_sum = 0.0, ra, dec;
-	int i, count = 0;
-
-	/* get RA, DEC for each reference object */
-	for (i = 0; i < solution->num_ref_objects - 1; i++) {
-		ref = &solution->ref[i];
-		refn = &solution->ref[i + 1];
-
-		if (ref->clip_posn || refn->clip_posn)
-			continue;
-
-		plate_to_equ(solution, ref->object, refn->object,
-			&ref->pobject, &refn->pobject, primary, &ra, &dec);
-
-		ra_sum += ra;
-		dec_sum += dec;
-		count++;
-	}
-
-	/* get final RA, DEC */
-	ref = &solution->ref[solution->num_ref_objects - 1];
-	refn = &solution->ref[0];
-	if (ref->clip_posn || refn->clip_posn)
-		goto calc;
-
-	plate_to_equ(solution, ref->object, refn->object,
-			&ref->pobject, &refn->pobject, primary, &ra, &dec);
-
-	ra_sum += ra;
-	dec_sum += dec;
-	count++;
-
-calc:
-	*ra_ = ra_sum / count;
-	*dec_ = dec_sum / count;
-}
-
 /* compare plate object brightness against the brightness of all the reference
  * plate objects and then use the average differences to calculate magnitude */
 static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
