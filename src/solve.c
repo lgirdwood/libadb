@@ -882,6 +882,21 @@ static void get_plate_position(struct adb_solve_solution *solution,
 			if (ref->clip_posn || refn->clip_posn)
 					continue;
 
+			/* dont compare object against itself */
+			if (ref->pobject.x == primary->x &&
+				ref->pobject.y == primary->y)
+				continue;
+
+			/* dont compare object against itself */
+			if (refn->pobject.x == primary->x &&
+				refn->pobject.y == primary->y)
+				continue;
+
+			/* dont compare object against itself */
+			if (ref->pobject.x == refn->pobject.x &&
+				ref->pobject.y == refn->pobject.y)
+					continue;
+
 			plate_to_equ(solution, ref->object, refn->object,
 						&ref->pobject, &refn->pobject, primary, &ra, &dec);
 
