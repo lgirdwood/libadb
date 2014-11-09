@@ -882,17 +882,17 @@ static void get_plate_position(struct adb_solve_solution *solution,
 			if (ref->clip_posn || refn->clip_posn)
 					continue;
 
-			/* dont compare object against itself */
+			/* dont primary object against itself */
 			if (ref->pobject.x == primary->x &&
 				ref->pobject.y == primary->y)
 				continue;
 
-			/* dont compare object against itself */
+			/* dont primary object against itself */
 			if (refn->pobject.x == primary->x &&
 				refn->pobject.y == primary->y)
 				continue;
 
-			/* dont compare object against itself */
+			/* dont compare objects against itself */
 			if (ref->pobject.x == refn->pobject.x &&
 				ref->pobject.y == refn->pobject.y)
 					continue;
@@ -1039,7 +1039,6 @@ static void clip_plate_position_coefficients(struct adb_solve *solve,
 	struct adb_reference_object *ref;
 	int i, count = 0, tries = 10, lastcount;
 	double mean_sigma = 0.0, sigma_sigma = 0.0, t, clip;
-printf("num refs %d\n", solution->num_ref_objects);
 
 	/* we need at least 3 reference objects */
 	if (solution->num_ref_objects < 3)
@@ -1090,7 +1089,7 @@ printf("num refs %d\n", solution->num_ref_objects);
 		sigma_sigma /= count;
 		sigma_sigma = sqrtf(sigma_sigma);
 		clip = mean_sigma + sigma_sigma;
-printf("sigsig %e clip %e count %d\n\n", sigma_sigma, clip, count);
+
 		count = 0;
 		/* clip objects outside sigma */
 		for (i = 0; i < solution->num_ref_objects; i++) {
