@@ -165,6 +165,8 @@ struct adb_solve_object *adb_solution_get_object(
 void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 		int height,  double ra, double dec);
 
+double adb_solve_get_pixel_size(struct adb_solve_solution *solution);
+
 #ifdef __cplusplus
 };
 #endif
