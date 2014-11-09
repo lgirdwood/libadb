@@ -875,9 +875,12 @@ static void get_plate_position(struct adb_solve_solution *solution,
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects; i++) {
-		for (j = i + 1; j < solution->num_ref_objects; j++) {
+		for (j = 0; j < solution->num_ref_objects; j++) {
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
+
+			if (j == i)
+				continue;
 
 			if (ref->clip_posn || refn->clip_posn)
 					continue;
