@@ -2605,13 +2605,18 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	solution->total_objects = solution->num_solved_objects +
 		solution->num_unsolved_objects;
 
+	/* calulate plate coefficients */
+#pragma omp parallel
+	{
+		calc_plate_magnitude_coefficients(solve, solution);
+		clip_plate_position_coefficients(solve, solution);
+	}
+
 	/* calculate magnitude for each object in image */
-	calc_plate_magnitude_coefficients(solve, solution);
 	calc_solved_plate_magnitude(solve, solution);
 	calc_unsolved_plate_magnitudes(solve, solution);
 
 	/* calc positions for each object in image */
-	clip_plate_position_coefficients(solve, solution);
 	calc_solved_plate_positions(solve, solution);
 	calc_unsolved_plate_positions(solve, solution);
 
