@@ -2674,7 +2674,7 @@ struct adb_solve_object *adb_solution_get_object(
 	return &solution->solve_object[index];
 }
 
-double adb_solve_get_pixel_size(struct adb_solve_solution *solution)
+double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 {
 	return solution->rad_per_pix;
 }
