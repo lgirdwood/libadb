@@ -167,6 +167,9 @@ void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 
 double adb_solution_get_pixel_size(struct adb_solve_solution *solution);
 
+void adb_solution_get_equ_position(struct adb_solve_solution *solution,
+		double ra, double dec, double *x,  double *y);
+
 #ifdef __cplusplus
 };
 #endif

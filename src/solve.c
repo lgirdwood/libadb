@@ -2678,3 +2678,9 @@ double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 {
 	return solution->rad_per_pix;
 }
+
+void adb_solution_get_equ_position(struct adb_solve_solution *solution,
+		double ra, double dec, double *x,  double *y)
+{
+	get_equ_position(solution, ra, dec,  x,  y);
+}
