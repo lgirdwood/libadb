@@ -41,6 +41,7 @@ struct adb_pobject {
 	int x;
 	int y;
 	unsigned int adu;
+	unsigned int extended;
 };
 
 enum adb_constraint {
