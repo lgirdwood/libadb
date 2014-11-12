@@ -193,10 +193,10 @@ struct adb_solve {
 	double plate_dec;
 };
 
-static void get_plate_position(struct adb_solve_solution *solution,
+static void plate_to_equ_position(struct adb_solve_solution *solution,
 	struct adb_pobject *primary, double *ra_, double *dec_);
-static void get_equ_position(struct adb_solve_solution *solution,
-	double ra, double dec, int *x_, int *y_);
+static void equ_to_plate_position(struct adb_solve_solution *solution,
+	double ra, double dec, double *x_, double *y_);
 
 #ifdef DEBUG
 static const struct adb_object *dobj[4] = {NULL, NULL, NULL, NULL};
@@ -705,7 +705,7 @@ static void calc_solved_plate_positions(struct adb_solve *solve,
 		if (solution->solve_object[idx].object == NULL)
 			continue;
 
-		get_plate_position(solution, &ref->pobject, &solution->solve_object[idx].ra,
+		plate_to_equ_position(solution, &ref->pobject, &solution->solve_object[idx].ra,
 				&solution->solve_object[idx].dec);
 	}
 }
@@ -726,7 +726,7 @@ static void calc_unsolved_plate_positions(struct adb_solve *solve,
 		if (solve_object->object)
 				continue;
 
-		get_plate_position(solution, &solution->pobjects[i],
+		plate_to_equ_position(solution, &solution->pobjects[i],
 				&solution->solve_object[i].ra,
 				&solution->solve_object[i].dec);
 	}
@@ -841,8 +841,8 @@ static void equ_to_plate(struct adb_solve_solution *solution,
 /* calculate the average difference between plate position values and solution
  * objects. Use this as basis for calculating RA,DEC based on plate x,y.
  */
-static void get_equ_position(struct adb_solve_solution *solution,
-	double ra, double dec, int *x_, int *y_)
+static void equ_to_plate_position(struct adb_solve_solution *solution,
+	double ra, double dec, double *x_, double *y_)
 {
 	struct adb_reference_object *ref, *refn;
 	int x_sum = 0, y_sum = 0, i, j, count = 0, x, y;
@@ -873,8 +873,8 @@ static void get_equ_position(struct adb_solve_solution *solution,
 		}
 	}
 
-	*x_ = x_sum / count;
-	*y_ = y_sum / count;
+	*x_ = (double)x_sum / (double)count;
+	*y_ = (double)y_sum / (double)count;
 }
 
 /* convert plate coordinates to EQU coordinates by comparing plate object
@@ -942,7 +942,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 /* calculate the average difference between plate position values and solution
  * objects. Use this as basis for calculating RA,DEC based on plate x,y.
  */
-static void get_plate_position(struct adb_solve_solution *solution,
+static void plate_to_equ_position(struct adb_solve_solution *solution,
 	struct adb_pobject *primary, double *ra_, double *dec_)
 {
 	struct adb_reference_object *ref, *refn;
@@ -2679,8 +2679,58 @@ double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 	return solution->rad_per_pix;
 }
 
-void adb_solution_get_equ_position(struct adb_solve_solution *solution,
+void adb_solution_equ_to_plate_position(struct adb_solve_solution *solution,
 		double ra, double dec, double *x,  double *y)
 {
-	get_equ_position(solution, ra, dec,  x,  y);
+	equ_to_plate_position(solution, ra, dec,  x,  y);
+}
+
+void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
+		int x, int y, double *ra, double *dec)
+{
+	struct adb_pobject p;
+
+	p.x = x;
+	p.y = y;
+
+	plate_to_equ_position(solution, &p, ra, dec);
+}
+
+void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
+		enum adb_plate_bounds bounds, double *ra, double *dec)
+{
+	struct adb_solve *solve = solution->solve;
+	struct adb_pobject p;
+
+	switch (bounds) {
+	case ADB_BOUND_TOP_RIGHT:
+		p.x = solve->plate_width;
+		p.y = solve->plate_height;
+		plate_to_equ_position(solution, &p, ra, dec);
+		break;
+	case ADB_BOUND_TOP_LEFT:
+		p.x = 0;
+		p.y = solve->plate_height;
+		plate_to_equ_position(solution, &p, ra, dec);
+		break;
+	case ADB_BOUND_BOTTOM_RIGHT:
+		p.x = solve->plate_width;
+		p.y =0 ;
+		plate_to_equ_position(solution, &p, ra, dec);
+		break;
+	case ADB_BOUND_BOTTOM_LEFT:
+		p.x = 0;
+		p.y = 0;
+		plate_to_equ_position(solution, &p, ra, dec);
+		break;
+	case ADB_BOUND_CENTRE:
+		p.x = solve->plate_width / 2;
+		p.y = solve->plate_height / 2;
+		plate_to_equ_position(solution, &p, ra, dec);
+		break;
+	default:
+		*ra = 0.0;
+		*dec = 0.0;
+		break;
+	}
 }

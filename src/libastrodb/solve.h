@@ -57,6 +57,14 @@ enum adb_find {
 	ADB_FIND_FIRST,
 };
 
+enum adb_plate_bounds {
+	ADB_BOUND_TOP_RIGHT,
+	ADB_BOUND_TOP_LEFT,
+	ADB_BOUND_BOTTOM_RIGHT,
+	ADB_BOUND_BOTTOM_LEFT,
+	ADB_BOUND_CENTRE,
+};
+
 struct adb_source_objects {
 	const struct adb_object **objects;
 	int num_objects;
@@ -168,7 +176,13 @@ void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 
 double adb_solution_get_pixel_size(struct adb_solve_solution *solution);
 
-void adb_solution_get_equ_position(struct adb_solve_solution *solution,
+void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
+		enum adb_plate_bounds bounds, double *ra, double *dec);
+
+void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
+		int x, int y, double *ra, double *dec);
+
+void adb_solution_equ_to_plate_position(struct adb_solve_solution *solution,
 		double ra, double dec, double *x,  double *y);
 
 #ifdef __cplusplus
