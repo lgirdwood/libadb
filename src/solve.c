@@ -2674,6 +2674,21 @@ struct adb_solve_object *adb_solution_get_object(
 	return &solution->solve_object[index];
 }
 
+struct adb_solve_object *adb_solution_get_object_at(
+	struct adb_solve_solution *solution, int x, int y)
+{
+	int i;
+
+	for (i = 0; i < solution->num_pobjects; i++) {
+		if (x == solution->solve_object[i].pobject.x &&
+				y == solution->solve_object[i].pobject.y) {
+			printf("object id %d\n", i);
+			return &solution->solve_object[i];
+		}
+	}
+	return NULL;
+}
+
 double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 {
 	return solution->rad_per_pix;
