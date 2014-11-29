@@ -69,7 +69,7 @@ static struct adb_schema_field tycho_fields[] = {
 	adb_member("DEC", "DEdeg", struct tycho_object, \
 		object.dec, ADB_CTYPE_DEGREES, "degrees", 0, NULL),
 	adb_member("Mag", "VT", struct tycho_object,
-		object.key, ADB_CTYPE_FLOAT, "", 0, NULL),
+		object.mag, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("pmRA", "pmRA", struct tycho_object,
 		pmRA, ADB_CTYPE_FLOAT, "mas/a", 0, NULL),
 	adb_member("pmDEC", "pmDEC", struct tycho_object,
@@ -98,7 +98,7 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 		for (j = 0; j < object_head->count; j++) {
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f\n",
 				obj->object.designation, obj->object.id, obj->object.ra * R2D,
-				obj->object.dec * R2D, obj->object.key);
+				obj->object.dec * R2D, obj->object.mag);
 			obj++;
 		}
 		object_head++;

@@ -276,7 +276,7 @@ static struct adb_schema_field star_fields[] = {
 	adb_gmember("DEC sign", "DE-", struct sky2kv4_object,
 		object.dec, ADB_CTYPE_SIGN, "", 0, NULL),
 	adb_member("Visual Mag", "Vmag", struct sky2kv4_object,
-		object.key, ADB_CTYPE_FLOAT, "", 0, NULL),
+		object.mag, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("sp", "Sp", struct sky2kv4_object,
 		sp, ADB_CTYPE_STRING, "", 0, sky2kv4_sp_insert),
 	adb_member("HD", "HD", struct sky2kv4_object,
@@ -380,7 +380,7 @@ static void search_print(const struct adb_object *_objects[], int count)
 		const struct sky2kv4_object *obj = objects[i];
 		fprintf(stdout, "Obj:%s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
 			obj->name, obj->object.id, obj->object.ra * R2D,
-			obj->object.dec * R2D, obj->object.key,
+			obj->object.dec * R2D, obj->object.mag,
 			obj->sp, obj->HD);
 		obj++;
 	}
@@ -560,7 +560,7 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 		for (j = 0; j < object_head->count; j++) {
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
 				obj->name, obj->object.id, obj->object.ra * R2D,
-				obj->object.dec * R2D, obj->object.key,
+				obj->object.dec * R2D, obj->object.mag,
 				obj->sp, obj->HD);
 			obj++;
 		}
@@ -575,7 +575,7 @@ static void object_printf(const struct adb_object *object)
 
 	fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
 		obj->name, obj->object.id, obj->object.ra * R2D,
-		obj->object.dec * R2D, obj->object.key,
+		obj->object.dec * R2D, obj->object.mag,
 		obj->sp, obj->HD);
 }
 
@@ -590,7 +590,7 @@ static void sobject_printf(struct adb_solve_object *sobject)
 	if (obj != NULL) {
 		fprintf(stdout, " Obj: %s %ld RA: %f DEC: %f Mag %f Type %s HD %d\n",
 			obj->name, obj->object.id, obj->object.ra * R2D,
-			obj->object.dec * R2D, obj->object.key,
+			obj->object.dec * R2D, obj->object.mag,
 			obj->sp, obj->HD);
 	}
 

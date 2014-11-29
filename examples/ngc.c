@@ -53,7 +53,7 @@ static struct adb_schema_field ngc_fields[] = {
 	adb_gmember("DEC sign", "DE-", struct ngc_object,
 		object.dec, ADB_CTYPE_SIGN, "", 0, NULL),
 	adb_member("Integrated Mag", "mag", struct ngc_object,
-		object.key, ADB_CTYPE_FLOAT, "", 0, NULL),
+		object.mag, ADB_CTYPE_FLOAT, "", 0, NULL),
 	adb_member("Description", "Desc", struct ngc_object,
 		desc, ADB_CTYPE_STRING, "", 0, NULL),
 	adb_member("Largest Dimension", "size", struct ngc_object, \
@@ -76,7 +76,7 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 		for (j = 0; j < object_head->count; j++) {
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f size %f desc %s\n",
 				obj->object.designation, obj->object.id, obj->object.ra * R2D,
-				obj->object.dec * R2D, obj->object.key,
+				obj->object.dec * R2D, obj->object.mag,
 				obj->size, obj->desc);
 			obj++;
 		}

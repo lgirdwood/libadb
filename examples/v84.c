@@ -209,8 +209,8 @@ static int insert_row(struct adb_db *db, int table_id,
 		object->designation, "PNG", &gobject);
 	if (gobject) {
 		struct cstar_object *cstar_obj = (struct cstar_object *)gobject;
-		pn_obj->object.key =
-			cstar_obj->object.key;
+		pn_obj->object.mag =
+			cstar_obj->object.mag;
 	}
 
 	added += adb_table_insert_object(db, table_id, (struct adb_object*) pn_obj);

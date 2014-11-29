@@ -109,7 +109,7 @@ static struct adb_schema_field hyperleda_fields[] = {
 		ADB_CTYPE_STRING, "", 0, NULL),
 	adb_member("OType", "OType", struct hyperleda_object, OType,
 		ADB_CTYPE_STRING, "", 0, otype_insert),
-	adb_member("Diameter", "logD25", struct hyperleda_object,  d.key,
+	adb_member("Diameter", "logD25", struct hyperleda_object,  d.mag,
 		ADB_CTYPE_FLOAT, "0.1amin", 0, size_insert),
 	adb_member("Axis Ratio", "logR25", struct hyperleda_object, axis_ratio,
 		ADB_CTYPE_FLOAT, "0.1amin", 0, size_insert),
@@ -133,7 +133,7 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 		for (j = 0; j < object_head->count; j++) {
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Size %f\n",
 				obj->other_name, obj->d.id, obj->d.ra * R2D,
-				obj->d.dec * R2D, obj->d.key);
+				obj->d.dec * R2D, obj->d.mag);
 			obj++;
 		}
 		object_head++;

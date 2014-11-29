@@ -54,7 +54,8 @@ struct adb_object {
 	/* primary keys for object attribute based access */
 	double ra;
 	double dec;
-	float key;
+	float mag;
+	float size;
 
 	union {
 		struct adb_import import; /* only used for importing */
@@ -93,7 +94,8 @@ void adb_table_set_free(struct adb_object_set *set);
 
 #define adb_object_ra(object) object->ra
 #define adb_object_dec(object) object->dec
-#define adb_object_keyval(object) object->key
+#define adb_object_mag(object) object->mag
+#define adb_object_size(object) object->size
 
 #define ADB_FIELD_DESIGNATION	"_DESIGNATION"
 

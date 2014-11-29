@@ -479,16 +479,16 @@ static int table_histogram_import(struct adb_db *db,
 			continue;
 		}
 
-		if (object.key < table->object.min_value ||
-			object.key > table->object.max_value) {
+		if (object.mag < table->object.min_value ||
+			object.mag > table->object.max_value) {
 			oor++;
 			continue;
 		}
 
-		hindex = (object.key - table->object.min_value) / histo;
+		hindex = (object.mag - table->object.min_value) / histo;
 		if (hindex >= ADB_TABLE_HISTOGRAM_DIVS || hindex < 0) {
 			adb_error(db, "hash index out of range %d for %s have val %f\n",
-				hindex, buf, object.key);
+				hindex, buf, object.mag);
 			oor++;
 			continue;
 		}
@@ -555,16 +555,16 @@ static int table_histogram_alt_import(struct adb_db *db,
 			continue;
 		}
 
-		if (object.key < table->object.min_value ||
-			object.key > table->object.max_value) {
+		if (object.mag < table->object.min_value ||
+			object.mag > table->object.max_value) {
 			oor++;
 			continue;
 		}
 
-		hindex = (object.key - table->object.min_value) / histo;
+		hindex = (object.mag - table->object.min_value) / histo;
 		if (hindex >= ADB_TABLE_HISTOGRAM_DIVS || hindex < 0) {
 			adb_error(db, "hash index out of range %d for %s (%s) have val %f\n",
-				hindex, buf, buf2, object.key);
+				hindex, buf, buf2, object.mag);
 			oor++;
 			continue;
 		}
@@ -590,7 +590,7 @@ static int import_object_ascending(struct adb_db *db,
 	struct htm *htm = db->htm;
 	int depth;
 
-	depth = import_get_object_depth_min(table, adb_object_keyval(object));
+	depth = import_get_object_depth_min(table, adb_object_mag(object));
 	if (depth < 0)
 		return 0;
 
@@ -615,7 +615,7 @@ static int import_object_descending(struct adb_db *db,
 	struct htm *htm = db->htm;
 	int depth;
 
-	depth = import_get_object_depth_max(table, adb_object_keyval(object));
+	depth = import_get_object_depth_max(table, adb_object_mag(object));
 	if (depth < 0)
 		return 0;
 

@@ -234,7 +234,7 @@ static void debug_init(struct adb_object_set *set)
 				fprintf(stderr, "can't find %s\n", snames[i]);
 			else
 				fprintf(stdout, "found %s mag %f\n",
-					sobj[i]->designation, sobj[i]->key);
+					sobj[i]->designation, sobj[i]->mag);
 		}
 }
 
@@ -385,9 +385,9 @@ static int object_cmp(const void *o1, const void *o2)
 	const struct adb_object *p1 = *(const struct adb_object **)o1,
 		*p2 = *(const struct adb_object **)o2;
 
-	if (p1->key < p2->key)
+	if (p1->mag < p2->mag)
 		return -1;
-	else if (p1->key > p2->key)
+	else if (p1->mag > p2->mag)
 		return 1;
 	else
 		return 0;
@@ -452,7 +452,7 @@ static float get_plate_magnitude(struct adb_solve *solve,
 		if (ref->clip_mag)
 			continue;
 
-		mag += ref->object->key +
+		mag += ref->object->mag +
 			get_plate_mag_diff(&ref->pobject, primary);
 	}
 
@@ -487,7 +487,7 @@ static float get_ref_mag_delta_mean(struct adb_solve_solution *solution,
 		plate_delta = get_plate_mag_diff(&reft->pobject, &ref->pobject);
 
 		/* difference between catalog objects */
-		db_delta = ref->object->key - reft->object->key;
+		db_delta = ref->object->mag - reft->object->mag;
 
 		/* calculate average difference */
 		mean += db_delta - plate_delta;
@@ -528,7 +528,7 @@ static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 		plate_delta = get_plate_mag_diff(&ref->pobject, &reft->pobject);
 
 		/* delta between target object mag and detected object mag */
-		db_delta = ref->object->key - reft->object->key;
+		db_delta = ref->object->mag - reft->object->mag;
 
 		/* calc sigma */
 		diff = db_delta - plate_delta;
@@ -629,7 +629,7 @@ static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
 			continue;
 
 		/* calculate mean difference in magnitude */
-		mean += ref->object->key +
+		mean += ref->object->mag +
 			get_plate_mag_diff(&ref->pobject,
 			&solution->solve_object[target].pobject);
 		count++;
@@ -680,7 +680,7 @@ static void calc_solved_plate_magnitude(struct adb_solve *solve,
 		solution->solve_object[idx].mean = get_ref_mag_delta_mean(solution, i);
 
 		solution->solve_object[idx].mag =
-			solution->solve_object[idx].object->key +
+			solution->solve_object[idx].object->mag +
 			solution->solve_object[idx].mean;
 
 		solution->solve_object[idx].sigma =
@@ -1436,8 +1436,8 @@ static int build_and_sort_object_set(struct adb_solve *solve,
 			const struct adb_object *o = object;
 
 			/* dont copy objects outside mag limits */
-			if (o->key <= solve->constraint.min_mag &&
-				o->key >= solve->constraint.max_mag)
+			if (o->mag <= solve->constraint.min_mag &&
+				o->mag >= solve->constraint.max_mag)
 				source->objects[count++] = object;
 			object += solve->table->object.bytes;
 		}
@@ -1462,10 +1462,10 @@ static int bsearch_head(const struct adb_object **adb_source_objects,
 		return idx;
 
 	/* narrow search */
-	if (object->key > value)
+	if (object->mag > value)
 		return bsearch_head(adb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
-	else if (object->key < value)
+	else if (object->mag < value)
 		return bsearch_head(adb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
@@ -1485,13 +1485,13 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 	object = source->objects[idx];
 
 	/* make sure the object is first in the array amongst equals */
-	if (object->key < vmag) {
+	if (object->mag < vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx++; idx < source->num_objects; idx++) {
 			object = source->objects[idx];
 
-			if (object->key >= vmag)
+			if (object->mag >= vmag)
 				return idx - 1;
 		}
 	} else {
@@ -1499,7 +1499,7 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 		for (idx--; idx > start_idx; idx--) {
 			object = source->objects[idx];
 
-			if (object->key < vmag)
+			if (object->mag < vmag)
 				return idx + 1;
 		}
 	}
@@ -1519,10 +1519,10 @@ static int bsearch_tail(const struct adb_object **adb_source_objects,
 		return idx;
 
 	/* narrow search */
-	if (object->key > value)
+	if (object->mag > value)
 		return bsearch_tail(adb_source_objects, value, start, idx - 1,
 				start + ((idx - start) / 2));
-	else if (object->key < value)
+	else if (object->mag < value)
 		return bsearch_tail(adb_source_objects, value, idx + 1, end,
 				idx + ((end - idx) / 2));
 	else
@@ -1542,13 +1542,13 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 	object = source->objects[idx];
 
 	/* make sure the object is last in the array amongst equals */
-	if (object->key > vmag) {
+	if (object->mag > vmag) {
 
 		/* make sure we return the idx of the object with equal vmag */
 		for (idx--; idx > start_idx; idx--) {
 			object = source->objects[idx];
 
-			if (object->key <= vmag)
+			if (object->mag <= vmag)
 				return idx + 1;
 		}
 	} else {
@@ -1556,7 +1556,7 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 		for (idx++; idx < source->num_objects; idx++) {
 			object = source->objects[idx];
 
-			if (object->key > vmag)
+			if (object->mag > vmag)
 				return idx - 1;
 		}
 	}
@@ -1577,13 +1577,13 @@ static int solve_object_on_magnitude(struct solve_runtime *runtime,
 
 	/* get search start position */
 	pos = object_get_first_on_mag(source,
-		primary->key - solve->tolerance.mag, 0);
+		primary->mag - solve->tolerance.mag, 0);
 
 	/* get start and end indices for secondary vmag */
 	start = object_get_first_on_mag(source,
-		t->mag.pattern_min + primary->key, pos);
+		t->mag.pattern_min + primary->mag, pos);
 	end = object_get_last_with_mag(source,
-		t->mag.pattern_max + primary->key, pos);
+		t->mag.pattern_max + primary->mag, pos);
 
 	/* both out of range */
 	if (start == end)
@@ -2017,8 +2017,8 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime,
 	plate_diff = get_plate_mag_diff(&solve->pobject[idx],
 			&solve->pobject[idx + 1]);
 
-	db_diff = s->object[idx]->key -
-			s->object[idx + 1]->key;
+	db_diff = s->object[idx]->mag -
+			s->object[idx + 1]->mag;
 
 	return plate_diff - db_diff;
 }
@@ -2051,7 +2051,7 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		runtime->pot_pa[i].delta.mag =
 			fabs(get_plate_magnitude(runtime->solve, solution, pobject) -
-			runtime->pot_pa[0].object[0]->key);
+			runtime->pot_pa[0].object[0]->mag);
 
 		runtime->pot_pa[i].divergance =
 			runtime->pot_pa[i].delta.mag * DELTA_MAG_COEFF +

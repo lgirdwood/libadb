@@ -57,7 +57,7 @@ void htm_import_object_ascending(struct adb_db *db,
 	while (current) {
 
 		/* is new object lower than HEAD object ? */
-		if (adb_object_keyval(new_object) <= adb_object_keyval(current)) {
+		if (adb_object_mag(new_object) <= adb_object_mag(current)) {
 
 			/* is object new HEAD ?*/
 			if (current == head) {
@@ -86,7 +86,7 @@ out:
 		"imported object at RA %3.3f DEC %3.3f size %f"
 		" -> %sQ%dD%dP%x with objs %d\n",
 		adb_object_ra(new_object) * R2D, adb_object_dec(new_object) * R2D,
-		adb_object_keyval(new_object),
+		adb_object_mag(new_object),
 		trixel->hemisphere ? "S" : "N", trixel->quadrant, trixel->depth,
 		trixel->position, trixel->data[table_id].num_objects);
 }
@@ -112,7 +112,7 @@ void htm_import_object_descending(struct adb_db *db,
 	while (current) {
 
 		/* is new object higher than HEAD object ? */
-		if (adb_object_keyval(new_object) >= adb_object_keyval(current)) {
+		if (adb_object_mag(new_object) >= adb_object_mag(current)) {
 
 			/* is object new HEAD ?*/
 			if (current == head) {
@@ -141,7 +141,7 @@ out:
 		"imported object at RA %3.3f DEC %3.3f size %f"
 		" -> %sQ%dD%dP%x with objs %d\n",
 		adb_object_ra(new_object) * R2D, adb_object_dec(new_object) * R2D,
-		adb_object_keyval(new_object),
+		adb_object_mag(new_object),
 		trixel->hemisphere ? "S" : "N", trixel->quadrant, trixel->depth,
 		trixel->position, trixel->data[table_id].num_objects);
 }
