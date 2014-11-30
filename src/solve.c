@@ -2577,7 +2577,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	solution->num_unsolved_objects = 0;
 
 	/* solve each new plate object */
-#pragma omp parallel for schedule(dynamic, 10)
+#pragma omp parallel for schedule(dynamic, 10) reduction (+:num_solved, num_unsolved)
 	for (i = 0; i < solution->num_pobjects; i++) {
 		ret = get_object(solve, i, solution, &solution->pobjects[i],
 			&solution->solve_object[i]);
