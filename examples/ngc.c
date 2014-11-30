@@ -34,7 +34,6 @@ struct ngc_object {
 	struct adb_object object;
 	unsigned char type[4];
 	char desc[51];		/* description */
-	float size;
 };
 
 static struct adb_schema_field ngc_fields[] = {
@@ -57,7 +56,7 @@ static struct adb_schema_field ngc_fields[] = {
 	adb_member("Description", "Desc", struct ngc_object,
 		desc, ADB_CTYPE_STRING, "", 0, NULL),
 	adb_member("Largest Dimension", "size", struct ngc_object, \
-		size,  ADB_CTYPE_FLOAT, "arcmin", 0, NULL),
+		object.size,  ADB_CTYPE_FLOAT, "arcmin", 0, NULL),
 };
 
 static int print = 0;
@@ -77,7 +76,7 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f size %f desc %s\n",
 				obj->object.designation, obj->object.id, obj->object.ra * R2D,
 				obj->object.dec * R2D, obj->object.mag,
-				obj->size, obj->desc);
+				obj->object.size, obj->desc);
 			obj++;
 		}
 		object_head++;
