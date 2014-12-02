@@ -1408,6 +1408,23 @@ static void add_single_pot_on_distance(struct solve_runtime *runtime,
 	runtime->num_pot_distance++;
 }
 
+/* add single object to list of potentials on distance */
+static void add_single_extended(struct solve_runtime *runtime,
+	const struct adb_object *primary,
+	struct adb_source_objects *source, double delta, int flip)
+{
+	struct adb_solve_solution *p;
+
+	if (runtime->num_pot_distance >= MAX_POTENTAL_MATCHES)
+		return;
+
+	p = &runtime->pot_distance[runtime->num_pot_distance];
+	p->delta.dist = delta;
+	p->object[0] = primary;
+	p->flip = flip;
+	runtime->num_pot_distance++;
+}
+
 /* get a set of source objects to check the pattern against */
 static int build_and_sort_object_set(struct adb_solve *solve,
 	struct adb_object_set *set, struct adb_source_objects *source)
@@ -1720,6 +1737,91 @@ static int solve_single_object_on_distance(struct solve_runtime *runtime,
 		SOBJ_FOUND(s);
 
 		add_single_pot_on_distance(runtime, s, &solution->source,
+				diverge, solution->flip);
+		count++;
+	}
+
+	return count;
+}
+
+static int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
+	struct adb_solve_solution *solution)
+{
+	const struct adb_object *s;
+	struct magnitude_range *range = &runtime->pot_magnitude;
+	int i, count = 0;
+	double distance, diff[4], diverge, size;
+
+	/* check distance ratio for each matching candidate against targets */
+	runtime->num_pot_distance = 0;
+
+	/* check t0 candidates */
+	for (i = range->start[0]; i < range->end[0]; i++) {
+
+		s = solution->source.objects[i];
+
+		/* convert object size from arcmin to radians */
+		size = (s->size / 60.0) * D2R;
+
+		SOBJ_CHECK(s);
+
+		/* plate object to candidate object 0 */
+		distance = get_equ_distance(solution->object[0], s);
+
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[0].distance.pattern_min,
+			runtime->soln_target[0].distance.pattern_max, 1);
+
+		if (distance > runtime->soln_target[0].distance.pattern_max + size)
+			continue;
+		if (distance < runtime->soln_target[0].distance.pattern_min - size)
+			continue;
+		diff[0] = distance / runtime->soln_target[0].distance.plate_actual;
+
+		/* plate object to candidate object 1 */
+		distance = get_equ_distance(solution->object[1], s);
+
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[1].distance.pattern_min,
+			runtime->soln_target[1].distance.pattern_max, 2);
+
+		if (distance > runtime->soln_target[1].distance.pattern_max + size)
+			continue;
+		if (distance < runtime->soln_target[1].distance.pattern_min - size)
+			continue;
+		diff[1] = distance / runtime->soln_target[1].distance.plate_actual;
+
+		/* plate object to candidate object 2 */
+		distance = get_equ_distance(solution->object[2], s);
+
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[2].distance.pattern_min,
+			runtime->soln_target[2].distance.pattern_max, 3);
+
+		if (distance > runtime->soln_target[2].distance.pattern_max + size)
+			continue;
+		if (distance < runtime->soln_target[2].distance.pattern_min - size)
+			continue;
+		diff[2] = distance / runtime->soln_target[2].distance.plate_actual;
+
+		/* plate object to candidate object 3 */
+		distance = get_equ_distance(solution->object[3], s);
+
+		SOBJ_CHECK_DIST(s, distance,
+			runtime->soln_target[3].distance.pattern_min,
+			runtime->soln_target[3].distance.pattern_max, 4);
+
+		if (distance > runtime->soln_target[3].distance.pattern_max + size)
+			continue;
+		if (distance < runtime->soln_target[3].distance.pattern_min - size)
+			continue;
+		diff[3] = distance / runtime->soln_target[3].distance.plate_actual;
+
+		diverge = quad_diff(diff[0], diff[1], diff[2], diff[3]);
+
+		SOBJ_FOUND(s);
+
+		add_single_extended(runtime, s, &solution->source,
 				diverge, solution->flip);
 		count++;
 	}
@@ -2499,6 +2601,47 @@ static int get_solve_plate(struct adb_solve_solution *solution,
 }
 
 /* get object or estimated object magnitude & position for plate object */
+static int get_extended_object(struct adb_solve *solve, int object_id,
+	struct adb_solve_solution *solution,
+	struct adb_pobject *pobject, struct adb_solve_object *sobject)
+{
+	struct solve_runtime runtime;
+	int count = 0;
+
+	if (solution->set == NULL)
+		return -EINVAL;
+
+	memset(&runtime, 0, sizeof(runtime));
+	memset(sobject, 0, sizeof(*sobject));
+	runtime.solve = solve;
+
+	/* calculate plate parameters for new object */
+	create_target_single(solve, pobject, solution, &runtime);
+
+	/* find candidate adb_source_objects on magnitude */
+	count = solve_single_object_on_magnitude(&runtime, solution, pobject);
+	if (count == 0)
+		return 0;
+
+	/* at this point we have a range of candidate stars that match the
+	 * magnitude bounds of the plate object now check for distance alignment */
+	count = solve_single_object_on_distance_extended(&runtime, solution);
+	if (count == 0)
+		return 0;
+
+	calc_object_divergence(&runtime, solution, pobject);
+
+	/* it's possible we may have > 1 potential object so order them */
+	qsort(&runtime.pot_pa, count,
+			sizeof(struct adb_solve_solution), solution_cmp);
+
+	/* assign closest object */
+	sobject->object = runtime.pot_distance[0].object[0];
+
+	return count;
+}
+
+/* get object or estimated object magnitude & position for plate object */
 static int get_object(struct adb_solve *solve, int object_id,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *pobject, struct adb_solve_object *sobject)
@@ -2579,8 +2722,12 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* solve each new plate object */
 #pragma omp parallel for schedule(dynamic, 10) reduction (+:num_solved, num_unsolved)
 	for (i = 0; i < solution->num_pobjects; i++) {
+
+		if (solution->pobjects[i].extended)
+			continue;
+
 		ret = get_object(solve, i, solution, &solution->pobjects[i],
-			&solution->solve_object[i]);
+					&solution->solve_object[i]);
 
 		if (ret < 0) {
 			fail = 1;
@@ -2619,6 +2766,60 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* calc positions for each object in image */
 	calc_solved_plate_positions(solve, solution);
 	calc_unsolved_plate_positions(solve, solution);
+
+	return solution->num_solved_objects;
+}
+
+/* get plate objects or estimates of plate object position and magnitude */
+int adb_solve_get_objects_extended(struct adb_solve *solve,
+	struct adb_solve_solution *solution)
+{
+	int i, ret, fail = 0, num_solved = 0, num_unsolved = 0;
+
+	if (solution->num_pobjects == 0)
+		return 0;
+
+	/* reallocate memory for new solved objects */
+	solution->solve_object = realloc(solution->solve_object,
+		sizeof(struct adb_solve_object) * solution->num_pobjects);
+	if (solution->solve_object == NULL)
+		return -ENOMEM;
+
+	solution->num_solved_objects = 0;
+	solution->num_unsolved_objects = 0;
+
+	/* solve each new plate object */
+#pragma omp parallel for schedule(dynamic, 10) reduction (+:num_solved, num_unsolved)
+	for (i = 0; i < solution->num_pobjects; i++) {
+
+		if (!solution->pobjects[i].extended)
+			continue;
+
+		ret = get_extended_object(solve, i, solution, &solution->pobjects[i],
+					&solution->solve_object[i]);
+
+		if (ret < 0) {
+			fail = 1;
+			continue;
+		} else if (ret == 0)
+			num_unsolved++;
+		else
+			num_solved++;
+
+		solution->solve_object[i].pobject = solution->pobjects[i];
+	}
+
+	if (fail) {
+		free(solution->solve_object);
+		solution->solve_object = NULL;
+		return ret;
+	}
+
+	solution->num_solved_objects = num_solved;
+	solution->num_unsolved_objects = num_unsolved;
+
+	solution->total_objects = solution->num_solved_objects +
+		solution->num_unsolved_objects;
 
 	return solution->num_solved_objects;
 }

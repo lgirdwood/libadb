@@ -156,6 +156,9 @@ int adb_solve_get_solutions(struct adb_solve *solve,
 int adb_solve_get_objects(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
+int adb_solve_get_objects_extended(struct adb_solve *solve,
+	struct adb_solve_solution *solution);
+
 int adb_solve_add_pobjects(struct adb_solve *solve,
 		struct adb_solve_solution *solution,
 		struct adb_pobject *pobjects, int num_pobjects);
