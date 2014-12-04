@@ -2629,12 +2629,6 @@ static int get_extended_object(struct adb_solve *solve, int object_id,
 	if (count == 0)
 		return 0;
 
-	calc_object_divergence(&runtime, solution, pobject);
-
-	/* it's possible we may have > 1 potential object so order them */
-	qsort(&runtime.pot_pa, count,
-			sizeof(struct adb_solve_solution), solution_cmp);
-
 	/* assign closest object */
 	sobject->object = runtime.pot_distance[0].object[0];
 
