@@ -2713,6 +2713,8 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* reallocate memory for new solved objects */
 	solution->solve_object = realloc(solution->solve_object,
 		sizeof(struct adb_solve_object) * solution->num_pobjects);
+	memset(solution->solve_object, 0,
+			sizeof(struct adb_solve_object) * solution->num_pobjects);
 	if (solution->solve_object == NULL)
 		return -ENOMEM;
 
@@ -2781,6 +2783,8 @@ int adb_solve_get_objects_extended(struct adb_solve *solve,
 
 	/* reallocate memory for new solved objects */
 	solution->solve_object = realloc(solution->solve_object,
+		sizeof(struct adb_solve_object) * solution->num_pobjects);
+	memset(solution->solve_object, 0,
 		sizeof(struct adb_solve_object) * solution->num_pobjects);
 	if (solution->solve_object == NULL)
 		return -ENOMEM;
