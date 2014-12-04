@@ -691,7 +691,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 
 			/* terminate string */
 			if (table->import.field[i].type == ADB_CTYPE_STRING)
-				buf[table->import.field[i].text_size - 1] = 0;
+				buf[table->import.field[i].text_size] = 0;
 
 			import = table->import.field[i].import(object,
 					table->import.field[i].struct_offset, buf);
@@ -792,7 +792,7 @@ static int import_rows_with_alternatives(struct adb_db *db,
 
 			/* terminate string */
 			if (table->import.field[i].type == ADB_CTYPE_STRING)
-				buf[table->import.field[i].text_size - 1] = 0;
+				buf[table->import.field[i].text_size] = 0;
 
 			import = table->import.field[i].import(
 				object, table->import.field[i].struct_offset, buf);
