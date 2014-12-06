@@ -470,7 +470,7 @@ static int table_histogram_import(struct adb_db *db,
 
 		/* terminate string */
 		if (key->type == ADB_CTYPE_STRING)
-			buf[key->text_size - 1] = 0;
+			buf[key->text_size] = 0;
 
 		import = key->import(&object, key->struct_offset, buf);
 		if (import < 0) {
