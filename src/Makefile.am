@@ -19,7 +19,13 @@ libastrodb_la_SOURCES = \
 	search.c \
 	table.c \
 	hash.c \
-	solve.c
+	solve.c \
+	solve_pa.c \
+	solve_dist.c \
+	solve_mag.c \
+	solve_target.c \
+	astrometry.c \
+	photometry.c
 
 noinst_HEADERS = \
 	readme.h \
@@ -27,7 +33,8 @@ noinst_HEADERS = \
 	private.h \
 	htm.h \
 	schema.h \
-	cds.h
+	cds.h \
+	solve.h
 
 libastrodb_la_LDFLAGS = \
 	-version-info $(LT_VERSION) \
