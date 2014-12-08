@@ -357,132 +357,118 @@ static inline double equ_quad(double pa)
 	return pa_;
 }
 /* plate distance squared between primary and secondary */
-double get_plate_distance(struct adb_pobject *primary,
+double distance_get_plate(struct adb_pobject *primary,
 	struct adb_pobject *secondary);
 
 /* distance in between two adb_source_objects */
-double get_equ_distance(const struct adb_object *o1,
+double distance_get_equ(const struct adb_object *o1,
 	const struct adb_object *o2);
 
 /* position angle in radians relative to plate north */
-double get_plate_pa(struct adb_pobject *primary,
+double pa_get_plate(struct adb_pobject *primary,
 	struct adb_pobject *secondary);
 
 /* position angle in radians */
-double get_equ_pa(const struct adb_object *o1,
+double pa_get_equ(const struct adb_object *o1,
 		const struct adb_object *o2);
 
 /* ratio of magnitude from primary to secondary */
-double get_plate_mag_diff(struct adb_pobject *primary,
+double mag_get_plate_diff(struct adb_pobject *primary,
 	struct adb_pobject *secondary);
 
 /* calculate the average difference between plate ADU values and solution
  * objects. Use this as basis for calculating magnitudes based on plate ADU.
  */
-float get_plate_magnitude(struct adb_solve *solve,
+float mag_get_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *primary);
 
 /* compare pattern objects magnitude against source objects */
-int solve_object_on_magnitude(struct solve_runtime *runtime,
+int mag_solve_object(struct solve_runtime *runtime,
 		const struct adb_object *primary, int idx);
 
 /* compare pattern objects magnitude against source objects */
-int solve_single_object_on_magnitude(struct solve_runtime *runtime,
+int mag_solve_single_object(struct solve_runtime *runtime,
 		struct adb_solve_solution *solution,
 		struct adb_pobject *pobject);
 
-int object_cmp(const void *o1, const void *o2);
+int mag_object_cmp(const void *o1, const void *o2);
 
-int solve_object_on_pa(struct solve_runtime *runtime,
+int pa_solve_object(struct solve_runtime *runtime,
 	const struct adb_object *primary, int idx);
 
-int solve_single_object_on_pa(struct solve_runtime *runtime,
+int pa_solve_single_object(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution);
 
 /* check magnitude matched objects on pattern distance */
-int solve_object_on_distance(struct solve_runtime *runtime,
+int distance_solve_object(struct solve_runtime *runtime,
 	const struct adb_object *primary);
 
-int solve_single_object_on_distance(struct solve_runtime *runtime,
+int distance_solve_single_object(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution);
 
-int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
+int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution);
 
-void plate_to_equ_position(struct adb_solve_solution *solution,
+void posn_plate_to_equ(struct adb_solve_solution *solution,
 	struct adb_pobject *primary, double *ra_, double *dec_);
-void equ_to_plate_position(struct adb_solve_solution *solution,
+void posn_equ_to_plate(struct adb_solve_solution *solution,
 	double ra, double dec, double *x_, double *y_);
 
 /* add matching objects i,j,k to list of potentials on distance */
-void add_pot_on_distance(struct solve_runtime *runtime,
+void target_add_match_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source,
 	int i, int j, int k, double delta, double rad_per_pix);
 
 /* add single object to list of potentials on distance */
-void add_single_pot_on_distance(struct solve_runtime *runtime,
+void target_add_single_match_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source, double delta, int flip);
 
-int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
+int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution);
 
-void add_single_extended(struct solve_runtime *runtime,
+void target_add_single_match_extended(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source, double delta, int flip);
 
 /* get a set of source objects to check the pattern against */
-int build_and_sort_object_set(struct adb_solve *solve,
+int target_prepare_source_objects(struct adb_solve *solve,
 	struct adb_object_set *set, struct adb_source_objects *source);
 
-int add_reference_object(struct adb_solve_solution *soln, int id,
+int target_add_ref_object(struct adb_solve_solution *soln, int id,
 	const struct adb_object *object, struct adb_pobject *pobject);
 
-/* calculate object pattern variables to match against source objects */
-void create_pattern_object(struct adb_solve *solve, int target,
-	struct adb_pobject *primary, struct adb_pobject *secondary);
-
-void create_target_pattern(struct adb_solve *solve);
-
-/* calculate object pattern variables to match against source objects */
-void create_single_object(struct adb_solve *solve, int target,
-	struct adb_pobject *primary, struct adb_pobject *secondary,
-	struct solve_runtime *runtime, struct adb_solve_solution *solution);
+void target_create_pattern(struct adb_solve *solve);
 
 /* create a pattern of plate targets and sort by magnitude */
-void create_target_single(struct adb_solve *solve,
+void target_create_single(struct adb_solve *solve,
 	struct adb_pobject *pobject,
 	struct adb_solve_solution *solution,
 	struct solve_runtime *runtime);
 
-void calc_plate_magnitude_coefficients(struct adb_solve *solve,
+void mag_calc_plate_coefficients(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
-/* TODO: investigate speedup with only 4 ref objects found in soln */
-/* calculate the magnitude of an unsolved plate object */
-void calc_unsolved_plate_magnitude(struct adb_solve *solve,
-	struct adb_solve_solution *solution, int target);
-
 /* calculate the magnitude of all unsolved plate objects */
-void calc_unsolved_plate_magnitudes(struct adb_solve *solve,
+void mag_calc_unsolved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
 /* calculate the magnitude, mag delta mean and mag delta sigma
  * of a solved plate object */
-void calc_solved_plate_magnitude(struct adb_solve *solve,
+void mag_calc_solved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
-void clip_plate_position_coefficients(struct adb_solve *solve,
+void posn_clip_plate_coefficients(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
 /* calculate the position of unsolved plate objects */
-void calc_unsolved_plate_positions(struct adb_solve *solve,
+void posn_calc_unsolved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
 /* calculate the position of solved plate objects */
-void calc_solved_plate_positions(struct adb_solve *solve,
+void posn_calc_solved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
 
 #endif

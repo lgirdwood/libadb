@@ -28,7 +28,7 @@
 #include "solve.h"
 
 /* position angle in radians relative to plate north */
-double get_plate_pa(struct adb_pobject *primary,
+double pa_get_plate(struct adb_pobject *primary,
 	struct adb_pobject *secondary)
 {
 	double x, y;
@@ -40,7 +40,7 @@ double get_plate_pa(struct adb_pobject *primary,
 }
 
 /* position angle in radians */
-double get_equ_pa(const struct adb_object *o1, const struct adb_object *o2)
+double pa_get_equ(const struct adb_object *o1, const struct adb_object *o2)
 {
 	double k, ra_delta, x, y;
 	double sin_dec, cos_dec, sin_ra, cos_ra_delta;
@@ -93,7 +93,7 @@ static inline int pa_valid(struct target_object *t, double delta, int flip)
 	}
 }
 
-int solve_object_on_pa(struct solve_runtime *runtime,
+int pa_solve_object(struct solve_runtime *runtime,
 	const struct adb_object *primary, int idx)
 {
 	struct adb_solve_solution *p;
@@ -114,8 +114,8 @@ int solve_object_on_pa(struct solve_runtime *runtime,
 		p->flip = 0;
 
 		/* check PA for primary to each secondary object */
-		pa1 = get_equ_pa(p->object[0], p->object[1]);
-		pa2 = get_equ_pa(p->object[0], p->object[2]);
+		pa1 = pa_get_equ(p->object[0], p->object[1]);
+		pa2 = pa_get_equ(p->object[0], p->object[2]);
 		pa_delta12 = pa1 - pa2;
 		if (pa_delta12 < 0.0)
 			pa_delta12 += 2.0 * M_PI;
@@ -135,7 +135,7 @@ int solve_object_on_pa(struct solve_runtime *runtime,
 
 next:
 		/* matches delta 1 - 2, now try 2 - 3 */
-		pa3 = get_equ_pa(p->object[0], p->object[3]);
+		pa3 = pa_get_equ(p->object[0], p->object[3]);
 		pa_delta23 = pa2 - pa3;
 		if (pa_delta23 < 0.0)
 			pa_delta23 += 2.0 * M_PI;
@@ -168,7 +168,7 @@ next:
 	return count;
 }
 
-int solve_single_object_on_pa(struct solve_runtime *runtime,
+int pa_solve_single_object(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution)
 {
 	struct adb_solve_solution *p;
@@ -182,8 +182,8 @@ int solve_single_object_on_pa(struct solve_runtime *runtime,
 		p = &runtime->pot_distance[i];
 
 		/* check object against 0 -> 1 */
-		pa0 = get_equ_pa(p->object[0], solution->object[0]);
-		pa1 = get_equ_pa(p->object[0], solution->object[1]);
+		pa0 = pa_get_equ(p->object[0], solution->object[0]);
+		pa1 = pa_get_equ(p->object[0], solution->object[1]);
 		pa_delta01 = pa0 - pa1;
 		if (pa_delta01 < 0.0)
 			pa_delta01 += 2.0 * M_PI;
@@ -191,7 +191,7 @@ int solve_single_object_on_pa(struct solve_runtime *runtime,
 			continue;
 
 		/* check object against 1 -> 2 */
-		pa2 = get_equ_pa(p->object[0], solution->object[2]);
+		pa2 = pa_get_equ(p->object[0], solution->object[2]);
 		pa_delta12 = pa1 - pa2;
 		if (pa_delta12 < 0.0)
 			pa_delta12 += 2.0 * M_PI;
@@ -199,7 +199,7 @@ int solve_single_object_on_pa(struct solve_runtime *runtime,
 			continue;
 
 		/* check object against 2 -> 3 */
-		pa3 = get_equ_pa(p->object[0], solution->object[3]);
+		pa3 = pa_get_equ(p->object[0], solution->object[3]);
 		pa_delta23 = pa2 - pa3;
 		if (pa_delta23 < 0.0)
 			pa_delta23 += 2.0 * M_PI;

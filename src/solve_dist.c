@@ -28,7 +28,7 @@
 #include "solve.h"
 
 /* plate distance squared between primary and secondary */
-double get_plate_distance(struct adb_pobject *primary,
+double distance_get_plate(struct adb_pobject *primary,
 	struct adb_pobject *secondary)
 {
 	double x, y;
@@ -40,7 +40,7 @@ double get_plate_distance(struct adb_pobject *primary,
 }
 
 /* distance in between two adb_source_objects */
-double get_equ_distance(const struct adb_object *o1,
+double distance_get_equ(const struct adb_object *o1,
 	const struct adb_object *o2)
 {
 	double x,y,z;
@@ -60,7 +60,7 @@ double get_equ_distance(const struct adb_object *o1,
 }
 
 /* quickly check if object p is within FoV of object s */
-static inline int not_within_fov_fast(struct adb_solve *solve,
+static inline int distance_not_within_fov(struct adb_solve *solve,
 		const struct adb_object *p, const struct adb_object *s)
 {
 	double ra_diff = fabs(p->ra - s->ra);
@@ -78,7 +78,7 @@ static inline int not_within_fov_fast(struct adb_solve *solve,
 	return 0;
 }
 
-int solve_single_object_on_distance(struct solve_runtime *runtime,
+int distance_solve_single_object(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
@@ -97,7 +97,7 @@ int solve_single_object_on_distance(struct solve_runtime *runtime,
 		SOBJ_CHECK(s);
 
 		/* plate object to candidate object 0 */
-		distance = get_equ_distance(solution->object[0], s);
+		distance = distance_get_equ(solution->object[0], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[0].distance.pattern_min,
@@ -110,7 +110,7 @@ int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[0] = distance / runtime->soln_target[0].distance.plate_actual;
 
 		/* plate object to candidate object 1 */
-		distance = get_equ_distance(solution->object[1], s);
+		distance = distance_get_equ(solution->object[1], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[1].distance.pattern_min,
@@ -123,7 +123,7 @@ int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[1] = distance / runtime->soln_target[1].distance.plate_actual;
 
 		/* plate object to candidate object 2 */
-		distance = get_equ_distance(solution->object[2], s);
+		distance = distance_get_equ(solution->object[2], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[2].distance.pattern_min,
@@ -136,7 +136,7 @@ int solve_single_object_on_distance(struct solve_runtime *runtime,
 		diff[2] = distance / runtime->soln_target[2].distance.plate_actual;
 
 		/* plate object to candidate object 3 */
-		distance = get_equ_distance(solution->object[3], s);
+		distance = distance_get_equ(solution->object[3], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[3].distance.pattern_min,
@@ -152,7 +152,7 @@ int solve_single_object_on_distance(struct solve_runtime *runtime,
 
 		SOBJ_FOUND(s);
 
-		add_single_pot_on_distance(runtime, s, &solution->source,
+		target_add_single_match_on_distance(runtime, s, &solution->source,
 				diverge, solution->flip);
 		count++;
 	}
@@ -160,7 +160,7 @@ int solve_single_object_on_distance(struct solve_runtime *runtime,
 	return count;
 }
 
-int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
+int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
@@ -182,7 +182,7 @@ int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
 		SOBJ_CHECK(s);
 
 		/* plate object to candidate object 0 */
-		distance = get_equ_distance(solution->object[0], s);
+		distance = distance_get_equ(solution->object[0], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[0].distance.pattern_min,
@@ -195,7 +195,7 @@ int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
 		diff[0] = distance / runtime->soln_target[0].distance.plate_actual;
 
 		/* plate object to candidate object 1 */
-		distance = get_equ_distance(solution->object[1], s);
+		distance = distance_get_equ(solution->object[1], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[1].distance.pattern_min,
@@ -208,7 +208,7 @@ int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
 		diff[1] = distance / runtime->soln_target[1].distance.plate_actual;
 
 		/* plate object to candidate object 2 */
-		distance = get_equ_distance(solution->object[2], s);
+		distance = distance_get_equ(solution->object[2], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[2].distance.pattern_min,
@@ -221,7 +221,7 @@ int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
 		diff[2] = distance / runtime->soln_target[2].distance.plate_actual;
 
 		/* plate object to candidate object 3 */
-		distance = get_equ_distance(solution->object[3], s);
+		distance = distance_get_equ(solution->object[3], s);
 
 		SOBJ_CHECK_DIST(s, distance,
 			runtime->soln_target[3].distance.pattern_min,
@@ -237,7 +237,7 @@ int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
 
 		SOBJ_FOUND(s);
 
-		add_single_extended(runtime, s, &solution->source,
+		target_add_single_match_extended(runtime, s, &solution->source,
 				diverge, solution->flip);
 		count++;
 	}
@@ -246,7 +246,7 @@ int solve_single_object_on_distance_extended(struct solve_runtime *runtime,
 }
 
 /* check magnitude matched objects on pattern distance */
-int solve_object_on_distance(struct solve_runtime *runtime,
+int distance_solve_object(struct solve_runtime *runtime,
 	const struct adb_object *primary)
 {
 	const struct adb_object *s[3];
@@ -274,10 +274,10 @@ int solve_object_on_distance(struct solve_runtime *runtime,
 
 		DOBJ_CHECK(2, s[0]);
 
-		if (not_within_fov_fast(solve, primary, s[0]))
+		if (distance_not_within_fov(solve, primary, s[0]))
 			continue;
 
-		distance0 = get_equ_distance(primary, s[0]);
+		distance0 = distance_get_equ(primary, s[0]);
 
 		/* rule out any distances > FOV */
 		if (distance0 > solve->constraint.max_fov)
@@ -301,10 +301,10 @@ int solve_object_on_distance(struct solve_runtime *runtime,
 
 			DOBJ_CHECK(3, s[1]);
 
-			if (not_within_fov_fast(solve, primary, s[1]))
+			if (distance_not_within_fov(solve, primary, s[1]))
 				continue;
 
-			distance1 = get_equ_distance(primary, s[1]);
+			distance1 = distance_get_equ(primary, s[1]);
 
 			DOBJ_LIST(2, primary, s[1], distance1, j);
 
@@ -330,10 +330,10 @@ int solve_object_on_distance(struct solve_runtime *runtime,
 
 					DOBJ_CHECK(4, s[2]);
 
-					if (not_within_fov_fast(solve, primary, s[2]))
+					if (distance_not_within_fov(solve, primary, s[2]))
 						continue;
 
-					distance2 = get_equ_distance(primary, s[2]);
+					distance2 = distance_get_equ(primary, s[2]);
 
 					DOBJ_LIST(3, primary, s[2], distance2, k);
 
@@ -354,7 +354,7 @@ int solve_object_on_distance(struct solve_runtime *runtime,
 
 						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
 
-						add_pot_on_distance(runtime, primary, &solve->source,
+						target_add_match_on_distance(runtime, primary, &solve->source,
 							i, j, k, delta, tri_avg(rad_per_pixel, ratio1, ratio2));
 						count++;
 					}

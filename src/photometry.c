@@ -52,7 +52,7 @@ static float get_ref_mag_delta_mean(struct adb_solve_solution *solution,
 			continue;
 
 		/* difference between plate objects */
-		plate_delta = get_plate_mag_diff(&reft->pobject, &ref->pobject);
+		plate_delta = mag_get_plate_diff(&reft->pobject, &ref->pobject);
 
 		/* difference between catalog objects */
 		db_delta = ref->object->mag - reft->object->mag;
@@ -93,7 +93,7 @@ static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 			continue;
 
 		/* mag difference between target and solved plate object */
-		plate_delta = get_plate_mag_diff(&ref->pobject, &reft->pobject);
+		plate_delta = mag_get_plate_diff(&ref->pobject, &reft->pobject);
 
 		/* delta between target object mag and detected object mag */
 		db_delta = ref->object->mag - reft->object->mag;
@@ -110,7 +110,36 @@ static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 	return sqrtf(sigma);
 }
 
-void calc_plate_magnitude_coefficients(struct adb_solve *solve,
+/* TODO: investigate speedup with only 4 ref objects found in soln */
+/* calculate the magnitude of an unsolved plate object */
+static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
+	struct adb_solve_solution *solution, int target)
+{
+	struct adb_reference_object *ref;
+	int i, count = 0;
+	float mean = 0.0;
+
+	/* compare plate object to reference objects */
+	for (i = 0; i < solution->num_ref_objects; i++) {
+		ref = &solution->ref[i];
+
+		/* make sure solved object is close to catalog mag */
+		/* otherwise reject it for magnitude calculation */
+		if (ref->clip_mag)
+			continue;
+
+		/* calculate mean difference in magnitude */
+		mean += ref->object->mag +
+			mag_get_plate_diff(&ref->pobject,
+			&solution->solve_object[target].pobject);
+		count++;
+	}
+
+	/* use mean magnitude as estimated plate magnitude */
+	solution->solve_object[target].mag = mean / count;
+}
+
+void mag_calc_plate_coefficients(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
@@ -178,37 +207,8 @@ void calc_plate_magnitude_coefficients(struct adb_solve *solve,
 	} while (count != lastcount && --tries);
 }
 
-/* TODO: investigate speedup with only 4 ref objects found in soln */
-/* calculate the magnitude of an unsolved plate object */
-void calc_unsolved_plate_magnitude(struct adb_solve *solve,
-	struct adb_solve_solution *solution, int target)
-{
-	struct adb_reference_object *ref;
-	int i, count = 0;
-	float mean = 0.0;
-
-	/* compare plate object to reference objects */
-	for (i = 0; i < solution->num_ref_objects; i++) {
-		ref = &solution->ref[i];
-
-		/* make sure solved object is close to catalog mag */
-		/* otherwise reject it for magnitude calculation */
-		if (ref->clip_mag)
-			continue;
-
-		/* calculate mean difference in magnitude */
-		mean += ref->object->mag +
-			get_plate_mag_diff(&ref->pobject,
-			&solution->solve_object[target].pobject);
-		count++;
-	}
-
-	/* use mean magnitude as estimated plate magnitude */
-	solution->solve_object[target].mag = mean / count;
-}
-
 /* calculate the magnitude of all unsolved plate objects */
-void calc_unsolved_plate_magnitudes(struct adb_solve *solve,
+void mag_calc_unsolved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
 	struct adb_solve_object *solve_object;
@@ -229,7 +229,7 @@ void calc_unsolved_plate_magnitudes(struct adb_solve *solve,
 
 /* calculate the magnitude, mag delta mean and mag delta sigma
  * of a solved plate object */
-void calc_solved_plate_magnitude(struct adb_solve *solve,
+void mag_calc_solved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;

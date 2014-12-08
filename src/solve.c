@@ -46,7 +46,7 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime,
 	struct adb_solve_solution *s = &runtime->pot_pa[pot];
 	double plate_diff, db_diff;
 
-	plate_diff = get_plate_mag_diff(&solve->pobject[idx],
+	plate_diff = mag_get_plate_diff(&solve->pobject[idx],
 			&solve->pobject[idx + 1]);
 
 	db_diff = s->object[idx]->mag -
@@ -82,7 +82,7 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	/* calculate differences in magnitude from DB and plate objects */
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		runtime->pot_pa[i].delta.mag =
-			fabs(get_plate_magnitude(runtime->solve, solution, pobject) -
+			fabs(mag_get_plate(runtime->solve, solution, pobject) -
 			runtime->pot_pa[0].object[0]->mag);
 
 		runtime->pot_pa[i].divergance =
@@ -170,7 +170,7 @@ static int try_object_as_primary(struct adb_solve *solve,
 
 	/* find secondary candidate adb_source_objects on magnitude */
 	for (i = 0; i < MIN_PLATE_OBJECTS - 1; i++) {
-		count = solve_object_on_magnitude(&runtime, primary, i);
+		count = mag_solve_object(&runtime, primary, i);
 		if (!count)
 			return 0;
 	}
@@ -178,13 +178,13 @@ static int try_object_as_primary(struct adb_solve *solve,
 	/* at this point we have a range of candidate stars that match the
 	 * magnitude bounds of the primary object and each secondary object,
 	 * now check secondary candidates for distance alignment */
-	count = solve_object_on_distance(&runtime, primary);
+	count = distance_solve_object(&runtime, primary);
 	if (!count)
 		return 0;
 
 	/* At this point we have a list of clusters that match on magnitude and
 	 * distance, so we finally check the candidates clusters for PA alignment*/
-	count = solve_object_on_pa(&runtime, primary, i);
+	count = pa_solve_object(&runtime, primary, i);
 	if (!count)
 		return 0;
 
@@ -360,7 +360,7 @@ int adb_solve(struct adb_solve *solve,
 		return -EINVAL;
 	}
 
-	ret = build_and_sort_object_set(solve, set, &solve->source);
+	ret = target_prepare_source_objects(solve, set, &solve->source);
 	if (ret <= 0) {
 		adb_error(solve->db, "cant get trixels %d\n", ret);
 		return ret;
@@ -375,7 +375,7 @@ int adb_solve(struct adb_solve *solve,
 			solve->plate_idx_start, solve->plate_idx_end - 1,
 			solve->num_plate_objects);
 
-		create_target_pattern(solve);
+		target_create_pattern(solve);
 
 		if (find == ADB_FIND_ALL)
 			ret = solve_plate_cluster_for_set_all(solve, set);
@@ -499,7 +499,7 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 
 	/* sort adb_source_objects on magnitude */
 	qsort(solution->source.objects, set->count,
-		sizeof(struct adb_object *), object_cmp);
+		sizeof(struct adb_object *), mag_object_cmp);
 	solution->source.num_objects = count;
 
 	/* allocate initial reference objects */
@@ -546,16 +546,16 @@ static int get_extended_object(struct adb_solve *solve, int object_id,
 	runtime.solve = solve;
 
 	/* calculate plate parameters for new object */
-	create_target_single(solve, pobject, solution, &runtime);
+	target_create_single(solve, pobject, solution, &runtime);
 
 	/* find candidate adb_source_objects on magnitude */
-	count = solve_single_object_on_magnitude(&runtime, solution, pobject);
+	count = mag_solve_single_object(&runtime, solution, pobject);
 	if (count == 0)
 		return 0;
 
 	/* at this point we have a range of candidate stars that match the
 	 * magnitude bounds of the plate object now check for distance alignment */
-	count = solve_single_object_on_distance_extended(&runtime, solution);
+	count = distance_solve_single_object_extended(&runtime, solution);
 	if (count == 0)
 		return 0;
 
@@ -586,33 +586,33 @@ static int get_object(struct adb_solve *solve, int object_id,
 
 		if (plate >= 0) {
 			sobject->object = solution->object[plate];
-			add_reference_object(solution, object_id, sobject->object, pobject);
+			target_add_ref_object(solution, object_id, sobject->object, pobject);
 			return 1;
 		}
 	}
 
 	/* calculate plate parameters for new object */
-	create_target_single(solve, pobject, solution, &runtime);
+	target_create_single(solve, pobject, solution, &runtime);
 
 	/* find candidate adb_source_objects on magnitude */
-	count = solve_single_object_on_magnitude(&runtime, solution, pobject);
+	count = mag_solve_single_object(&runtime, solution, pobject);
 	if (count == 0)
 		return 0;
 
 	/* at this point we have a range of candidate stars that match the
 	 * magnitude bounds of the plate object now check for distance alignment */
-	count = solve_single_object_on_distance(&runtime, solution);
+	count = distance_solve_single_object(&runtime, solution);
 	if (count == 0)
 		return 0;
 
 	/* At this point we have a list of objects that match on magnitude and
 	 * distance, so we finally check the objects for PA alignment*/
-	count = solve_single_object_on_pa(&runtime, solution);
+	count = pa_solve_single_object(&runtime, solution);
 	if (count == 0)
 		return 0;
 
 	/* add object as reference */
-	add_reference_object(solution, object_id, runtime.pot_pa[0].object[0], pobject);
+	target_add_ref_object(solution, object_id, runtime.pot_pa[0].object[0], pobject);
 
 	calc_object_divergence(&runtime, solution, pobject);
 
@@ -681,17 +681,17 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	/* calulate plate coefficients */
 #pragma omp parallel
 	{
-		calc_plate_magnitude_coefficients(solve, solution);
-		clip_plate_position_coefficients(solve, solution);
+		mag_calc_plate_coefficients(solve, solution);
+		posn_clip_plate_coefficients(solve, solution);
 	}
 
 	/* calculate magnitude for each object in image */
-	calc_solved_plate_magnitude(solve, solution);
-	calc_unsolved_plate_magnitudes(solve, solution);
+	mag_calc_solved_plate(solve, solution);
+	mag_calc_unsolved_plate(solve, solution);
 
 	/* calc positions for each object in image */
-	calc_solved_plate_positions(solve, solution);
-	calc_unsolved_plate_positions(solve, solution);
+	posn_calc_solved_plate(solve, solution);
+	posn_calc_unsolved_plate(solve, solution);
 
 	return solution->num_solved_objects;
 }
@@ -826,7 +826,7 @@ double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 void adb_solution_equ_to_plate_position(struct adb_solve_solution *solution,
 		double ra, double dec, double *x,  double *y)
 {
-	equ_to_plate_position(solution, ra, dec,  x,  y);
+	posn_equ_to_plate(solution, ra, dec,  x,  y);
 }
 
 void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
@@ -837,7 +837,7 @@ void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
 	p.x = x;
 	p.y = y;
 
-	plate_to_equ_position(solution, &p, ra, dec);
+	posn_plate_to_equ(solution, &p, ra, dec);
 }
 
 void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
@@ -850,31 +850,35 @@ void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
 	case ADB_BOUND_TOP_RIGHT:
 		p.x = solve->plate_width;
 		p.y = solve->plate_height;
-		plate_to_equ_position(solution, &p, ra, dec);
+		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_TOP_LEFT:
 		p.x = 0;
 		p.y = solve->plate_height;
-		plate_to_equ_position(solution, &p, ra, dec);
+		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_BOTTOM_RIGHT:
 		p.x = solve->plate_width;
 		p.y =0 ;
-		plate_to_equ_position(solution, &p, ra, dec);
+		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_BOTTOM_LEFT:
 		p.x = 0;
 		p.y = 0;
-		plate_to_equ_position(solution, &p, ra, dec);
+		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_CENTRE:
 		p.x = solve->plate_width / 2;
 		p.y = solve->plate_height / 2;
-		plate_to_equ_position(solution, &p, ra, dec);
+		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	default:
 		*ra = 0.0;
 		*dec = 0.0;
 		break;
 	}
+}
+
+void adb_solution_recalc_objects(struct adb_solve_solution *solution)
+{
 }

@@ -40,7 +40,7 @@ static int plate_object_cmp(const void *o1, const void *o2)
 }
 
 /* add a reference object to the solution */
-int add_reference_object(struct adb_solve_solution *soln, int id,
+int target_add_ref_object(struct adb_solve_solution *soln, int id,
 	const struct adb_object *object, struct adb_pobject *pobject)
 {
 	struct adb_reference_object *ref;
@@ -71,7 +71,7 @@ int add_reference_object(struct adb_solve_solution *soln, int id,
 }
 
 /* calculate object pattern variables to match against source objects */
-void create_pattern_object(struct adb_solve *solve, int target,
+static void create_pattern_object(struct adb_solve *solve, int target,
 	struct adb_pobject *primary, struct adb_pobject *secondary)
 {
 	struct target_object *t = &solve->target.secondary[target];
@@ -79,23 +79,23 @@ void create_pattern_object(struct adb_solve *solve, int target,
 	t->pobject = secondary;
 
 	/* calculate plate distance and min,max to primary */
-	t->distance.plate_actual = get_plate_distance(primary, secondary);
+	t->distance.plate_actual = distance_get_plate(primary, secondary);
 	t->distance.pattern_min =
 		t->distance.plate_actual - solve->tolerance.dist;
 	t->distance.pattern_max =
 		t->distance.plate_actual + solve->tolerance.dist;
 
 	/* calculate plate magnitude and min,max to primary */
-	t->mag.plate_actual = get_plate_mag_diff(primary, secondary);
+	t->mag.plate_actual = mag_get_plate_diff(primary, secondary);
 	t->mag.pattern_min = t->mag.plate_actual - solve->tolerance.mag;
 	t->mag.pattern_max = t->mag.plate_actual + solve->tolerance.mag;
 
 	/* calculate plate position angle to primary */
-	t->pa.plate_actual = get_plate_pa(primary, secondary);
+	t->pa.plate_actual = pa_get_plate(primary, secondary);
 }
 
 /* create a pattern of plate targets and sort by magnitude */
-void create_target_pattern(struct adb_solve *solve)
+void target_create_pattern(struct adb_solve *solve)
 {
 	struct target_object *t0, *t1, *t2;
 	int i, j;
@@ -160,7 +160,7 @@ void create_target_pattern(struct adb_solve *solve)
 }
 
 /* calculate object pattern variables to match against source objects */
-void create_single_object(struct adb_solve *solve, int target,
+static void create_single_object(struct adb_solve *solve, int target,
 	struct adb_pobject *primary, struct adb_pobject *secondary,
 	struct solve_runtime *runtime, struct adb_solve_solution *solution)
 {
@@ -169,23 +169,23 @@ void create_single_object(struct adb_solve *solve, int target,
 	t->pobject = secondary;
 
 	/* calculate plate distance and min,max to primary */
-	t->distance.plate_actual = get_plate_distance(primary, secondary);
+	t->distance.plate_actual = distance_get_plate(primary, secondary);
 	t->distance.pattern_min = solution->rad_per_pix *
 		(t->distance.plate_actual - solve->tolerance.dist);
 	t->distance.pattern_max = solution->rad_per_pix *
 		(t->distance.plate_actual + solve->tolerance.dist);
 
 	/* calculate plate magnitude and min,max to primary */
-	t->mag.plate_actual = get_plate_mag_diff(primary, secondary);
+	t->mag.plate_actual = mag_get_plate_diff(primary, secondary);
 	t->mag.pattern_min = t->mag.plate_actual - solve->tolerance.mag;
 	t->mag.pattern_max = t->mag.plate_actual + solve->tolerance.mag;
 
 	/* calculate plate position angle to primary */
-	t->pa.plate_actual = get_plate_pa(primary, secondary);
+	t->pa.plate_actual = pa_get_plate(primary, secondary);
 }
 
 /* create a pattern of plate targets and sort by magnitude */
-void create_target_single(struct adb_solve *solve,
+void target_create_single(struct adb_solve *solve,
 	struct adb_pobject *pobject,
 	struct adb_solve_solution *solution,
 	struct solve_runtime *runtime)
@@ -264,7 +264,7 @@ void create_target_single(struct adb_solve *solve,
 }
 
 /* add matching objects i,j,k to list of potentials on distance */
-void add_pot_on_distance(struct solve_runtime *runtime,
+void target_add_match_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source,
 	int i, int j, int k, double delta, double rad_per_pix)
@@ -291,7 +291,7 @@ void add_pot_on_distance(struct solve_runtime *runtime,
 }
 
 /* add single object to list of potentials on distance */
-void add_single_pot_on_distance(struct solve_runtime *runtime,
+void target_add_single_match_on_distance(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source, double delta, int flip)
 {
@@ -308,7 +308,7 @@ void add_single_pot_on_distance(struct solve_runtime *runtime,
 }
 
 /* add single object to list of potentials on distance */
-void add_single_extended(struct solve_runtime *runtime,
+void target_add_single_match_extended(struct solve_runtime *runtime,
 	const struct adb_object *primary,
 	struct adb_source_objects *source, double delta, int flip)
 {
@@ -325,7 +325,7 @@ void add_single_extended(struct solve_runtime *runtime,
 }
 
 /* get a set of source objects to check the pattern against */
-int build_and_sort_object_set(struct adb_solve *solve,
+int target_prepare_source_objects(struct adb_solve *solve,
 	struct adb_object_set *set, struct adb_source_objects *source)
 {
 	int object_heads, i, j, count = 0;
@@ -361,7 +361,7 @@ int build_and_sort_object_set(struct adb_solve *solve,
 
 	/* sort adb_source_objects on magnitude */
 	qsort(source->objects, count, sizeof(struct adb_object *),
-		object_cmp);
+		mag_object_cmp);
 	source->num_objects = count;
 
 	return count;

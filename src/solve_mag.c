@@ -27,7 +27,7 @@
 
 #include "solve.h"
 
-int object_cmp(const void *o1, const void *o2)
+int mag_object_cmp(const void *o1, const void *o2)
 {
 	const struct adb_object *p1 = *(const struct adb_object **)o1,
 		*p2 = *(const struct adb_object **)o2;
@@ -41,7 +41,7 @@ int object_cmp(const void *o1, const void *o2)
 }
 
 /* ratio of magnitude from primary to secondary */
-double get_plate_mag_diff(struct adb_pobject *primary,
+double mag_get_plate_diff(struct adb_pobject *primary,
 	struct adb_pobject *secondary)
 {
 	double s_adu = secondary->adu, p_adu = primary->adu;
@@ -52,7 +52,7 @@ double get_plate_mag_diff(struct adb_pobject *primary,
 /* calculate the average difference between plate ADU values and solution
  * objects. Use this as basis for calculating magnitudes based on plate ADU.
  */
-float get_plate_magnitude(struct adb_solve *solve,
+float mag_get_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct adb_pobject *primary)
 {
@@ -68,7 +68,7 @@ float get_plate_magnitude(struct adb_solve *solve,
 			continue;
 
 		mag += ref->object->mag +
-			get_plate_mag_diff(&ref->pobject, primary);
+			mag_get_plate_diff(&ref->pobject, primary);
 	}
 
 	return mag / (float)count;
@@ -189,7 +189,7 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 }
 
 /* compare pattern objects magnitude against source objects */
-int solve_object_on_magnitude(struct solve_runtime *runtime,
+int mag_solve_object(struct solve_runtime *runtime,
 		const struct adb_object *primary, int idx)
 {
 	struct magnitude_range *range = &runtime->pot_magnitude;
@@ -226,7 +226,7 @@ int solve_object_on_magnitude(struct solve_runtime *runtime,
 }
 
 /* compare pattern objects magnitude against source objects */
-int solve_single_object_on_magnitude(struct solve_runtime *runtime,
+int mag_solve_single_object(struct solve_runtime *runtime,
 		struct adb_solve_solution *solution,
 		struct adb_pobject *pobject)
 {
@@ -236,7 +236,7 @@ int solve_single_object_on_magnitude(struct solve_runtime *runtime,
 	int start, end;
 	float mag_min, mag_max, plate_mag;
 
-	plate_mag = get_plate_magnitude(solve, solution, pobject);
+	plate_mag = mag_get_plate(solve, solution, pobject);
 
 	mag_min = plate_mag - solution->delta.mag;
 	mag_max = plate_mag + solution->delta.mag;
@@ -267,4 +267,3 @@ int solve_single_object_on_magnitude(struct solve_runtime *runtime,
 	/* return number of candidate adb_source_objects based on vmag */
 	return range->end[0] - range->start[0];
 }
-
