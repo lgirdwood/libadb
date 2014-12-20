@@ -678,22 +678,40 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	solution->total_objects = solution->num_solved_objects +
 		solution->num_unsolved_objects;
 
-	/* calulate plate coefficients */
-#pragma omp parallel
-	{
-		mag_calc_plate_coefficients(solve, solution);
-		posn_clip_plate_coefficients(solve, solution);
-	}
+	return solution->num_solved_objects;
+}
 
-	/* calculate magnitude for each object in image */
-	mag_calc_solved_plate(solve, solution);
-	mag_calc_unsolved_plate(solve, solution);
+int adb_solve_astrometry(struct adb_solve *solve,
+		struct adb_solve_solution *solution)
+{
+	int ret;
+
+	ret = posn_clip_plate_coefficients(solve, solution);
+	if (ret < 0)
+		return ret;
 
 	/* calc positions for each object in image */
 	posn_calc_solved_plate(solve, solution);
 	posn_calc_unsolved_plate(solve, solution);
 
-	return solution->num_solved_objects;
+	return 0;
+}
+
+int adb_solve_photometry(struct adb_solve *solve,
+		struct adb_solve_solution *solution)
+{
+	int ret;
+
+	/* make sure we have enough reference objects */
+	ret = mag_calc_plate_coefficients(solve, solution);
+	if (ret < 0)
+		return ret;
+
+	/* calculate magnitude for each object in image */
+	mag_calc_solved_plate(solve, solution);
+	mag_calc_unsolved_plate(solve, solution);
+
+	return 0;
 }
 
 /* get plate objects or estimates of plate object position and magnitude */
@@ -810,10 +828,8 @@ struct adb_solve_object *adb_solution_get_object_at(
 
 	for (i = 0; i < solution->num_pobjects; i++) {
 		if (x == solution->solve_object[i].pobject.x &&
-				y == solution->solve_object[i].pobject.y) {
-			printf("object id %d\n", i);
-			return &solution->solve_object[i];
-		}
+				y == solution->solve_object[i].pobject.y)
+				return &solution->solve_object[i];
 	}
 	return NULL;
 }
@@ -859,7 +875,7 @@ void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
 		break;
 	case ADB_BOUND_BOTTOM_RIGHT:
 		p.x = solve->plate_width;
-		p.y =0 ;
+		p.y = 0;
 		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_BOTTOM_LEFT:

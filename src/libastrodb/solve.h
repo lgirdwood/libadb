@@ -191,6 +191,12 @@ void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
 void adb_solution_equ_to_plate_position(struct adb_solve_solution *solution,
 		double ra, double dec, double *x,  double *y);
 
+int adb_solve_photometry(struct adb_solve *solve,
+		struct adb_solve_solution *solution);
+
+int adb_solve_astrometry(struct adb_solve *solve,
+		struct adb_solve_solution *solution);
+
 #ifdef __cplusplus
 };
 #endif
