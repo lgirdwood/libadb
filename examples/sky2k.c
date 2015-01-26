@@ -611,7 +611,7 @@ static int get1(struct adb_db *db, int table_id)
 	if (!set)
 		return -ENOMEM;
 
-	adb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 16.0);
+	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, -2.0, 16.0);
 
 	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
@@ -642,7 +642,7 @@ static int get2(struct adb_db *db, int table_id)
 	 * we may get some objects fainter than mag 3 depending on the mag clip
 	 * boundary. This is not a problem for rendering sky views.
 	 */
-	adb_table_set_constraints(set, 0.0, 0.0, 360.0, -2.0, 2.0);
+	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, -2.0, 2.0);
 
 	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
@@ -673,7 +673,7 @@ static int get3(struct adb_db *db, int table_id)
 	 * we may get some objects fainter than mag 3 depending on the mag clip
 	 * boundary. This is not a problem for rendering sky views.
 	 */
-	adb_table_set_constraints(set, 0.0, 0.0, 30.0, -2.0, 2.0);
+	adb_table_set_constraints(set, 0.0, 0.0, 30.0 * D2R, -2.0, 2.0);
 
 	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
@@ -711,7 +711,7 @@ static int get4(struct adb_db *db, int table_id)
 		object_printf(objectn);
 
 	fprintf(stdout, "Get nearest object in db to north pole\n");
-	objectn = adb_table_set_get_nearest_on_pos(set, 0.0 * D2R, 90.0 * D2R);
+	objectn = adb_table_set_get_nearest_on_pos(set, 0.0, M_PI_2);
 	if (objectn)
 		object_printf(objectn);
 
@@ -885,14 +885,14 @@ static int sky2k_solve(char *lib_dir)
 		goto set_err;
 
 	/* set sky area constraints for solver */
-	adb_table_set_constraints(set, 57.0, 24.0, 5.0, -2.0, 5.0);
+	adb_table_set_constraints(set, 57.0 * D2R, 24.0 * D2R, 5.0 * D2R, -2.0, 5.0);
 
 	/* we can now solve images */
 	solve = adb_solve_new(db, table_id);
 
 	/* set magnitude and distance constraints */
 	adb_solve_constraint(solve, ADB_CONSTRAINT_MAG, 6.0, -2.0);
-	adb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1, 2.0);
+	adb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1 * D2R, 2.0 * D2R);
 
 	/* add plate/ccd objects */
 	adb_solve_add_plate_object(solve, &pobject[0]);
@@ -904,7 +904,7 @@ static int sky2k_solve(char *lib_dir)
 	/* set image tolerances */
 	adb_solve_set_magnitude_delta(solve, 0.25);
 	adb_solve_set_distance_delta(solve, 5.0);
-	adb_solve_set_pa_delta(solve, 2.0);
+	adb_solve_set_pa_delta(solve, 2.0 * D2R);
 
 	start_timer();
 	found = adb_solve(solve, set, ADB_FIND_FIRST);

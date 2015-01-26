@@ -253,14 +253,14 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 	solve->table = &db->table[table_id];
 
 	/* set initial constraints */
-	solve->constraint.min_ra = 0.0 * D2R;
-	solve->constraint.max_ra = 360.0 * D2R;
-	solve->constraint.min_dec = 0.0 * D2R;
-	solve->constraint.max_dec = 90.0 * D2R;
+	solve->constraint.min_ra = 0.0;
+	solve->constraint.max_ra =  2.0 * M_PI;
+	solve->constraint.min_dec = 0.0;
+	solve->constraint.max_dec = M_PI_2;
 	solve->constraint.min_mag = 16.0;
 	solve->constraint.max_mag = -2.0;
 	solve->constraint.min_fov = 0.1 * D2R;
-	solve->constraint.max_fov = 90.0 * D2R;
+	solve->constraint.max_fov = M_PI_2;
 	solve->num_solutions = 0;
 
 	for (i = 0; i < MAX_RT_SOLUTIONS; i++) {
@@ -319,16 +319,16 @@ int adb_solve_constraint(struct adb_solve *solve,
 		solve->constraint.max_mag = max;
 		break;
 	case ADB_CONSTRAINT_FOV:
-		solve->constraint.min_fov = min * D2R;
-		solve->constraint.max_fov = max * D2R;
+		solve->constraint.min_fov = min;
+		solve->constraint.max_fov = max;
 		break;
 	case ADB_CONSTRAINT_RA:
-		solve->constraint.min_ra = min * D2R;
-		solve->constraint.max_ra = max * D2R;
+		solve->constraint.min_ra = min;
+		solve->constraint.max_ra = max;
 		break;
 	case ADB_CONSTRAINT_DEC:
-		solve->constraint.min_dec = min * D2R;
-		solve->constraint.max_dec = max * D2R;
+		solve->constraint.min_dec = min;
+		solve->constraint.max_dec = max;
 		break;
 	default:
 		adb_error(solve->db, "unknown constraint type %d\n", type);
@@ -411,9 +411,9 @@ int adb_solve_set_distance_delta(struct adb_solve *solve,
 }
 
 int adb_solve_set_pa_delta(struct adb_solve *solve,
-		double delta_degrees)
+		double delta_rad)
 {
-	solve->tolerance.pa = delta_degrees * D2R;
+	solve->tolerance.pa = delta_rad;
 	return 0;
 }
 
@@ -422,8 +422,8 @@ void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 {
 	solve->plate_width = width;
 	solve->plate_height = height;
-	solve->plate_ra = ra * D2R;
-	solve->plate_dec = dec * D2R;
+	solve->plate_ra = ra ;
+	solve->plate_dec = dec;
 }
 
 int adb_solve_get_solutions(struct adb_solve *solve,
@@ -465,7 +465,7 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 		return -ENOMEM;
 	solution->set = set;
 
-	adb_table_set_constraints(set, centre_ra * R2D, centre_dec *R2D,
+	adb_table_set_constraints(set, centre_ra, centre_dec,
 			fov, -10.0, mag_limit);
 
 	/* get object heads */
@@ -684,11 +684,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 int adb_solve_astrometry(struct adb_solve *solve,
 		struct adb_solve_solution *solution)
 {
-	int ret;
-
-	ret = posn_clip_plate_coefficients(solve, solution);
-	if (ret < 0)
-		return ret;
+	posn_clip_plate_coefficients(solve, solution);
 
 	/* calc positions for each object in image */
 	posn_calc_solved_plate(solve, solution);
@@ -700,12 +696,8 @@ int adb_solve_astrometry(struct adb_solve *solve,
 int adb_solve_photometry(struct adb_solve *solve,
 		struct adb_solve_solution *solution)
 {
-	int ret;
-
 	/* make sure we have enough reference objects */
-	ret = mag_calc_plate_coefficients(solve, solution);
-	if (ret < 0)
-		return ret;
+	mag_calc_plate_coefficients(solve, solution);
 
 	/* calculate magnitude for each object in image */
 	mag_calc_solved_plate(solve, solution);

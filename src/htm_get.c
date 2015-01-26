@@ -596,7 +596,7 @@ struct adb_object_set *adb_table_set_new(struct adb_db *db,
 	set->table_id = table_id;
 	set->centre_ra = 0.0;
 	set->centre_dec = 0.0;
-	set->fov = 360.0 * D2R;
+	set->fov = 2.0 * M_PI;
 
 	htm_clip(set->db->htm, set, set->centre_ra,
 		set->centre_dec, set->fov, table->depth_map[0].min_value,
@@ -610,9 +610,9 @@ int adb_table_set_constraints(struct adb_object_set *set,
 				double fov, double start,
 				double end)
 {
-	set->centre_ra = ra * D2R;
-	set->centre_dec = dec * D2R;
-	set->fov = fov * D2R;
+	set->centre_ra = ra;
+	set->centre_dec = dec;
+	set->fov = fov;
 
 	return htm_clip(set->db->htm, set, set->centre_ra,
 		set->centre_dec, set->fov, start, end);
