@@ -320,6 +320,7 @@ static int trixel_add_parent(struct htm *htm,
 		if (trixel_buf[i] == NULL) {
 			trixel_buf[i] = t;
 			adb_htm_vdebug(htm, ADB_LOG_HTM_GET, "add trixel at pos %d\n", i);
+			htm_dump_trixel(htm, t);
 			return 1;
 		}
 	}
@@ -526,6 +527,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 			set->trixels[i]->a->ra * R2D, set->trixels[i]->a->dec * R2D,
 			set->trixels[i]->b->ra * R2D, set->trixels[i]->b->dec * R2D,
 			set->trixels[i]->c->ra * R2D, set->trixels[i]->c->dec * R2D);
+		htm_dump_trixel(htm, set->trixels[i]);
 
 		if (set->trixels[i]->depth < set->min_depth ||
 			set->trixels[i]->depth > set->max_depth)
@@ -548,7 +550,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 		"got %d populated trixels with %d objects\n",
 		populated_trixels, object_count);
 	adb_htm_debug(htm, ADB_LOG_HTM_GET,
-		"htm clip depths: min %d max %d fov %d\n",
+		"htm clip depths: min %d max %d fov depth %d\n",
 		set->min_depth, set->max_depth, set->fov_depth);
 	adb_htm_debug(htm, ADB_LOG_HTM_GET, "clip fov %3.3f\n", set->fov * R2D);
 
