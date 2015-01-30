@@ -403,6 +403,8 @@ int htm_clip(struct htm *htm, struct adb_object_set *set,
 	struct htm_vertex vertex;
 	struct adb_table *table = set->table;
 
+	bzero(set->trixels, set->valid_trixels * sizeof(struct htm_trixel*));
+
 	set->min_depth = table_get_object_depth_min(table, min_depth);
 	set->max_depth = table_get_object_depth_max(table, max_depth);
 	if (set->min_depth < 0 || set->max_depth < 0) {
