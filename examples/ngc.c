@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include <libastrodb/db-import.h>
 #include <libastrodb/db.h>
