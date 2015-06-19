@@ -144,8 +144,8 @@ int adb_solve_constraint(struct adb_solve *solve,
 int adb_solve(struct adb_solve *solve, struct adb_object_set *set,
 		enum adb_find find);
 
-int adb_solve_get_solutions(struct adb_solve *solve,
-	unsigned int solution, struct adb_solve_solution **solutions);
+ struct adb_solve_solution * adb_solve_get_solution(struct adb_solve *solve,
+	unsigned int solution);
 
 /*! \fn int adb_solve_get_object(struct adb_solve *solve,
 		struct adb_solve_objects *solve_objects,

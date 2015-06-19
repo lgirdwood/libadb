@@ -916,7 +916,7 @@ static int sky2k_solve(char *lib_dir)
 	for (i = 0; i < found; i++) {
 
 		/* dump first set of objects */
-		adb_solve_get_solutions(solve, i, &solution);
+		solution = adb_solve_get_solution(solve, i);
 
 		/* set FoV and mag limits for single object searches */
 		adb_solve_prep_solution(solution, 2.0, 8.0, table_id);

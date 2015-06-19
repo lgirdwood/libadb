@@ -426,16 +426,13 @@ void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 	solve->plate_dec = dec;
 }
 
-int adb_solve_get_solutions(struct adb_solve *solve,
-	unsigned int index, struct adb_solve_solution **solution)
+struct adb_solve_solution *adb_solve_get_solution(struct adb_solve *solve,
+	unsigned int index)
 {
-	if (solve->num_solutions == 0 || index >= solve->num_solutions) {
-		*solution = NULL;
-		return -EINVAL;
-	}
+	if (solve->num_solutions == 0 || index >= solve->num_solutions)
+		return NULL;
 
-	*solution = &solve->solution[index];
-	return 0;
+	return &solve->solution[index];
 }
 
 /* prepare solution for finding other objects */
