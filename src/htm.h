@@ -19,6 +19,8 @@
 #ifndef __ADB_TABLE_HTM_H
 #define __ADB_TABLE_HTM_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -245,3 +247,5 @@ static inline void htm_vertex_update_unit(struct htm_vertex *v)
 }
 
 #endif /* TABLE_HTM_H_ */
+
+#endif

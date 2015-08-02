@@ -19,6 +19,8 @@
 #ifndef __ADB_TABLE_H
 #define __ADB_TABLE_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -115,5 +117,7 @@ int table_get_object_depth_min(struct adb_table *table, float value);
 int table_get_hashmap(struct adb_db *db, int table_id, const char *key);
 void table_put_id(struct adb_db *db, int id);
 int table_get_id(struct adb_db *db);
+
+#endif
 
 #endif

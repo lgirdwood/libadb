@@ -19,6 +19,8 @@
 #ifndef __ADB_README_H
 #define __ADB_README_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #define RM_BYTE_TYPE_SIZE		8
 #define RM_BYTE_UNIT_SIZE		8
 #define RM_BYTE_LABEL_SIZE		16
@@ -115,5 +117,7 @@ int cds_get_dataset(struct adb_db *db, struct adb_table *table,
 int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	const char *ext);
 int table_parse_readme(struct adb_db *db, int table_id);
+
+#endif
 
 #endif

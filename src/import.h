@@ -19,6 +19,8 @@
 #ifndef __ADB_IMPORT_H
 #define __ADB_IMPORT_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -60,6 +62,9 @@ struct cds_importer {
 
 	/* KD Tree data */
 	int kd_root;
+
+	/* Alt dataset name - when does not match ReadMe */
+	const char *alt_dataset;
 };
 
 typedef int (*object_import) (struct adb_db *, struct adb_object *,
@@ -92,5 +97,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table);
 
 int import_get_object_depth_max(struct adb_table *table, float value);
 int import_get_object_depth_min(struct adb_table *table, float value);
+
+#endif
 
 #endif

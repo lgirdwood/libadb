@@ -19,6 +19,8 @@
 #ifndef __ADB_LIB_H
 #define __ADB_LIB_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include "cds.h"
 #include "table.h"
 #include "import.h"
@@ -50,5 +52,7 @@ struct adb_db {
 	enum adb_msg_level msg_level;
 	int msg_flags;
 };
+
+#endif
 
 #endif

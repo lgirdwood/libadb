@@ -19,6 +19,8 @@
 #ifndef __ADB_SCHEMA_H
 #define __ADB_SCHEMA_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #define ADB_TABLE_HISTOGRAM_DIVS	100
 #define ADB_TABLE_DEPTH_DIVS	100
 
@@ -68,5 +70,7 @@ int schema_add_alternative_field(struct adb_db *db,
 	struct adb_table *table, const char *field, int pri_idx);
 int schema_write(struct adb_db *db, struct adb_table *table);
 int schema_read(struct adb_db *db, struct adb_table *table);
+
+#endif
 
 #endif

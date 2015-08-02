@@ -19,6 +19,8 @@
 #ifndef __ADB_DEBUG_H
 #define __ADB_DEBUG_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <execinfo.h>
@@ -168,5 +170,7 @@ static inline void adberrl_(struct adb_library *lib, const char *level,
 
 #define astrolib_info(lib, type, format, arg...) \
 		adboutl_(lib, "  I", __FILE__, __func__, __LINE__, format, ## arg)
+
+#endif
 
 #endif

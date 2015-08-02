@@ -19,6 +19,8 @@
 #ifndef __ADB_HASH_H
 #define __ADB_HASH_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -60,5 +62,7 @@ int hash_int(int val, int mod);
 void hash_free_maps(struct adb_table *table);
 int hash_build_table(struct adb_table *table, int map);
 int hash_build_set(struct adb_object_set *set, int map);
+
+#endif
 
 #endif

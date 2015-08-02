@@ -19,6 +19,8 @@
 #ifndef PRIVATE_H_
 #define PRIVATE_H_
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 /*
  * libastrodb file format version
  */
@@ -39,3 +41,5 @@
 #define unlikely(x)     __builtin_expect((x),0)
 
 #endif /* PRIVATE_H_ */
+
+#endif

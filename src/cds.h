@@ -16,6 +16,8 @@
  *  Copyright (C) 2005 - 2014 Liam Girdwood
  */
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #ifndef __ADB_CDS_H
 #define __ADB_CDS_H
 
@@ -52,5 +54,7 @@ struct table_path {
 	char *remote;  			/*!< remote catalog path */
 	char *file;         	/*!< table local filename */
 };
+
+#endif
 
 #endif

@@ -19,6 +19,8 @@
 #ifndef __ADB_SOLVE_H
 #define __ADB_SOLVE_H
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 #include <libastrodb/db.h>
 #include <libastrodb/solve.h>
 #include <libastrodb/object.h>
@@ -470,5 +472,7 @@ void posn_calc_unsolved_plate(struct adb_solve *solve,
 /* calculate the position of solved plate objects */
 void posn_calc_solved_plate(struct adb_solve *solve,
 	struct adb_solve_solution *solution);
+
+#endif
 
 #endif
