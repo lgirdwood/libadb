@@ -27,23 +27,38 @@ extern "C" {
 
 #define ADB_OBJECT_NAME_SIZE	16
 
-#define adb_offset(x,y) (long)(&((x*)0)->y) 		/* offset in struct */
-#define adb_sizeof(x,y) sizeof(((x*)0)->y) 		/* size in struct */
-#define adb_size(x) (sizeof(x)/sizeof(x[0]))		/* array size */
+#define adb_offset(x,y) (long)(&((x*)0)->y) 	/*!< offset in struct */
+#define adb_sizeof(x,y) sizeof(((x*)0)->y) 		/*!< size in struct */
+#define adb_size(x) (sizeof(x)/sizeof(x[0]))	/*!< array size */
 
 struct adb_db;
 
+/*! \struct adb_kd_tree
+ * \ingroup dataset
+ *
+ * KD tree
+ */
 struct adb_kd_tree {
 	/* KD tree - indexs */
 	int32_t child[2], parent, index;
 };
 
+/*! \struct adb_import
+ * \ingroup dataset
+ *
+ * Import
+ */
 struct adb_import {
 	/* next object (in Vmag or size) or NULL */
 	struct adb_object *next;
 	struct adb_kd_tree *kd;
 };
 
+/*! \struct adb_object
+ * \ingroup dataset
+ *
+ * Import
+ */
 struct adb_object {
 	/* primary keys for object hash based access */
 	union {

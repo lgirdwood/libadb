@@ -76,29 +76,30 @@ typedef enum {
 typedef int (*adb_field_import1)(struct adb_object *, int, char *);
 typedef int (*adb_field_import2)(struct adb_object *, int, char *, char *);
 
-/*! \struct adb_schema_object
+/*! \struct adb_schema_field
  * \ingroup dataset
  *
  * Represents a field within a dataset structure.
  */
 struct adb_schema_field {
 	char name[ADB_SCHEMA_NAME_SIZE];		/*!< field name */
-	char symbol[ADB_SCHEMA_SYMBOL_SIZE];		/*!< field symbol */
+	char symbol[ADB_SCHEMA_SYMBOL_SIZE];	/*!< field symbol */
 	int32_t struct_offset;					/*!< struct offset */
 	int32_t struct_bytes;					/*!< struct size */
 	int32_t group_offset;					/*!< group offset, -1 if atomic */
-	int32_t group_posn;					/*!< group posn, lowest is first */
-	int32_t text_size;					/*!< line size */
-	int32_t text_offset;					/*! line offset */
-	adb_ctype type;				/*!< field type */
+	int32_t group_posn;						/*!< group posn, lowest is first */
+	int32_t text_size;						/*!< line size */
+	int32_t text_offset;					/*!< line offset */
+	adb_ctype type;							/*!< field type */
 	char units[ADB_SCHEMA_UNITS_SIZE];		/*!< field units */
-	adb_field_import1 import;			/* custom insert method */
+	adb_field_import1 import;				/*!< custom insert method */
 };
 
-/*! \fn int adb_table_create(struct adb_db *db, char *cat_class,
-		char *cat_id, char *table_name, enum adb_table_type type,
-		float min_limit, float max_limit, float max_resolution);
- * \brief Create a new dataset
+/*! \fn int adb_table_import_new(struct adb_db *db,
+		const char *cat_class, const char *cat_id, const char *table_name,
+		const char *depth_field, float min_limit, float max_limit,
+		adb_import_type otype);
+ * \brief Configure a new table for import
  * \ingroup dataset
  */
 int adb_table_import_new(struct adb_db *db,
@@ -106,9 +107,9 @@ int adb_table_import_new(struct adb_db *db,
 		const char *depth_field, float min_limit, float max_limit,
 		adb_import_type otype);
 
-/*! \fn int adb_table_register_schema(struct adb_db *db,
-					struct adb_schema_object *schema,
-					int schema_size, int object_size);
+/*! \fn int adb_table_import_schema(struct adb_db *db, int table_id,
+					struct adb_schema_field *schema,
+					int num_schema_fields, int object_size);
  * \brief Register a new table schema
  * \ingroup table
  */
@@ -116,25 +117,30 @@ int adb_table_import_schema(struct adb_db *db, int table_id,
 					struct adb_schema_field *schema,
 					int num_schema_fields, int object_size);
 
-/*! \fn int adb_table_alt_field(adb_table *table, char* field, char* alt,
-					int flags);
+/*! \fn int adb_table_import_field(struct adb_db *db, int table_id, const char *field,
+	const char *alt, int flags);
 * \brief Set an alternative field if another field is blank
 * \ingroup dataset
 */
 int adb_table_import_field(struct adb_db *db, int table_id, const char *field,
 	const char *alt, int flags);
 
-
+/*! \fn int adb_table_import(struct adb_db *db, int table_id);
+* \brief Set an alternative field if another field is blank
+* \ingroup dataset
+*/
 int adb_table_import(struct adb_db *db, int table_id);
 
-/*! \fn adb_ctype adb_table_get_field_type(adb_table *table, char* field);
+/*! \fn adb_ctype adb_table_get_field_type(struct adb_db *db, int table_id,
+	const char* field);
  * \brief Get field type in struct
  * \ingroup dataset
  */
 adb_ctype adb_table_get_field_type(struct adb_db *db, int table_id,
 	const char* field);
 
-/*! \fn int adb_table_get_field_offset(adb_table *table, char* field);
+/*! \fn int adb_table_get_field_offset(struct adb_db *db, int table_id,
+	const char* field);
  * \brief Get field offset in struct
  * \ingroup dataset
  */
