@@ -141,6 +141,14 @@ adb_ctype adb_table_get_field_type(struct adb_db *db, int table_id,
 int adb_table_get_field_offset(struct adb_db *db, int table_id,
 	const char* field);
 
+/*! \fn int adb_table_import_alt_dataset(struct adb_db *db, int table_id,
+	const char *dataset, int num_objects);
+ * \brief Set the dataset name and object count manually.
+ * \ingroup dataset
+ */
+int adb_table_import_alt_dataset(struct adb_db *db, int table_id,
+	const char *dataset, int num_objects);
+
 #ifdef __cplusplus
 };
 #endif

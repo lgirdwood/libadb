@@ -455,7 +455,7 @@ static int table_histogram_import(struct adb_db *db,
 
 	size = table->import.text_length + 10;
 
-	for (j = 0; j < table->object.count; j++) {
+	for (j = 0; j < table->object.count || table->object.count == 0; j++) {
 		bzero(line, ADB_IMPORT_LINE_SIZE);
 
 		/* try and read a little extra padding */
@@ -500,6 +500,8 @@ static int table_histogram_import(struct adb_db *db,
 out:
 	adb_info(db, ADB_LOG_CDS_IMPORT,
 		"Used %d objects for histogram %d out of range\n", used, oor);
+	if (table->object.count == 0)
+		table->object.count = used;
 	histo_depth_calc(db, table, histo);
 	fseek(f, 0, SEEK_SET);
 	free(line);
@@ -530,7 +532,7 @@ static int table_histogram_alt_import(struct adb_db *db,
 
 	size = table->import.text_length + 10;
 
-	for (j = 0; j < table->object.count; j++) {
+	for (j = 0; j < table->object.count || table->object.count == 0; j++) {
 		bzero(line, ADB_IMPORT_LINE_SIZE);
 
 		/* try and read a little extra padding */
@@ -576,6 +578,8 @@ static int table_histogram_alt_import(struct adb_db *db,
 out:
 	adb_info(db, ADB_LOG_CDS_IMPORT,
 		"Used %d objects for histogram %d out of range\n", used, oor);
+	if (table->object.count == 0)
+		table->object.count = used;
 	histo_depth_calc(db, table, histo);
 	fseek(f, 0, SEEK_SET);
 	free(line);
@@ -985,6 +989,20 @@ add_fields:
 	return n;
 }
 
+int adb_table_import_alt_dataset(struct adb_db *db, int table_id,
+	const char *dataset, int num_objects)
+{
+	struct adb_table *table;
+
+	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
+		return -EINVAL;
+	table = &db->table[table_id];
+
+	table->import.alt_dataset = dataset;
+	table->object.count = num_objects;
+	return 0;
+}
+
 /*! \fn adb_table *adb_table_create(adb_db *db, char *table_name, unsigned int flags)
  * \param db Catalog
  * \param table_name Dataset name (dataset file_name name in ReadMe)
@@ -1134,6 +1152,12 @@ int adb_table_import(struct adb_db *db, int table_id)
 	struct adb_table *table = &db->table[table_id];
 	int ret = -EINVAL, num_files, i;
 	char file[ADB_PATH_SIZE];
+
+	/* do we have an alternate dataset configured ? */
+	if (table->import.alt_dataset) {
+		table->path.file = table->import.alt_dataset;
+		goto import;
+	}
 
 	/* do the ASCII data files exist locally ?  */
 	for (i = 0; i < adb_size(file_extensions); i++) {
