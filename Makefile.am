@@ -14,12 +14,14 @@ DISTCLEANFILES =
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libastrodb.pc
 
-doxygen:
-	$(MAKE) -C doxygen doxygen
-
-.PHONY: distcleancheck doxygen
+.PHONY: distcleancheck
 
 # see git-version-gen
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
+
+doc-dummy:
+
+doc: doc-dummy
+	$(MAKE) -C doc doc
