@@ -2,7 +2,8 @@ noinst_PROGRAMS = \
 	sky2k \
 	ngc \
 	hyperleda \
-	tycho
+	tycho \
+	gsc
 #	vii110a \
 #	v84
 
@@ -26,6 +27,9 @@ hyperleda_SOURCES = \
 tycho_SOURCES = \
 	tycho.c
 
+gsc_SOURCES = \
+	gsc.c
+
 sky2k_LDADD = \
 	../src/libastrodb.la
 
@@ -42,4 +46,7 @@ hyperleda_LDADD = \
 	../src/libastrodb.la
 
 tycho_LDADD = \
+	../src/libastrodb.la
+
+gsc_LDADD = \
 	../src/libastrodb.la
