@@ -63,6 +63,10 @@ struct kd_elem {
 };
 
 struct kd_base {
+	struct adb_db *db;
+	int count;
+	int total;
+	float percent;
 	struct kd_base_elem *base;
 	struct kd_elem *x_base;
 	struct kd_elem *y_base;
@@ -291,6 +295,17 @@ static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
 	return NULL;
 }
 
+static inline void mbase_inc(struct kd_base *mbase)
+{
+	mbase->count++;
+	if (mbase->count >= mbase->total) {
+		mbase->percent += 0.1;
+		adb_info(mbase->db, ADB_LOG_CDS_KDTREE,
+			"\r Building %3.1f percent ", mbase->percent);
+		mbase->count = 0;
+	}
+}
+
 static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase,
 	int x_start, int x_end, int y_start, int y_end, int z_start, int z_end)
 {
@@ -314,6 +329,7 @@ static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase,
 	if (x_elem == NULL)
 		return NULL;
 
+	mbase_inc(mbase);
 	x_id = x_elem->eid;
 	parent = x_elem->base;
 	parent->used = 1;
@@ -366,6 +382,7 @@ static struct kd_base_elem *kd_y_select_elem(struct kd_base *mbase,
 	if (y_elem == NULL)
 		return NULL;
 
+	mbase_inc(mbase);
 	y_id = y_elem->eid;
 	parent = y_elem->base;
 	parent->used = 1;
@@ -418,6 +435,7 @@ static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase,
 	if (z_elem == NULL)
 		return NULL;
 
+	mbase_inc(mbase);
 	z_id = z_elem->eid;
 	parent = z_elem->base;
 	parent->used = 1;
@@ -568,7 +586,11 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	if (base == NULL)
 		return -ENOMEM;
 
+	mbase.db = db;
 	mbase.base = base;
+	mbase.count = 0;
+	mbase.percent = 0.0;
+	mbase.total = table->object.count / 1000;
 	mbase.x_base = (struct kd_elem*)(base + table->object.count);
 	mbase.y_base = mbase.x_base + table->object.count;
 	mbase.z_base = mbase.y_base + table->object.count;
@@ -583,13 +605,18 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	/* create RA and DEC elems */
 	elem_create_xyz(base, table);
 
+	adb_info(db, ADB_LOG_CDS_KDTREE, "Sorting KD Tree objects...\n");
+
 	/* sort RA and DEC elems in order */
-	qsort(mbase.x_base, table->object.count,
-		sizeof(struct kd_elem), elem_x_cmp);
-	qsort(mbase.y_base, table->object.count,
-		sizeof(struct kd_elem), elem_y_cmp);
-	qsort(mbase.z_base, table->object.count,
-		sizeof(struct kd_elem), elem_z_cmp);
+#pragma omp parallel
+	{
+		qsort(mbase.x_base, table->object.count,
+			sizeof(struct kd_elem), elem_x_cmp);
+		qsort(mbase.y_base, table->object.count,
+			sizeof(struct kd_elem), elem_y_cmp);
+		qsort(mbase.z_base, table->object.count,
+			sizeof(struct kd_elem), elem_z_cmp);
+	}
 
 	/* give XYZ elems index numbers */
 	for (i = 0; i < table->object.count; i++) {
@@ -599,6 +626,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	}
 
 	/* build the KD tree starting on X */
+	adb_info(db, ADB_LOG_CDS_KDTREE, "\r Building 0.0 percent");
 	root = kd_x_select_elem(&mbase, 0, table->object.count - 1, 0,
 		table->object.count - 1, 0, table->object.count - 1);
 	if (root == NULL) {
@@ -606,6 +634,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 		ret = -EINVAL;
 		goto out;
 	}
+	adb_info(db, ADB_LOG_CDS_KDTREE, "\r Building 100.0 percent\n");
 
 	/* update the objects with KD data */
 	update_objects(base, table, root);
