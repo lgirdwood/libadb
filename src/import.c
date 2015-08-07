@@ -398,32 +398,49 @@ static int get_histogram_keys(struct adb_db *db, struct adb_table *table)
 	return -EINVAL;
 }
 
+/* get index where 80% of remaining objects exist */
+static int get_80percent_limit(struct adb_db *db,
+	struct adb_table *table, float histo, int index, int *remaining)
+{
+	float required;
+	int i, c = 0, r = *remaining;
+
+	required = 0.8 * r;
+
+	for (i = index; i >= 0; i--) {
+		c += table->file_index.histo[i];
+		if (c >= required) {
+			*remaining = r - c + table->file_index.histo[i];
+			return i;
+		}
+	}
+	return 0;
+}
+
 static void histo_depth_calc(struct adb_db *db,
 	struct adb_table *table, float histo)
 {
-	int i, j, start, end, count;
-
-	count = ADB_TABLE_HISTOGRAM_DIVS / (db->htm->depth + 1);
+	int i, j, start, old_start, remaining;
 
 	start = 0;
-	end = count +  ADB_TABLE_HISTOGRAM_DIVS % (db->htm->depth + 1);
+	old_start = ADB_TABLE_HISTOGRAM_DIVS - 1;
+	remaining = table->object.count;
 
-	for (j = 0; j < db->htm->depth; j++) {
+	/* sort objects by magnitude into htm depth levels */
+	for (j = db->htm->depth; j >= 0; j--) {
 
-		table->depth_map[j].min_value = table->object.min_value + start * histo;
-		table->depth_map[j].max_value = table->object.min_value + end * histo;
+		start =  get_80percent_limit(db, table, histo, old_start,
+			&remaining);
 
-		start = end;
-		end += count;
+		table->depth_map[j].min_value =
+			table->object.min_value + start * histo;
+		table->depth_map[j].max_value =
+			table->object.min_value + old_start * histo;
+		old_start = start;
 
 		adb_info(db, ADB_LOG_CDS_IMPORT, "depth %d %3.3f <-> %3.3f\n", j,
 			table->depth_map[j].min_value, table->depth_map[j].max_value);
 	}
-	table->depth_map[j].min_value = table->depth_map[j - 1].max_value;
-	table->depth_map[j].max_value = table->object.max_value;
-
-	adb_info(db, ADB_LOG_CDS_IMPORT, "depth %d %3.3f <-> %3.3f\n", j,
-		table->depth_map[j].min_value, table->depth_map[j].max_value);
 
 	for (i = 0; i < ADB_TABLE_HISTOGRAM_DIVS; i++)
 		adb_info(db, ADB_LOG_CDS_IMPORT, "%3.3f <-> %3.3f %d\n",
@@ -431,6 +448,11 @@ static void histo_depth_calc(struct adb_db *db,
 			table->object.min_value + (i + 1) * histo,
 			table->file_index.histo[i]);
 }
+
+#define histo_inc(db, count) \
+	count++; \
+	if (count % 10000 == 0) \
+		adb_info(db, ADB_LOG_CDS_IMPORT, "\r Parsed %d", count);
 
 static int table_histogram_import(struct adb_db *db,
 	struct adb_table *table, FILE *f)
@@ -495,6 +517,7 @@ static int table_histogram_import(struct adb_db *db,
 
 		table->file_index.histo[hindex]++;
 		used++;
+		histo_inc(db, j);
 	}
 
 out:
@@ -573,6 +596,7 @@ static int table_histogram_alt_import(struct adb_db *db,
 
 		table->file_index.histo[hindex]++;
 		used++;
+		histo_inc(db, j);
 	}
 
 out:
@@ -636,12 +660,22 @@ static int import_object_descending(struct adb_db *db,
 	return 1;
 }
 
+#define import_inc(db, count, pc, div) \
+	count++; \
+	if (count >= div) {\
+		pc += 0.01; \
+		count = 0; \
+		adb_info(db, ADB_LOG_CDS_IMPORT, "\r Imported %3.1f percent", pc); \
+	}
+
 static int import_rows(struct adb_db *db, int table_id, FILE *f)
 {
 	struct adb_table *table;
 	struct adb_object *object;
 	int i, j, count = 0, short_records = 0, import, warn, line_count = 0;
+	int div, pc_count = 0;
 	char *line, buf[ADB_IMPORT_LINE_SIZE];
+	float pc = 0.0;
 	size_t size;
 	ssize_t rsize;
 
@@ -660,6 +694,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 		table->object.count, table->object.bytes);
 
 	size = table->import.text_length + 10;
+	div = table->object.count / 10000;
 
 	for (j = 0; j < table->object.count; j++) {
 		warn = 0;
@@ -711,7 +746,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 		if (import == 0)
 			warn = 1;
 		else if (import == 1)
-			count += import;
+			count++;
 		else {
 			adb_error(db, "failed to import object at line %d: %s\n", j, line);
 			return -EINVAL;
@@ -724,6 +759,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT, "line %s\n\n", line);
 		}
 		line_count++;
+		import_inc(db, pc_count, pc, div);
 	}
 
 out:
@@ -739,6 +775,8 @@ static int import_rows_with_alternatives(struct adb_db *db,
 {
 	struct adb_table *table;
 	int i, j, k, count = 0, short_records = 0, warn, import, line_count = 0;
+	int div, pc_count = 0;
+	float pc = 0.0;
 	char *line;
 	char buf[ADB_IMPORT_LINE_SIZE], buf2[ADB_IMPORT_LINE_SIZE];
 	struct adb_object *object;
@@ -762,6 +800,8 @@ static int import_rows_with_alternatives(struct adb_db *db,
 		"Importing %d alt fields\n", table->object.num_alt_fields);
 
 	size = table->import.text_length + 10;
+	div = table->object.count / 10000;
+
 	for (j = 0; j < table->object.count; j++) {
 		object = calloc(1, table->object.bytes);
 		if (object == NULL) {
@@ -832,7 +872,7 @@ static int import_rows_with_alternatives(struct adb_db *db,
 		if (import == 0)
 			warn = 1;
 		else if (import == 1)
-			count += import;
+			count++;
 		else {
 			adb_error(db, "failed to import object at line %d: %s\n", j, line);
 			return -EINVAL;
@@ -845,6 +885,7 @@ static int import_rows_with_alternatives(struct adb_db *db,
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT, "line %s\n\n", line);
 		}
 		line_count++;
+		import_inc(db, pc_count, pc, div);
 	}
 
 out:
