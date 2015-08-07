@@ -38,6 +38,7 @@ static inline void adbout_(struct adb_db *db, const char *level,
 	va_start(va, fmt);
 	fprintf(stdout, "%s:%s:%s:%d:  ", level, file, func, line);
 	vfprintf(stdout, fmt, va);
+	fflush(stdout);
 	va_end(va);
 }
 
@@ -60,6 +61,7 @@ static inline void adberr_(struct adb_db *db, const char *level,
 	for (j = 0; j < nptrs; j++)
 		fprintf(stderr, "  %s\n", str[j]);
 
+	fflush(stderr);
 	free(str);
 }
 
