@@ -246,6 +246,13 @@ static inline void htm_vertex_update_unit(struct htm_vertex *v)
 		trixel->depth, trixel->position); \
 }
 
+#define htm_dump_trixel_objects(htm, trixel, idx) \
+{ \
+	adb_htm_debug(htm, ADB_LOG_HTM_GET, "H:%s Q:%d D:%d P:%x objects %d\n", \
+		trixel->hemisphere ? "S" : "N", trixel->quadrant, \
+		trixel->depth, trixel->position, trixel->data[idx].num_objects); \
+}
+
 #endif /* TABLE_HTM_H_ */
 
 #endif

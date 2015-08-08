@@ -415,6 +415,9 @@ int htm_clip(struct htm *htm, struct adb_object_set *set,
 	}
 
 	set->fov_depth = htm_get_depth_from_resolution(fov);
+	if (set->fov_depth > htm->depth)
+		set->fov_depth = htm->depth;
+
 	set->fov = fov;
 	vertex.ra = ra;
 	vertex.dec = dec;
@@ -527,7 +530,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 			set->trixels[i]->a->ra * R2D, set->trixels[i]->a->dec * R2D,
 			set->trixels[i]->b->ra * R2D, set->trixels[i]->b->dec * R2D,
 			set->trixels[i]->c->ra * R2D, set->trixels[i]->c->dec * R2D);
-		htm_dump_trixel(htm, set->trixels[i]);
+		htm_dump_trixel_objects(htm, set->trixels[i], 3);
 
 		if (set->trixels[i]->depth < set->min_depth ||
 			set->trixels[i]->depth > set->max_depth)
