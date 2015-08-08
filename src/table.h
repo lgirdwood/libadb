@@ -91,6 +91,7 @@ struct adb_table {
 	/* depth by depth table HTM mappings */
 	struct depth_map depth_map[HTM_MAX_DEPTH];
 	int max_depth;		/*!< deepest HTM depth used by this table */
+	int depth_count[HTM_MAX_DEPTH];
 
 	/* hashed object searching */
 	struct table_hash hash;
