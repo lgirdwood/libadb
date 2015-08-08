@@ -106,13 +106,20 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 	}
 }
 
+/* test object designations */
+static const char *dnames[] = {
+		"3992-746-1", "3992-942-1", "3992-193-1", "3996-1436-1",
+		"3992-648-1", "3992-645-1", "3992-349-1", "3992-882-1",
+};
+
 /*
  * Get all the objects in the dataset.
  */
 static int get_all(struct adb_db *db, int table_id)
 {
 	struct adb_object_set *set;
-	int count, heads;
+	int count, heads, i, found;
+	const struct adb_object *dobj[4] = {NULL, NULL, NULL, NULL};
 
 	fprintf(stdout, "Get all objects\n");
 	set = adb_table_set_new(db, table_id);
@@ -126,6 +133,16 @@ static int get_all(struct adb_db *db, int table_id)
 	fprintf(stdout, " found %d object list heads %d objects\n\n", heads, count);
 
 	get_printf(adb_set_get_head(set), heads);
+
+	adb_set_hash_key(set, ADB_FIELD_DESIGNATION);
+
+	/* search for solution objects */
+	for (i = 0; i < adb_size(dnames); i++) {
+		found = adb_set_get_object(set, dnames[i], ADB_FIELD_DESIGNATION,
+			&dobj[i]);
+		if (found <= 0)
+			fprintf(stderr, "can't find %s\n", dnames[i]);
+	}
 
 	adb_table_set_free(set);
 	return 0;
@@ -173,8 +190,8 @@ int tycho_query(char *lib_dir)
 		goto lib_err;
 	}
 
-	adb_set_msg_level(db, ADB_MSG_DEBUG);
-	adb_set_log_level(db, ADB_LOG_ALL);
+	//adb_set_msg_level(db, ADB_MSG_DEBUG);
+	//adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use CDS catalog class I, #250, dataset tycho */
 	table_id = adb_table_open(db, "I", "250", "catalog");
