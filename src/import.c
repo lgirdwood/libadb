@@ -337,7 +337,8 @@ int import_get_object_depth_min(struct adb_table *table, float value)
 		return -EINVAL;
 
 	for (depth = 0; depth <= table->db->htm->depth; depth++) {
-		if (value <= table->depth_map[depth].max_value)
+		if (value > table->depth_map[depth].min_value &&
+			value < table->depth_map[depth].max_value)
 			return depth;
 	}
 
@@ -354,8 +355,8 @@ int import_get_object_depth_max(struct adb_table *table, float value)
 		return -EINVAL;
 
 	for (depth = 0; depth <= table->db->htm->depth; depth++) {
-
-		if (value <= table->depth_map[depth].min_value)
+		if (value > table->depth_map[depth].min_value &&
+			value < table->depth_map[depth].max_value)
 			return depth;
 	}
 
@@ -379,30 +380,28 @@ static void get_import_buffer_size(struct adb_db *db,
 		table->import.text_buffer_bytes);
 }
 
-static int get_histogram_keys(struct adb_db *db, struct adb_table *table)
+static void get_histogram_keys(struct adb_db *db, struct adb_table *table)
 {
 	int key_idx, alt_key_idx;
 
 	key_idx = schema_get_field(db, table, table->import.depth_field);
 	if (key_idx >= 0) {
 		table->import.histogram_key = &table->import.field[key_idx];
-		return 0;
 	}
 
 	alt_key_idx = schema_get_alt_field(db, table, table->import.depth_field);
 	if (alt_key_idx >= 0) {
 		table->import.histogram_alt_key = &table->import.alt_field[alt_key_idx];
-		return 0;
 	}
-
-	return -EINVAL;
 }
 
-/* get index where 80% of remaining objects exist */
-static int get_80percent_limit(struct adb_db *db,
-	struct adb_table *table, float histo, int index, int *remaining)
+static float hlimit[] = {0.8, 0.75, 0.66, 0.5};
+
+/* get index where limit% of remaining objects exist */
+static int get_percent_limit(struct adb_db *db, struct adb_table *table,
+	float limit, float histo, int index, int *remaining)
 {
-	float required;
+	int required;
 	int i, c = 0, r = *remaining;
 
 	required = 0.8 * r;
@@ -420,7 +419,7 @@ static int get_80percent_limit(struct adb_db *db,
 static void histo_depth_calc(struct adb_db *db,
 	struct adb_table *table, float histo)
 {
-	int i, j, start, old_start, remaining;
+	int i, j, start, old_start, remaining, limit = 0, total = 0;
 
 	start = 0;
 	old_start = ADB_TABLE_HISTOGRAM_DIVS - 1;
@@ -429,8 +428,8 @@ static void histo_depth_calc(struct adb_db *db,
 	/* sort objects by magnitude into htm depth levels */
 	for (j = db->htm->depth; j >= 0; j--) {
 
-		start =  get_80percent_limit(db, table, histo, old_start,
-			&remaining);
+		start = get_percent_limit(db, table, hlimit[limit], histo,
+			old_start, &remaining);
 
 		table->depth_map[j].min_value =
 			table->object.min_value + start * histo;
@@ -442,15 +441,17 @@ static void histo_depth_calc(struct adb_db *db,
 			table->depth_map[j].min_value, table->depth_map[j].max_value);
 	}
 
-	for (i = 0; i < ADB_TABLE_HISTOGRAM_DIVS; i++)
+	for (i = 0; i < ADB_TABLE_HISTOGRAM_DIVS; i++) {
 		adb_info(db, ADB_LOG_CDS_IMPORT, "%3.3f <-> %3.3f %d\n",
 			table->object.min_value + i * histo,
 			table->object.min_value + (i + 1) * histo,
 			table->file_index.histo[i]);
+			total += table->file_index.histo[i];
+	}
+	adb_info(db, ADB_LOG_CDS_IMPORT, "total histo %d\n", total);
 }
 
 #define histo_inc(db, count) \
-	count++; \
 	if (count % 10000 == 0) \
 		adb_info(db, ADB_LOG_CDS_IMPORT, "\r Parsed %d", count);
 
@@ -536,7 +537,7 @@ static int table_histogram_alt_import(struct adb_db *db,
 {
 	struct adb_object object;
 	struct alt_field *key = table->import.histogram_alt_key;
-	int j, rsize, import, used = 0, hindex, oor = 0;
+	int j, rsize, import, used = 0, hindex, oor = 0, blank = 0;
 	char *line;
 	char buf[ADB_IMPORT_LINE_SIZE], buf2[ADB_IMPORT_LINE_SIZE];
 	size_t size;
@@ -547,8 +548,8 @@ static int table_histogram_alt_import(struct adb_db *db,
 		return -ENOMEM;
 
 	adb_info(db, ADB_LOG_CDS_IMPORT,
-		"Creating histogram using field %s for depth\n",
-		key->key_field.symbol);
+		"Creating histogram using field %s/%s for depth\n",
+		key->key_field.symbol, key->alt_field.symbol);
 
 	histo = (table->object.max_value - table->object.min_value) /
 		(ADB_TABLE_HISTOGRAM_DIVS - 1);
@@ -561,7 +562,7 @@ static int table_histogram_alt_import(struct adb_db *db,
 		/* try and read a little extra padding */
 		rsize = getline(&line, &size, f);
 		if (rsize <= 0) {
-			adb_error(db, "cant read line\n");
+			adb_error(db, "can't read line\n");
 			goto out;
 		}
 
@@ -572,11 +573,11 @@ static int table_histogram_alt_import(struct adb_db *db,
 		strncpy(buf2, line + key->alt_field.text_offset,
 			key->alt_field.text_size);
 
-
 		import = key->import(&object, key->key_field.struct_offset, buf, buf2);
 		if (import < 0) {
 			adb_vdebug(db, ADB_LOG_CDS_IMPORT, " blank field %s on buf: %s\n",
 				key->key_field.symbol, buf);
+			blank++;
 			continue;
 		}
 
@@ -601,7 +602,8 @@ static int table_histogram_alt_import(struct adb_db *db,
 
 out:
 	adb_info(db, ADB_LOG_CDS_IMPORT,
-		"Used %d objects for histogram %d out of range\n", used, oor);
+		"Used %d objects for histogram %d out of range %d blank\n",
+		used, oor, blank);
 	if (table->object.count == 0)
 		table->object.count = used;
 	histo_depth_calc(db, table, histo);
@@ -672,7 +674,8 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 {
 	struct adb_table *table;
 	struct adb_object *object;
-	int i, j, count = 0, short_records = 0, import, warn, line_count = 0;
+	int i, j, count = 0, short_records = 0;
+	int import, warn = 0, line_count = 0, blank = 0;
 	int div, pc_count = 0;
 	char *line, buf[ADB_IMPORT_LINE_SIZE];
 	float pc = 0.0;
@@ -697,7 +700,7 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 	div = table->object.count / 10000;
 
 	for (j = 0; j < table->object.count; j++) {
-		warn = 0;
+
 		object = calloc(1, table->object.bytes);
 		if (object == NULL) {
 			free(line);
@@ -737,14 +740,14 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 			if (import < 0) {
 				adb_vdebug(db, ADB_LOG_CDS_IMPORT, " blank field %s\n",
 					table->import.field[i].symbol);
-				warn = 1;
+				blank++;
 			}
 		}
 
 		/* import row into table */
 		import = table->object.import(db, object, table);
 		if (import == 0)
-			warn = 1;
+			warn++;
 		else if (import == 1)
 			count++;
 		else {
@@ -763,7 +766,8 @@ static int import_rows(struct adb_db *db, int table_id, FILE *f)
 	}
 
 out:
-	adb_info(db, ADB_LOG_CDS_IMPORT, "Got %d short records\n", short_records);
+	adb_info(db, ADB_LOG_CDS_IMPORT, "Got %d short, %d blank records %d warnings\n",
+		short_records, blank, warn);
 	adb_info(db, ADB_LOG_CDS_IMPORT, "Imported %d records\n", count);
 	table->object.count = count;
 	free(line);
