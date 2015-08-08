@@ -158,7 +158,7 @@ int gsc_import(char *lib_dir)
 		return -ENOMEM;
 	}
 
-	db = adb_create_db(lib, 7, 1);
+	db = adb_create_db(lib, 9, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
@@ -169,7 +169,7 @@ int gsc_import(char *lib_dir)
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	table_id = adb_table_import_new(db, "I", "220", "out",
-				"Pmag", 0.0, 18.0, ADB_IMPORT_INC);
+				"Pmag", -2.0, 17.0, ADB_IMPORT_INC);
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create import table\n");
 		ret = table_id;
