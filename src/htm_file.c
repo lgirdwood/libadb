@@ -87,6 +87,7 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 
 		count += ret;
 		objects += hdr.num_objects * table->object.bytes;
+		table->depth_count[htm_trixel_depth(hdr.id)] += hdr.num_objects;
 
 		size = fread(&hdr, sizeof(hdr), 1, f);
 	}
@@ -148,6 +149,7 @@ static int write_trixel(struct adb_db *db, struct adb_table *table,
 		adb_error(db, "for trixel %x\n", hdr.id);
 		return -EINVAL;
 	}
+	table->depth_count[htm_trixel_depth(hdr.id)] += hdr.num_objects;
 
 children:
 	if (!trixel->child)
@@ -175,7 +177,7 @@ children:
 int table_read_trixels(struct adb_db *db, struct adb_table *table)
 {
 	struct adb_object *objects;
-	int count;
+	int count, i;
 	char file[ADB_PATH_SIZE];
 	FILE *f;
 
@@ -210,13 +212,17 @@ int table_read_trixels(struct adb_db *db, struct adb_table *table)
 
 	adb_info(db, ADB_LOG_HTM_FILE, "Read and inserted %d objects\n", count);
 	table->objects = objects;
+
+	for (i = 0; i <= table->db->htm->depth; i++)
+		adb_info(db, ADB_LOG_HTM_FILE, "Read %d objects at %d depth\n",
+			table->depth_count[i], i);
 	return count;
 }
 
 int table_write_trixels(struct adb_db *db, struct adb_table *table)
 {
 	struct htm *htm = db->htm;
-	int count = 0, count_;
+	int count = 0, count_, i;
 	char file[ADB_PATH_SIZE];
 	FILE *f;
 
@@ -273,8 +279,14 @@ int table_write_trixels(struct adb_db *db, struct adb_table *table)
 	if (count != table->object.count)
 		adb_error(db, "Error wrote %d objects, expected %d\n",
 					count, table->object.count);
+
+	for (i = 0; i <= table->db->htm->depth; i++)
+		adb_info(db, ADB_LOG_HTM_FILE, " wrote %d objects at depth %d\n",
+			table->depth_count[i], i);
+
 	fclose(f);
-	adb_info(db, ADB_LOG_HTM_FILE, "Wrote %d objects\n", count);
+	adb_info(db, ADB_LOG_HTM_FILE, " wrote %d objects in total\n", count);
+
 	return count;
 
 err:
