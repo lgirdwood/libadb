@@ -596,7 +596,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	mbase.z_base = mbase.y_base + table->object.count;
 
 	adb_info(db, ADB_LOG_CDS_KDTREE,
-		"Building KD Tree for %s with %d objects\n",
+		"Preparing KD Tree for %s with %d objects\n",
 		table->cds.name, table->object.count);
 
 	/* Get objects from HTM */
@@ -605,7 +605,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	/* create RA and DEC elems */
 	elem_create_xyz(base, table);
 
-	adb_info(db, ADB_LOG_CDS_KDTREE, "Sorting KD Tree objects...\n");
+	adb_info(db, ADB_LOG_CDS_KDTREE, "Sorting KD Tree source objects...\n");
 
 	/* sort RA and DEC elems in order */
 #pragma omp parallel
@@ -626,7 +626,7 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	}
 
 	/* build the KD tree starting on X */
-	adb_info(db, ADB_LOG_CDS_KDTREE, "\r Building 0.0 percent");
+	adb_info(db, ADB_LOG_CDS_KDTREE, "\r Building 0.0 percent ");
 	root = kd_x_select_elem(&mbase, 0, table->object.count - 1, 0,
 		table->object.count - 1, 0, table->object.count - 1);
 	if (root == NULL) {
