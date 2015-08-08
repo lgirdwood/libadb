@@ -136,6 +136,7 @@ int adb_table_open(struct adb_db *db, const char *cat_class,
 		return table_id;
 
 	table = &db->table[table_id];
+	memset(table, 0, sizeof(*table));
 	table->db = db;
 	table->id = table_id;
 
