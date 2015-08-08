@@ -207,6 +207,7 @@ static void debug_init(struct adb_object_set *set)
 {
 	int i, found;
 
+	fprintf(stdout, "!! enabling solve debug\n");
 	adb_set_hash_key(set, ADB_FIELD_DESIGNATION);
 
 	/* search for solution objects */
@@ -242,15 +243,15 @@ static void debug_init(struct adb_object_set *set)
 		do { \
 			if (stage < runtime->debug) \
 				fprintf(stdout, "pass %d:object %s (%3.3f) --> %s (%3.3f) dist %f min %f max %f tests %d no %d\n", \
-				stage, object1->designation, object1->key, \
-				object2->designation, object2->key, dist, min, max, num, i); \
+				stage, object1->designation, object1->mag, \
+				object2->designation, object2->mag, dist, min, max, num, i); \
 		} while (0)
 #define DOBJ_LIST(stage, object1, object2, dist, i) \
 		do { \
 			if (stage <= runtime->debug) \
 				fprintf(stdout, " check %d:object %s (%3.3f) --> %s (%3.3f) dist %f no %d\n", \
-				stage, object1->designation, object1->key, \
-				object2->designation, object2->key, dist, i); \
+				stage, object1->designation, object1->mag, \
+				object2->designation, object2->mag, dist, i); \
 		} while (0)
 #define DOBJ_PA_CHECK(object0, object1, object2, delta, min, max) \
 		do { \
@@ -271,7 +272,7 @@ static void debug_init(struct adb_object_set *set)
 		do { \
 			if (runtime->debug) \
 				fprintf(stdout, "%d: object %s (%3.3f) dist %f min %f max %f\n", \
-				num, object->designation, object->key, dist, min, max); \
+				num, object->designation, object->mag, dist, min, max); \
 		} while (0)
 #define SOBJ_FOUND(object) \
 		do { \

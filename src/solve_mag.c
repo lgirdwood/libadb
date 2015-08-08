@@ -248,7 +248,7 @@ int mag_solve_single_object(struct solve_runtime *runtime,
 	end = object_get_last_with_mag(source,
 			mag_max + solution->delta.mag, 0);
 
-	SOBJ_MAG(mag_min - solution->tolerance.mag,
+	SOBJ_MAG(mag_min - solution->delta.mag,
 			mag_max + solution->delta.mag);
 
 	/* both out of range */
