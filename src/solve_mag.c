@@ -69,6 +69,7 @@ float mag_get_plate(struct adb_solve *solve,
 
 		mag += ref->object->mag +
 			mag_get_plate_diff(&ref->pobject, primary);
+		count++;
 	}
 
 	return mag / (float)count;
