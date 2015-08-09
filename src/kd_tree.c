@@ -608,15 +608,12 @@ int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 	adb_info(db, ADB_LOG_CDS_KDTREE, "Sorting KD Tree source objects...\n");
 
 	/* sort RA and DEC elems in order */
-#pragma omp parallel
-	{
-		qsort(mbase.x_base, table->object.count,
-			sizeof(struct kd_elem), elem_x_cmp);
-		qsort(mbase.y_base, table->object.count,
-			sizeof(struct kd_elem), elem_y_cmp);
-		qsort(mbase.z_base, table->object.count,
-			sizeof(struct kd_elem), elem_z_cmp);
-	}
+	qsort(mbase.x_base, table->object.count,
+		sizeof(struct kd_elem), elem_x_cmp);
+	qsort(mbase.y_base, table->object.count,
+		sizeof(struct kd_elem), elem_y_cmp);
+	qsort(mbase.z_base, table->object.count,
+		sizeof(struct kd_elem), elem_z_cmp);
 
 	/* give XYZ elems index numbers */
 	for (i = 0; i < table->object.count; i++) {
