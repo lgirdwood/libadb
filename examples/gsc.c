@@ -113,7 +113,7 @@ int gsc_query(char *lib_dir)
 		return -ENOMEM;
 	}
 
-	db = adb_create_db(lib, 7, 1);
+	db = adb_create_db(lib, 9, 1);
 	if (db == NULL) {
 		fprintf(stderr, "failed to create db\n");
 		ret = -ENOMEM;
