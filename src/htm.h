@@ -90,13 +90,13 @@ struct adb_object_set;
  */
 struct htm_vertex {
 	/* spherical coords */
-	float ra;
-	float dec;
+	double ra;
+	double dec;
 
 	/* HTM (polyhedron) coords */
-	float x;
-	float y;
-	float z;
+	double x;
+	double y;
+	double z;
 
 	unsigned int depth; /* depth we are 1st used at */
 	struct htm_trixel **trixel;
@@ -137,12 +137,12 @@ struct htm_trixel {
 struct dec_strip {
 	int half_size; /* at max depth - calc this at startup */
 	int vertex_count;
-	float width;
+	double width;
 	struct htm_vertex *vertex; /* variable len array of vertices per quad */
 };
 
 struct htm_depth_map {
-	float boundary;
+	double boundary;
 	int object_count[ADB_MAX_TABLES];
 };
 
@@ -153,7 +153,7 @@ struct htm {
 	int depth;
 
 	/* domain */
-	float dec_step;
+	double dec_step;
 	struct dec_strip *dec;
 
 	/* mesh stats */
@@ -173,22 +173,22 @@ struct htm *htm_new(int depth, int tables);
 void htm_free(struct htm *htm);
 
 int htm_clip(struct htm *htm, struct adb_object_set *set,
-	float ra, float dec, float fov,
-	float min_depth, float max_depth);
+	double ra, double dec, double fov,
+	double min_depth, double max_depth);
 
 int htm_get_trixels(struct htm *htm, struct adb_object_set *set);
 
-int htm_get_depth_from_resolution(float resolution);
+int htm_get_depth_from_resolution(double resolution);
 
-int htm_get_object_depth_more(struct htm *htm, float value);
-int htm_get_object_depth_less(struct htm *htm, float value);
+int htm_get_object_depth_more(struct htm *htm, double value);
+int htm_get_object_depth_less(struct htm *htm, double value);
 
-int htm_get_depth_from_magnitude(struct htm *htm, float mag);
+int htm_get_depth_from_magnitude(struct htm *htm, double mag);
 
 struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 		struct htm_vertex *point, int depth);
 
-int htm_get_object_depth(struct htm *htm, float value);
+int htm_get_object_depth(struct htm *htm, double value);
 
 struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id);
 
@@ -215,12 +215,12 @@ static inline unsigned int htm_trixel_id(struct htm_trixel *trixel)
 
 static inline void htm_vertex_update_unit(struct htm_vertex *v)
 {
-	float cos_dec = cosf(v->dec);
+	double cos_dec = cos(v->dec);
 
 	/* spherical XYZ on unit vector */
-	v->x = cos_dec * sinf(v->ra);
-	v->y = sinf(v->dec);
-	v->z = cos_dec * cosf(v->ra);
+	v->x = cos_dec * sin(v->ra);
+	v->y = sin(v->dec);
+	v->z = cos_dec * cos(v->ra);
 
 	/* spherical to octohedron */
 	if (v->x < 0)

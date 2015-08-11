@@ -28,7 +28,7 @@
 #include "debug.h"
 
 /* vertex multiplication */
-static inline float vertex_mult(struct htm_vertex *a, struct htm_vertex *b)
+static inline double vertex_mult(struct htm_vertex *a, struct htm_vertex *b)
 {
 	return (a->x * b->x) + (a->y * b->y) + (a->z * b->z);
 }
@@ -55,7 +55,7 @@ static inline void vertex_dot(struct htm_vertex *a, struct htm_vertex *b,
 static int vertex_is_inside_up(struct htm_trixel *t, struct htm_vertex *point)
 {
 	struct htm_vertex prod;
-	float val;
+	double val;
 
 	/*
 	 * calculate the cross product of each edge in a clockwise a->b->c->a
@@ -90,7 +90,7 @@ static int vertex_is_inside_down(struct htm_trixel *t,
 	struct htm_vertex *point)
 {
 	struct htm_vertex prod;
-	float val;
+	double val;
 
 	/*
 	 * calculate the cross product of each edge in a anti-clockwise a->c->b->a
@@ -159,6 +159,8 @@ static struct htm_trixel *trixel_is_container(struct htm *htm,
 
 	/* we should never get here as one child will contain point */
 	adb_htm_debug(htm, ADB_LOG_HTM_GET, "No valid child for X %f Y %f Z %f\n",
+			point->x, point->y, point->z);
+printf("\n!!!!! No valid child for X %f Y %f Z %f\n",
 			point->x, point->y, point->z);
 	return t; 	/* return the parent, it's better than nothing */
 }
@@ -399,7 +401,7 @@ static int trixel_get_children(struct htm *htm, struct adb_object_set *set,
 }
 
 int htm_clip(struct htm *htm, struct adb_object_set *set,
-	float ra, float dec, float fov, float min_depth, float max_depth)
+	double ra, double dec, double fov, double min_depth, double max_depth)
 {
 	struct htm_vertex vertex;
 	struct adb_table *table = set->table;
@@ -530,7 +532,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 			set->trixels[i]->a->ra * R2D, set->trixels[i]->a->dec * R2D,
 			set->trixels[i]->b->ra * R2D, set->trixels[i]->b->dec * R2D,
 			set->trixels[i]->c->ra * R2D, set->trixels[i]->c->dec * R2D);
-		htm_dump_trixel_objects(htm, set->trixels[i], 3);
+		htm_dump_trixel_objects(htm, set->trixels[i], 0);
 
 		if (set->trixels[i]->depth < set->min_depth ||
 			set->trixels[i]->depth > set->max_depth)

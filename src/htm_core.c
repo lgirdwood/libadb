@@ -50,7 +50,7 @@ static void trixel_create_down(struct htm *htm,
 static void trixel_create_up(struct htm *htm,
 	struct htm_trixel *parent, int depth, int level, int hemisphere);
 
-static const float htm_resolution[] = {
+static const double htm_resolution[] = {
 		M_PI_2,
 		M_PI_2 / 2.0,
 		M_PI_2 / 4.0,
@@ -94,7 +94,7 @@ struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id)
 static int dec_strip_init(struct htm *htm)
 {
 	struct dec_strip *dec_strip;
-	float dec_step_size;
+	double dec_step_size;
 	int num_ra_steps, i;
 
 	/* calc domain size and DEC granularity */
@@ -187,25 +187,25 @@ static inline void trixel_init_xyz(struct htm_trixel *t)
 
 static void vertex_init_radec(struct htm_vertex *v)
 {
-	float cos_dec, x, y, z;
+	double cos_dec, x, y, z;
 
 	/* convert (x,y,z) from poly to to spherical */
 	if (v->x < -0)
-		x = -sqrtf(-v->x);
+		x = -sqrt(-v->x);
 	else
-		x = sqrtf(v->x);
+		x = sqrt(v->x);
 	if (v->y < -0)
-		y = -sqrtf(-v->y);
+		y = -sqrt(-v->y);
 	else
-		y = sqrtf(v->y);
+		y = sqrt(v->y);
 	if (v->z < -0)
-		z = -sqrtf(-v->z);
+		z = -sqrt(-v->z);
 	else
-		z = sqrtf(v->z);
+		z = sqrt(v->z);
 
 	/* calc Declination */
 	v->dec = asin(y);
-	cos_dec = cosf(v->dec);
+	cos_dec = cos(v->dec);
 
 	/* calc RA */
 	if (cos_dec > 1e-5 || cos_dec < -1e-5) {
@@ -224,7 +224,7 @@ static void vertex_init_radec(struct htm_vertex *v)
 
 /* lookup vertex based on position from dec domain */
 struct htm_vertex *vertex_get(struct htm *htm, int level,
-	float x, float y, float z)
+	double x, double y, double z)
 {
 	struct dec_strip *dec_strip;
 	struct htm_vertex *v;
@@ -269,7 +269,7 @@ struct htm_vertex *vertex_get(struct htm *htm, int level,
 }
 
 static inline void vertex_get_midpoint(struct htm_vertex *a,
-	struct htm_vertex *b, float *x, float *y, float *z)
+	struct htm_vertex *b, double *x, double *y, double *z)
 {
 	*x = ((a->x + b->x) / 2.0);
 	*y = ((a->y + b->y) / 2.0);
@@ -282,7 +282,7 @@ static inline void trixel_init_child_verticies(struct htm *htm,
 	struct htm_trixel *parent, struct htm_vertex **a,
 	struct htm_vertex **b, struct htm_vertex **c, int level)
 {
-	float x, y, z;
+	double x, y, z;
 
 	/* vertex a */
 	vertex_get_midpoint(parent->c, parent->b, &x, &y, &z);
@@ -602,7 +602,7 @@ static void trixel_create_down(struct htm *htm,
 }
 
 struct polyhedron {
-	float x,y,z;
+	double x,y,z;
 };
 
 static struct polyhedron poly[] = {
@@ -749,7 +749,7 @@ struct htm *htm_new(int depth, int tables)
 }
 
 
-int htm_get_depth_from_resolution(float resolution)
+int htm_get_depth_from_resolution(double resolution)
 {
 	int depth;
 
