@@ -123,6 +123,14 @@ static int write_trixel(struct adb_db *db, struct adb_table *table,
 	if (size == 0)
 		return 0;
 
+	adb_vdebug(db, ADB_LOG_HTM_FILE,
+			"write trixel %sQ%dD%dP%x id %x with objs %d\n",
+			htm_trixel_north(hdr.id) ? "N" : "S",
+			htm_trixel_quadrant(hdr.id),
+			htm_trixel_depth(hdr.id),
+			htm_trixel_position(hdr.id, htm_trixel_depth(hdr.id)),
+			hdr.id, hdr.num_objects);
+
 	/* write objects */
 	object = trixel->data[table->id].objects;
 	while (object) {
