@@ -626,7 +626,7 @@ static int get_object(struct adb_solve *solve, int object_id,
 int adb_solve_get_objects(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
-	int i, ret, fail = 0, num_solved = 0, num_unsolved = 0;
+	int i, ret = 0, fail = 0, num_solved = 0, num_unsolved = 0;
 
 	if (solution->num_pobjects == 0)
 		return 0;
@@ -643,7 +643,10 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	solution->num_unsolved_objects = 0;
 
 	/* solve each new plate object */
-#pragma omp parallel for schedule(dynamic, 10) reduction (+:num_solved, num_unsolved)
+#if 0 /* race condition somewhere cause a few differences in deteced objects */
+#pragma omp parallel for schedule(dynamic, 10) \
+		private(ret) reduction (+:num_solved, num_unsolved, fail)
+#endif
 	for (i = 0; i < solution->num_pobjects; i++) {
 
 		if (solution->pobjects[i].extended)
@@ -653,7 +656,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 					&solution->solve_object[i]);
 
 		if (ret < 0) {
-			fail = 1;
+			fail++;
 			continue;
 		} else if (ret == 0)
 			num_unsolved++;
