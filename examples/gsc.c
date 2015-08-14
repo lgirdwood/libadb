@@ -27,6 +27,7 @@
 #include <libastrodb/db-import.h>
 #include <libastrodb/db.h>
 #include <libastrodb/object.h>
+#include <libastrodb/search.h>
 
 #define D2R  (1.7453292519943295769e-2)  /* deg->radian */
 #define R2D  (5.7295779513082320877e1)   /* radian->deg */
@@ -53,6 +54,7 @@ static struct adb_schema_field gsc_fields[] = {
 };
 
 static int print = 0;
+static int sprint = 1;
 
 static void get_printf(const struct adb_object_head *object_head, int heads)
 {
@@ -66,8 +68,8 @@ static void get_printf(const struct adb_object_head *object_head, int heads)
 		obj = object_head->objects;
 
 		for (j = 0; j < object_head->count; j++) {
-			fprintf(stdout, "Obj: %s %ld RA: %f DEC: %f Mag %f\n",
-				obj->object.designation, obj->object.id, obj->object.ra * R2D,
+			fprintf(stdout, "Obj: %s RA: %f DEC: %f Mag %3.2f\n",
+				obj->object.designation, obj->object.ra * R2D,
 				obj->object.dec * R2D, obj->object.mag);
 			obj++;
 		}
@@ -100,6 +102,101 @@ static int get_all(struct adb_db *db, int table_id)
 	return 0;
 }
 
+static struct timeval start, end;
+
+inline static void start_timer(void)
+{
+	gettimeofday(&start, NULL);
+}
+
+static void end_timer(int objects, int bytes)
+{
+	double secs;
+
+	gettimeofday(&end, NULL);
+	secs = ((end.tv_sec * 1000000 + end.tv_usec) -
+		(start.tv_sec * 1000000 + start.tv_usec)) / 1000000.0;
+
+	if (bytes)
+		fprintf(stdout, "   Time %3.1f msecs @ %3.3e objects / %3.3e bytes per sec\n",
+			secs * 1000.0 , objects / secs , bytes / secs);
+	else
+		fprintf(stdout, "   Time %3.1f msecs @ %3.3e objects per sec\n",
+			secs * 1000.0, objects / secs);
+}
+
+static void search_print(const struct adb_object *_objects[], int count)
+{
+	const struct gsc_object **objects =
+		(const struct gsc_object **) _objects;
+	int i;
+
+	if (!sprint)
+		return;
+
+	for (i = 0; i < count; i++) {
+		const struct gsc_object *obj = objects[i];
+		fprintf(stdout, "Obj: %s RA: %f DEC: %f Mag %3.2f\n",
+				obj->object.designation, obj->object.ra * R2D,
+				obj->object.dec * R2D, obj->object.mag);
+		obj++;
+	}
+}
+
+static int search1(struct adb_db *db, int table_id)
+{
+	const struct adb_object **object;
+	struct adb_search *search;
+	struct adb_object_set *set;
+	int err;
+
+	fprintf(stdout, "Searching objects\n");
+
+	search = adb_search_new(db, table_id);
+	if (!search)
+		return -ENOMEM;
+
+	set = adb_table_set_new(db, table_id);
+	if (!set)
+		return -ENOMEM;
+
+	if (adb_search_add_comparator(search, "DEdeg", ADB_COMP_LT, "58.434773"))
+		fprintf(stderr, "failed to add comp DEdeg LT\n");
+	if (adb_search_add_comparator(search, "DEdeg", ADB_COMP_GT, "57.678541"))
+		fprintf(stderr, "failed to add comp DEdeg GT\n");
+	if (adb_search_add_operator(search, ADB_OP_AND))
+		fprintf(stderr, "failed to add op and\n");
+
+	if (adb_search_add_comparator(search, "RAdeg", ADB_COMP_LT, "342.434232"))
+		fprintf(stderr, "failed to add comp RAdeg LT\n");
+	if (adb_search_add_comparator(search, "RAdeg", ADB_COMP_GT, "341.339925"))
+		fprintf(stderr, "failed to add comp RAdeg GT\n");
+	if (adb_search_add_operator(search, ADB_OP_AND))
+		fprintf(stderr, "failed to add op and\n");
+
+	if (adb_search_add_operator(search, ADB_OP_AND))
+		fprintf(stderr, "failed to add op or\n");
+
+	start_timer();
+	if ((err = adb_search_get_results(search, set, &object)) < 0) {
+		fprintf(stderr, "Search init failed %d\n", err);
+		adb_search_free(search);
+		return err;
+	}
+	end_timer(adb_search_get_tests(search), 0);
+
+	fprintf(stdout, "   Search got %d objects out of %d tests\n\n",
+		adb_search_get_hits(search),
+		adb_search_get_tests(search));
+
+	search_print(object, adb_search_get_hits(search));
+
+	adb_search_free(search);
+	adb_table_set_free(set);
+	return 0;
+}
+
+
 int gsc_query(char *lib_dir)
 {
 	struct adb_library *lib;
@@ -120,8 +217,8 @@ int gsc_query(char *lib_dir)
 		goto lib_err;
 	}
 
-	adb_set_msg_level(db, ADB_MSG_DEBUG);
-	adb_set_log_level(db, ADB_LOG_ALL);
+	//adb_set_msg_level(db, ADB_MSG_DEBUG);
+	//adb_set_log_level(db, ADB_LOG_ALL);
 
 	/* use CDS catalog class VII, #118, dataset gsc2000 */
 	table_id = adb_table_open(db, "I", "220", "gsc");
@@ -130,6 +227,8 @@ int gsc_query(char *lib_dir)
 		ret = table_id;
 		goto table_err;
 	}
+
+	search1(db, table_id);
 
 	/* we can now perform operations on the db data !!! */
 	get_all(db, table_id);
