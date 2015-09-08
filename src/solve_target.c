@@ -52,7 +52,7 @@ int target_add_ref_object(struct adb_solve_solution *soln, int id,
 	/* first check to see if object is already present */
 	for (i = 0; i < soln->num_ref_objects; i++) {
 		ref = &soln->ref[i];
-		if (ref->object == object) {
+		if (ref->object == object && ref->id == id) {
 			pthread_mutex_unlock(&solve->mutex);
 			return 0;
 		}
@@ -67,7 +67,7 @@ int target_add_ref_object(struct adb_solve_solution *soln, int id,
 	soln->ref[soln->num_ref_objects++].pobject = *pobject;
 
 	pthread_mutex_unlock(&solve->mutex);
-	return 0;
+	return 1;
 }
 
 /* calculate object pattern variables to match against source objects */

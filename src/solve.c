@@ -568,7 +568,7 @@ static int get_object(struct adb_solve *solve, int object_id,
 	struct adb_pobject *pobject, struct adb_solve_object *sobject)
 {
 	struct solve_runtime runtime;
-	int count = 0, plate;
+	int count = 0, plate, new;
 
 	if (solution->set == NULL)
 		return -EINVAL;
@@ -583,8 +583,9 @@ static int get_object(struct adb_solve *solve, int object_id,
 
 		if (plate >= 0) {
 			sobject->object = solution->object[plate];
-			target_add_ref_object(solution, object_id, sobject->object, pobject);
-			return 1;
+			new = target_add_ref_object(solution, object_id,
+				sobject->object, pobject);
+			return new;
 		}
 	}
 
@@ -608,18 +609,18 @@ static int get_object(struct adb_solve *solve, int object_id,
 	if (count == 0)
 		return 0;
 
-	/* add object as reference */
-	target_add_ref_object(solution, object_id, runtime.pot_pa[0].object[0], pobject);
-
-	calc_object_divergence(&runtime, solution, pobject);
-
 	/* it's possible we may have > 1 potential object so order them */
 	qsort(&runtime.pot_pa, count,
 			sizeof(struct adb_solve_solution), solution_cmp);
 
 	/* assign closest object */
 	sobject->object = runtime.pot_pa[0].object[0];
-	return count;
+
+	/* add object as reference */
+	new = target_add_ref_object(solution, object_id, sobject->object, pobject);
+
+	calc_object_divergence(&runtime, solution, pobject);
+	return new;
 }
 
 /* get plate objects or estimates of plate object position and magnitude */
