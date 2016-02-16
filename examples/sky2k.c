@@ -892,7 +892,7 @@ static int sky2k_solve(char *lib_dir)
 
 	/* set magnitude and distance constraints */
 	adb_solve_constraint(solve, ADB_CONSTRAINT_MAG, 6.0, -2.0);
-	adb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1 * D2R, 2.0 * D2R);
+	adb_solve_constraint(solve, ADB_CONSTRAINT_FOV, 0.1 * D2R, 5.0 * D2R);
 
 	/* add plate/ccd objects */
 	adb_solve_add_plate_object(solve, &pobject[0]);
@@ -902,7 +902,7 @@ static int sky2k_solve(char *lib_dir)
 	adb_solve_add_plate_object(solve, &pobject[4]);
 
 	/* set image tolerances */
-	adb_solve_set_magnitude_delta(solve, 0.25);
+	adb_solve_set_magnitude_delta(solve, 0.5);
 	adb_solve_set_distance_delta(solve, 5.0);
 	adb_solve_set_pa_delta(solve, 2.0 * D2R);
 
