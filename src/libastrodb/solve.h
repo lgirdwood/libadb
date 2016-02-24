@@ -197,6 +197,12 @@ int adb_solve_photometry(struct adb_solve *solve,
 int adb_solve_astrometry(struct adb_solve *solve,
 		struct adb_solve_solution *solution);
 
+void adb_solve_stop(struct adb_solve *solve);
+
+float adb_solve_get_progress(struct adb_solve *solve);
+
+float adb_solution_get_progress(struct adb_solve_solution *solution);
+
 #ifdef __cplusplus
 };
 #endif

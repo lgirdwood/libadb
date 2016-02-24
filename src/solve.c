@@ -199,12 +199,21 @@ static int try_object_as_primary(struct adb_solve *solve,
 static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 	struct adb_object_set *set)
 {
-	int i, count = 0;
+	int i, count = 0, progress = 0;
 
 	/* attempt to solve for each object in set */
-#pragma omp parallel for schedule(dynamic, 10) reduction(+:count)
-	for (i = 0; i < solve->source.num_objects; i++)
+#pragma omp parallel for schedule(dynamic, 10) reduction(+:count, progress)
+	for (i = 0; i < solve->source.num_objects; i++) {
+
+		progress++;
+		solve->progress++;
+
+		/* we cant break OpenMP loops */
+		if (solve->exit)
+			continue;
+
 		count += try_object_as_primary(solve, solve->source.objects[i], i);
+	}
 
 	if (count >= MAX_RT_SOLUTIONS)
 		count = MAX_RT_SOLUTIONS - 1;
@@ -215,13 +224,17 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 	struct adb_object_set *set)
 {
-	int i, count = 0;
+	int i, count = 0, progress = 0;
 
 	/* attempt to solve for each object in set */
-#pragma omp parallel for schedule(dynamic, 10)
+#pragma omp parallel for schedule(dynamic, 10) reduction(+:progress)
 	for (i = 0; i < solve->source.num_objects; i++) {
 
-		if (count)
+		progress++;
+		solve->progress++;
+
+		/* we cant break OpenMP loops */
+		if (count || solve->exit)
 			continue;
 
 		if (try_object_as_primary(solve, solve->source.objects[i], i)) {
@@ -365,6 +378,10 @@ int adb_solve(struct adb_solve *solve,
 		adb_error(solve->db, "cant get trixels %d\n", ret);
 		return ret;
 	}
+
+	/* status reporting and exit */
+	solve->progress = 0.0;
+	solve->exit = 0;
 
 	for (i = 0; i <= solve->num_plate_objects - MIN_PLATE_OBJECTS; i++) {
 
@@ -644,7 +661,7 @@ int adb_solve_get_objects(struct adb_solve *solve,
 	solution->num_unsolved_objects = 0;
 
 	/* solve each new plate object */
-#if 0 /* race condition somewhere cause a few differences in deteced objects */
+#if 0 /* race condition somewhere cause a few differences in detected objects */
 #pragma omp parallel for schedule(dynamic, 10) \
 		private(ret) reduction (+:num_solved, num_unsolved, fail)
 #endif
@@ -711,10 +728,13 @@ int adb_solve_photometry(struct adb_solve *solve,
 int adb_solve_get_objects_extended(struct adb_solve *solve,
 	struct adb_solve_solution *solution)
 {
-	int i, ret, fail = 0, num_solved = 0, num_unsolved = 0;
+	int i, ret = 0, fail = 0, num_solved = 0, num_unsolved = 0;
 
 	if (solution->num_pobjects == 0)
 		return 0;
+
+	solve->exit = 0;
+	solve->progress = 0;
 
 	/* reallocate memory for new solved objects */
 	solution->solve_object = realloc(solution->solve_object,
@@ -728,9 +748,14 @@ int adb_solve_get_objects_extended(struct adb_solve *solve,
 	solution->num_unsolved_objects = 0;
 
 	/* solve each new plate object */
-#pragma omp parallel for schedule(dynamic, 10) reduction (+:num_solved, num_unsolved)
+#pragma omp parallel for schedule(dynamic, 10) \
+	private(ret) reduction (+:num_solved, num_unsolved)
 	for (i = 0; i < solution->num_pobjects; i++) {
 
+		if (solve->exit)
+			continue;
+
+		solve->progress++;
 		if (!solution->pobjects[i].extended)
 			continue;
 
@@ -890,4 +915,19 @@ void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
 
 void adb_solution_recalc_objects(struct adb_solve_solution *solution)
 {
+}
+
+void adb_solve_stop(struct adb_solve *solve)
+{
+	solve->exit = 1;
+}
+
+float adb_solve_get_progress(struct adb_solve *solve)
+{
+	return (float)solve->source.num_objects / solve->progress;
+}
+
+float adb_solution_get_progress(struct adb_solve_solution *solution)
+{
+	return (float)solution->num_pobjects / solution->solve->progress;
 }

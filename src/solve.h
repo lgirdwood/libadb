@@ -187,6 +187,10 @@ struct adb_solve {
 	int plate_height;
 	double plate_ra;
 	double plate_dec;
+
+	/* loop exit */
+	int exit;
+	int progress;
 };
 
 #ifdef DEBUG
