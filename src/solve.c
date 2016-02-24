@@ -659,6 +659,8 @@ int adb_solve_get_objects(struct adb_solve *solve,
 
 	solution->num_solved_objects = 0;
 	solution->num_unsolved_objects = 0;
+	solve->exit = 0;
+	solve->progress = 0;
 
 	/* solve each new plate object */
 #if 0 /* race condition somewhere cause a few differences in detected objects */
@@ -666,6 +668,11 @@ int adb_solve_get_objects(struct adb_solve *solve,
 		private(ret) reduction (+:num_solved, num_unsolved, fail)
 #endif
 	for (i = 0; i < solution->num_pobjects; i++) {
+
+		if (solve->exit)
+			continue;
+
+		solve->progress++;
 
 		if (solution->pobjects[i].extended)
 			continue;
@@ -733,9 +740,6 @@ int adb_solve_get_objects_extended(struct adb_solve *solve,
 	if (solution->num_pobjects == 0)
 		return 0;
 
-	solve->exit = 0;
-	solve->progress = 0;
-
 	/* reallocate memory for new solved objects */
 	solution->solve_object = realloc(solution->solve_object,
 		sizeof(struct adb_solve_object) * solution->num_pobjects);
@@ -746,6 +750,8 @@ int adb_solve_get_objects_extended(struct adb_solve *solve,
 
 	solution->num_solved_objects = 0;
 	solution->num_unsolved_objects = 0;
+	solve->exit = 0;
+	solve->progress = 0;
 
 	/* solve each new plate object */
 #pragma omp parallel for schedule(dynamic, 10) \
