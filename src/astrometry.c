@@ -214,7 +214,9 @@ void posn_equ_to_plate(struct adb_solve_solution *solution,
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects; i++) {
+
 		for (j = 0; j < solution->num_ref_objects; j++) {
+
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
@@ -230,7 +232,7 @@ void posn_equ_to_plate(struct adb_solve_solution *solution,
 					continue;
 
 			equ_to_plate(solution, ref->object, refn->object,
-						&ref->pobject, &refn->pobject, ra, dec, &x, &y);
+				&ref->pobject, &refn->pobject, ra, dec, &x, &y);
 
 			x_sum += x;
 			y_sum += y;
@@ -254,7 +256,9 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects; i++) {
+
 		for (j = 0; j < solution->num_ref_objects; j++) {
+
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
@@ -280,7 +284,8 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 					continue;
 
 			plate_to_equ(solution, ref->object, refn->object,
-						&ref->pobject, &refn->pobject, primary, &ra, &dec);
+				&ref->pobject, &refn->pobject,
+				primary, &ra, &dec);
 
 			ra_sum += ra;
 			dec_sum += dec;
@@ -310,16 +315,17 @@ void posn_clip_plate_coefficients(struct adb_solve *solve,
 
 		/* calc mean sigma delta per reference target */
 		for (i = 0; i < solution->num_ref_objects; i++) {
-				ref = &solution->ref[i];
+			ref = &solution->ref[i];
 
-				if (ref->clip_posn)
-						continue;
+			if (ref->clip_posn)
+				continue;
 
-				ref->dist_mean = get_ref_posn_delta_mean(solution, i);
-				ref->posn_sigma = get_ref_posn_delta_sigma(solution, i, ref->dist_mean);
+			ref->dist_mean = get_ref_posn_delta_mean(solution, i);
+			ref->posn_sigma = get_ref_posn_delta_sigma(solution,
+				i, ref->dist_mean);
 
-				mean_sigma += ref->posn_sigma;
-				count++;
+			mean_sigma += ref->posn_sigma;
+			count++;
 		}
 
 		if (count == 0)
@@ -350,14 +356,15 @@ void posn_clip_plate_coefficients(struct adb_solve *solve,
 		clip = mean_sigma + sigma_sigma;
 
 		count = 0;
+
 		/* clip objects outside sigma */
 		for (i = 0; i < solution->num_ref_objects; i++) {
-						ref = &solution->ref[i];
+			ref = &solution->ref[i];
 
-						if (ref->posn_sigma >= clip) {
-							ref->clip_posn = 1;
-							count++;
-						}
+			if (ref->posn_sigma >= clip) {
+				ref->clip_posn = 1;
+				count++;
+			}
 		}
 
 		/* clip targets outside sigma */
@@ -381,7 +388,8 @@ void posn_calc_solved_plate(struct adb_solve *solve,
 		if (solution->solve_object[idx].object == NULL)
 			continue;
 
-		posn_plate_to_equ(solution, &ref->pobject, &solution->solve_object[idx].ra,
+		posn_plate_to_equ(solution, &ref->pobject,
+				&solution->solve_object[idx].ra,
 				&solution->solve_object[idx].dec);
 	}
 }

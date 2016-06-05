@@ -156,15 +156,16 @@ void mag_calc_plate_coefficients(struct adb_solve *solve,
 
 		/* calc mean delta per reference target */
 		for (i = 0; i < solution->num_ref_objects; i++) {
-				ref = &solution->ref[i];
+			ref = &solution->ref[i];
 
-				if (ref->clip_mag)
-						continue;
+			if (ref->clip_mag)
+				continue;
 
-				ref->mag_mean = get_ref_mag_delta_mean(solution, i);
-				ref->mag_sigma = get_ref_mag_delta_sigma(solution, i, ref->mag_mean);
-				mean_sigma += ref->mag_sigma;
-				count++;
+			ref->mag_mean = get_ref_mag_delta_mean(solution, i);
+			ref->mag_sigma = get_ref_mag_delta_sigma(solution, i,
+				ref->mag_mean);
+			mean_sigma += ref->mag_sigma;
+			count++;
 		}
 
 		if (count == 0)
@@ -195,12 +196,12 @@ void mag_calc_plate_coefficients(struct adb_solve *solve,
 
 		count = 0;
 		for (i = 0; i < solution->num_ref_objects; i++) {
-						ref = &solution->ref[i];
+			ref = &solution->ref[i];
 
-						if (ref->mag_sigma >= clip) {
-							ref->clip_mag = 1;
-							count++;
-						}
+			if (ref->mag_sigma >= clip) {
+				ref->clip_mag = 1;
+				count++;
+			}
 		}
 
 		/* clip targets outside sigma */
@@ -245,7 +246,8 @@ void mag_calc_solved_plate(struct adb_solve *solve,
 		if (solution->solve_object[idx].object == NULL)
 			continue;
 
-		solution->solve_object[idx].mean = get_ref_mag_delta_mean(solution, i);
+		solution->solve_object[idx].mean =
+			get_ref_mag_delta_mean(solution, i);
 
 		solution->solve_object[idx].mag =
 			solution->solve_object[idx].object->mag +
