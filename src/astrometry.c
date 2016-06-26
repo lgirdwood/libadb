@@ -160,6 +160,9 @@ static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
 		count++;
 	}
 
+	if (count == 0)
+		return 0.0;
+
 	return mean / (double) count;
 }
 
@@ -199,6 +202,9 @@ static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
 		count++;
 	}
 
+	if (count == 0)
+		return 0.0;
+
 	sigma /= (double)count;
 	return sqrtf(sigma);
 }
@@ -224,12 +230,12 @@ void posn_equ_to_plate(struct adb_solve_solution *solution,
 				continue;
 
 			if (ref->clip_posn || refn->clip_posn)
-					continue;
+				continue;
 
 			/* dont compare objects against itself */
 			if (ref->pobject.x == refn->pobject.x &&
 				ref->pobject.y == refn->pobject.y)
-					continue;
+				continue;
 
 			equ_to_plate(solution, ref->object, refn->object,
 				&ref->pobject, &refn->pobject, ra, dec, &x, &y);
@@ -240,8 +246,13 @@ void posn_equ_to_plate(struct adb_solve_solution *solution,
 		}
 	}
 
-	*x_ = (double)x_sum / (double)count;
-	*y_ = (double)y_sum / (double)count;
+	if (count > 0) {
+		*x_ = (double)x_sum / (double)count;
+		*y_ = (double)y_sum / (double)count;
+	} else {
+		*x_ = 0;
+		*y_ = 0;
+	}
 }
 
 /* calculate the average difference between plate position values and solution
@@ -266,7 +277,7 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 				continue;
 
 			if (ref->clip_posn || refn->clip_posn)
-					continue;
+				continue;
 
 			/* dont primary object against itself */
 			if (ref->pobject.x == primary->x &&
@@ -281,7 +292,7 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 			/* dont compare objects against itself */
 			if (ref->pobject.x == refn->pobject.x &&
 				ref->pobject.y == refn->pobject.y)
-					continue;
+				continue;
 
 			plate_to_equ(solution, ref->object, refn->object,
 				&ref->pobject, &refn->pobject,
@@ -293,8 +304,13 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 		}
 	}
 
-	*ra_ = ra_sum / count;
-	*dec_ = dec_sum / count;
+	if (count > 0) {
+		*ra_ = ra_sum / count;
+		*dec_ = dec_sum / count;
+	} else {
+		*ra_ = 0.0;
+		*dec_ = 0.0;
+	}
 }
 
 void posn_clip_plate_coefficients(struct adb_solve *solve,
