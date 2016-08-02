@@ -350,6 +350,20 @@ int adb_solve_constraint(struct adb_solve *solve,
 	return 0;
 }
 
+static int get_solve_plate(struct adb_solve_solution *solution,
+		struct adb_pobject *pobject)
+{
+	int i;
+
+	for (i = 0; i < solution->num_pobjects; i++) {
+		if (solution->soln_pobject[i].adu == pobject->adu &&
+			solution->soln_pobject[i].x == pobject->x &&
+			solution->soln_pobject[i].y == pobject->y)
+			return i;
+	}
+
+	return -1;
+}
 /*! \fn int adb_solve_get_results(struct adb_solve *solve,
 				struct adb_object_set *set,
 				const struct adb_object **objects[],
@@ -368,7 +382,8 @@ int adb_solve(struct adb_solve *solve,
 
 	/* do we have enough plate adb_source_objects to solve */
 	if (solve->num_plate_objects < MIN_PLATE_OBJECTS) {
-		adb_error(solve->db, "not enough plate adb_source_objects, need %d have %d\n",
+		adb_error(solve->db,
+			"not enough plate adb_source_objects, need %d have %d\n",
 			MIN_PLATE_OBJECTS, solve->num_plate_objects);
 		return -EINVAL;
 	}
@@ -388,7 +403,8 @@ int adb_solve(struct adb_solve *solve,
 		solve->plate_idx_start = i;
 		solve->plate_idx_end = MIN_PLATE_OBJECTS + i;
 
-		adb_info(solve->db, ADB_LOG_SOLVE, "solving plate objects %d -> %d from %d\n",
+		adb_info(solve->db, ADB_LOG_SOLVE,
+			"solving plate objects %d -> %d from %d\n",
 			solve->plate_idx_start, solve->plate_idx_end - 1,
 			solve->num_plate_objects);
 
@@ -527,21 +543,6 @@ int adb_solve_prep_solution(struct adb_solve_solution *solution,
 	}
 
 	return 0;
-}
-
-static int get_solve_plate(struct adb_solve_solution *solution,
-		struct adb_pobject *pobject)
-{
-	int i;
-
-	for (i = 0; i < solution->num_pobjects; i++) {
-		if (solution->soln_pobject[i].adu == pobject->adu &&
-			solution->soln_pobject[i].x == pobject->x &&
-			solution->soln_pobject[i].y == pobject->y)
-			return i;
-	}
-
-	return -1;
 }
 
 /* get object or estimated object magnitude & position for plate object */
