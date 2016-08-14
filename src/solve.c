@@ -881,6 +881,23 @@ void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
 	posn_plate_to_equ(solution, &p, ra, dec);
 }
 
+void adb_solution_equ_to_plate_position_fast(struct adb_solve_solution *solution,
+		double ra, double dec, double *x,  double *y)
+{
+	posn_equ_to_plate_fast(solution, ra, dec,  x,  y);
+}
+
+void adb_solution_plate_to_equ_position_fast(struct adb_solve_solution *solution,
+		int x, int y, double *ra, double *dec)
+{
+	struct adb_pobject p;
+
+	p.x = x;
+	p.y = y;
+
+	posn_plate_to_equ_fast(solution, &p, ra, dec);
+}
+
 void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
 		enum adb_plate_bounds bounds, double *ra, double *dec)
 {
