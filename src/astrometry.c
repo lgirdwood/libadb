@@ -259,20 +259,22 @@ void posn_equ_to_plate_fast(struct adb_solve_solution *solution,
 	double ra, double dec, double *x_, double *y_)
 {
 	struct adb_reference_object *ref, *refn;
-	int x_sum = 0, y_sum = 0, i, j, count = 0, x, y;
+	int x_sum = 0, y_sum = 0, i, j, count = 0, x, y, objects;
+
+	if (solution->num_ref_objects < MIN_PLATE_OBJECTS)
+		objects = solution->num_ref_objects;
+	else
+		objects = MIN_PLATE_OBJECTS;
 
 	/* get RA, DEC for each reference object */
-	for (i = 0; i < MIN_PLATE_OBJECTS; i++) {
+	for (i = 0; i < objects; i++) {
 
-		for (j = 0; j < MIN_PLATE_OBJECTS; j++) {
+		for (j = 0; j < objects; j++) {
 
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
 			if (j == i)
-				continue;
-
-			if (ref->clip_posn || refn->clip_posn)
 				continue;
 
 			/* dont compare objects against itself */
@@ -361,20 +363,22 @@ void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 {
 	struct adb_reference_object *ref, *refn;
 	double ra_sum = 0.0, dec_sum = 0.0, ra, dec;
-	int i, j, count = 0;
+	int i, j, count = 0, objects;
+
+	if (solution->num_ref_objects < MIN_PLATE_OBJECTS)
+		objects = solution->num_ref_objects;
+	else
+		objects = MIN_PLATE_OBJECTS;
 
 	/* get RA, DEC for each reference object */
-	for (i = 0; i < MIN_PLATE_OBJECTS; i++) {
+	for (i = 0; i < objects; i++) {
 
-		for (j = 0; j < MIN_PLATE_OBJECTS; j++) {
+		for (j = 0; j < objects; j++) {
 
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
 			if (j == i)
-				continue;
-
-			if (ref->clip_posn || refn->clip_posn)
 				continue;
 
 			/* dont primary object against itself */
