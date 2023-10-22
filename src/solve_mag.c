@@ -46,6 +46,12 @@ double mag_get_plate_diff(struct adb_pobject *primary,
 {
 	double s_adu = secondary->adu, p_adu = primary->adu;
 
+	/* catch any objects with 0 ADU */
+	if (s_adu == 0)
+		s_adu = 1;
+	if (p_adu == 0)
+		p_adu = 1;
+
 	return -2.5 * log10(s_adu / p_adu);
 }
 
@@ -71,6 +77,9 @@ float mag_get_plate(struct adb_solve *solve,
 			mag_get_plate_diff(&ref->pobject, primary);
 		count++;
 	}
+
+	if (count == 0)
+		return mag;
 
 	return mag / (float)count;
 }

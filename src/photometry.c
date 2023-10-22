@@ -62,7 +62,9 @@ static float get_ref_mag_delta_mean(struct adb_solve_solution *solution,
 		count++;
 	}
 
-	mean /= count;
+	if (count)
+		mean /= count;
+
 	return mean;
 }
 
@@ -106,7 +108,9 @@ static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 		count++;
 	}
 
-	sigma /= count;
+	if (count)
+		sigma /= count;
+
 	return sqrtf(sigma);
 }
 
