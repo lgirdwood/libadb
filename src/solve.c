@@ -202,7 +202,9 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 	int i, count = 0, progress = 0;
 
 	/* attempt to solve for each object in set */
+#if HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:count, progress)
+#endif
 	for (i = 0; i < solve->source.num_objects; i++) {
 
 		progress++;
@@ -227,7 +229,9 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 	int i, count = 0, progress = 0;
 
 	/* attempt to solve for each object in set */
+#if HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:progress)
+#endif
 	for (i = 0; i < solve->source.num_objects; i++) {
 
 		progress++;
@@ -755,8 +759,10 @@ int adb_solve_get_objects_extended(struct adb_solve *solve,
 	solve->progress = 0;
 
 	/* solve each new plate object */
+#if HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic, 10) \
 	private(ret) reduction (+:num_solved, num_unsolved)
+#endif
 	for (i = 0; i < solution->num_pobjects; i++) {
 
 		if (solve->exit)
