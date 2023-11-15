@@ -328,7 +328,7 @@ void target_add_single_match_extended(struct solve_runtime *runtime,
 int target_prepare_source_objects(struct adb_solve *solve,
 	struct adb_object_set *set, struct adb_source_objects *source)
 {
-	int object_heads, i, j, count = 0;
+	int object_heads, i, j, count = 0, warn_once = 1;
 
 	/* get object heads */
 	object_heads = adb_set_get_objects(set);
@@ -351,10 +351,22 @@ int target_prepare_source_objects(struct adb_solve *solve,
 		for (j = 0; j < set->object_heads[i].count; j++)  {
 			const struct adb_object *o = object;
 
-			/* dont copy objects outside mag limits */
-			if (o->mag <= solve->constraint.min_mag &&
-				o->mag >= solve->constraint.max_mag)
-				source->objects[count++] = object;
+			/* ignore bogus objects - import errors ?*/
+			if (o->dec == 0.0 || o->ra == 0.0 || o->mag == 0.0) {
+				if (warn_once) {
+					warn_once = 0;
+					adb_error(solve->db, "object with zeroed attributes in db at head %d !\n");
+				}
+			} else {
+				/* valid object */
+				/* dont copy objects outside mag limits */
+				if (o->mag <= solve->constraint.min_mag &&
+					o->mag >= solve->constraint.max_mag) {
+					source->objects[count++] = object;
+				}
+			}
+
+			/* next object */
 			object += solve->table->object.bytes;
 		}
 	}
@@ -363,6 +375,9 @@ int target_prepare_source_objects(struct adb_solve *solve,
 	qsort(source->objects, count, sizeof(struct adb_object *),
 		mag_object_cmp);
 	source->num_objects = count;
+
+	adb_info(solve->db, ADB_LOG_SOLVE, "using %d solver source objects from %d heads\n",
+			count, object_heads);
 
 	return count;
 }

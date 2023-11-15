@@ -59,7 +59,7 @@ double distance_get_equ(const struct adb_object *o1,
 	return atan2(sqrt(x + y), z);
 }
 
-/* quickly check if object p is within FoV of object s */
+/* quickly check if object p is within FoV of object s within plate */
 static inline int distance_not_within_fov(struct adb_solve *solve,
 		const struct adb_object *p, const struct adb_object *s)
 {
@@ -245,7 +245,9 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	return count;
 }
 
-/* check magnitude matched objects on pattern distance */
+/*
+ * Solve plate object pattern based on distance ratio within plate FOV.
+ */
 int distance_solve_object(struct solve_runtime *runtime,
 	const struct adb_object *primary)
 {
@@ -264,22 +266,25 @@ int distance_solve_object(struct solve_runtime *runtime,
 	runtime->num_pot_distance = 0;
 
 	DOBJ_CHECK(1, primary);
-
+	adb_info(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n", range->start[0], range->end[0]);
+	adb_info(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n", range->start[1], range->end[1]);
+	adb_info(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n", range->start[2], range->end[2]);
 	/* check t0 candidates */
 	for (i = range->start[0]; i < range->end[0]; i++) {
 
+		/* dont solve against ourself */
 		s[0] = solve->source.objects[i];
 		if (s[0] == primary)
 			continue;
 
 		DOBJ_CHECK(2, s[0]);
 
+		/* fast check: skip if primary and secondary not within plate fov */
 		if (distance_not_within_fov(solve, primary, s[0]))
 			continue;
 
+		/* slower check: rule out any distances > plate FOV */
 		distance0 = distance_get_equ(primary, s[0]);
-
-		/* rule out any distances > FOV */
 		if (distance0 > solve->constraint.max_fov)
 			continue;
 
@@ -295,20 +300,23 @@ int distance_solve_object(struct solve_runtime *runtime,
 		/* check each t1 candidates against t0 <-> primary distance ratio */
 		for (j = range->start[1]; j < range->end[1]; j++) {
 
+			/* dont solve against ourself */
 			s[1] = solve->source.objects[j];
 			if (s[0] == s[1] || s[1] == primary)
 				continue;
 
 			DOBJ_CHECK(3, s[1]);
 
+			/* fast check: skip if primary and secondary not within plate fov */
 			if (distance_not_within_fov(solve, primary, s[1]))
 				continue;
 
+			/* slower check: rule out any distances > plate FOV */
 			distance1 = distance_get_equ(primary, s[1]);
 
 			DOBJ_LIST(2, primary, s[1], distance1, j);
 
-			/* rule out any distances > FOV */
+			/* rule out any distances > plate FOV */
 			if (distance1 > solve->constraint.max_fov)
 				continue;
 
@@ -324,15 +332,18 @@ int distance_solve_object(struct solve_runtime *runtime,
 				/* check t2 candidates */
 				for (k = range->start[2]; k < range->end[2]; k++) {
 
+					/* dont solve against ourself */
 					s[2] = solve->source.objects[k];
 					if (s[0] == s[2] || s[1] == s[2] || s[2] == primary)
 						continue;
 
 					DOBJ_CHECK(4, s[2]);
 
+					/* fast check: skip if primary and secondary not within plate fov */
 					if (distance_not_within_fov(solve, primary, s[2]))
 						continue;
 
+					/* slower check: rule out any distances > plate FOV */
 					distance2 = distance_get_equ(primary, s[2]);
 
 					DOBJ_LIST(3, primary, s[2], distance2, k);

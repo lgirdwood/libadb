@@ -919,17 +919,17 @@ static int sky2k_solve(char *lib_dir)
 		solution = adb_solve_get_solution(solve, i);
 
 		/* set FoV and mag limits for single object searches */
-		adb_solve_prep_solution(solution, 2.0, 8.0, table_id);
+		adb_solution_set_search_limits(solution, 2.0, 8.0, table_id);
 
 		fprintf(stdout, "Solution %d score %f\n", i,
 				adb_solution_divergence(solution));
 
 		/* get subsequent objects */
-		ret = adb_solve_add_pobjects(solve, solution, pobject, 6);
+		ret = adb_solution_add_pobjects(solution, pobject, 6);
 		if (ret < 0)
 			goto set_err;
 
-		ret = adb_solve_get_objects(solve, solution);
+		ret = adb_solution_get_objects(solution);
 		if (ret < 0)
 			goto set_err;
 

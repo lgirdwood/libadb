@@ -1200,7 +1200,7 @@ int adb_table_import(struct adb_db *db, int table_id)
 
 	/* do we have an alternate dataset configured ? */
 	if (table->import.alt_dataset) {
-		table->path.file = table->import.alt_dataset;
+		table->path.file = strdup(table->import.alt_dataset);
 		goto import;
 	}
 
@@ -1229,6 +1229,7 @@ int adb_table_import(struct adb_db *db, int table_id)
 
 	adb_warn(db, ADB_LOG_CDS_TABLE,
 		"Error failed to FTP CDS data files for %s\n", table->path.file);
+	free(table->path.file);
 	return ret;
 
 prepare:
@@ -1242,6 +1243,7 @@ prepare:
 	if (num_files == 0) {
 		adb_warn(db, ADB_LOG_CDS_TABLE,
 			"Error failed to find CDS data files for %s\n", table->path.file);
+		free(table->path.file);
 		return ret;
 	}
 
@@ -1254,6 +1256,7 @@ import:
 		if (ret < 0) {
 			adb_warn(db, ADB_LOG_CDS_TABLE,
 				"Error failed to import CDS table %s %d\n", table->path.file, ret);
+			free(table->path.file);
 		} else
 			goto schema;
 	}
@@ -1265,14 +1268,18 @@ schema:
 	ret = schema_write(db, table);
 	if (ret < 0) {
 		adb_error(db, "Error failed to save table schema %d\n", ret);
+		free(table->path.file);
 		return ret;
 	}
 
 	ret = table_write_trixels(db, table);
 	if (ret < 0) {
 		adb_error(db, "Error failed write table objects %d\n", ret);
+		free(table->path.file);
 		return ret;
 	}
 
+	free(table->path.file);
+	table->path.file = NULL;
 	return table->object.count;
 }

@@ -198,7 +198,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 		if (file) {
 			int err;
 
-			strncpy(dest, table->path.local, ADB_PATH_SIZE);
+			strncpy(dest, table->path.local, ADB_PATH_SIZE - 1);
 			strncat(dest, file, ADB_PATH_SIZE - strlen(file) - 1);
 
 			/* download file by file*/

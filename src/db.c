@@ -157,8 +157,8 @@ struct adb_db *adb_create_db(struct adb_library *lib,
 	if (db == NULL)
 		return NULL;
 	db->lib = lib;
-	db->msg_level = ADB_MSG_NONE;
-	db->msg_flags = 0;
+	db->msg_level = ADB_MSG_INFO;
+	db->msg_flags = ADB_LOG_SEARCH | ADB_LOG_SOLVE;
 
 	db->htm = htm_new(depth, tables);
 	if (db->htm == NULL) {

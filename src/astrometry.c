@@ -415,8 +415,7 @@ void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 	}
 }
 
-void posn_clip_plate_coefficients(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
+void posn_clip_plate_coefficients(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
 	int i, count = 0, tries = 10, lastcount;
@@ -490,8 +489,7 @@ void posn_clip_plate_coefficients(struct adb_solve *solve,
 }
 
 /* calculate the position of solved plate objects */
-void posn_calc_solved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
+void posn_calc_solved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
 	int i, idx;
@@ -513,8 +511,7 @@ void posn_calc_solved_plate(struct adb_solve *solve,
 }
 
 /* calculate the position of unsolved plate objects */
-void posn_calc_unsolved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
+void posn_calc_unsolved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_solve_object *solve_object;
 	int i;

@@ -45,16 +45,23 @@ struct adb_pobject {
 };
 
 enum adb_constraint {
-	ADB_CONSTRAINT_MAG,
-	ADB_CONSTRAINT_FOV,
-	ADB_CONSTRAINT_RA,
-	ADB_CONSTRAINT_DEC,
+	ADB_CONSTRAINT_MAG, 	/*!< min and maximum magnitude */
+	ADB_CONSTRAINT_FOV, 	/*!< min and max image FOV */
+	ADB_CONSTRAINT_RA, 		/*!< min and max image center RA */
+	ADB_CONSTRAINT_DEC, 	/*!< min and max image DEC */
+	ADB_CONSTRAINT_AREA,	/*!< min and max search area size in degrees */
+	ADB_CONSTRAINT_JD,		/*!< min and max search data in JD */
+	ADB_CONSTRAINT_POBJECTS,/*!< min and max plate objects used to solve */
 	/* TODO add others */
 };
 
+/* flags for solving - can be OR-ed together */
 enum adb_find {
-	ADB_FIND_ALL,
-	ADB_FIND_FIRST,
+	ADB_FIND_ALL			= 1 << 0,	/*!< find all solutions */
+	ADB_FIND_FIRST			= 1 << 1,	/*!< find first solutions */
+	ADB_FIND_PLANETS		= 1 << 2,	/*!< include planets in search */
+	ADB_FIND_ASTEROIDS		= 1 << 3,	/*!< include asteroids in search */
+	ADB_FIND_PROPER_MOTION	= 1 << 4,	/*!< apply PM in solution */
 };
 
 enum adb_plate_bounds {
@@ -153,17 +160,14 @@ int adb_solve(struct adb_solve *solve, struct adb_object_set *set,
  * \brief Execute a search
  * \ingroup search
  */
-int adb_solve_get_objects(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+int adb_solution_get_objects(struct adb_solve_solution *solution);
 
-int adb_solve_get_objects_extended(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+int adb_solution_get_objects_extended(struct adb_solve_solution *solution);
 
-int adb_solve_add_pobjects(struct adb_solve *solve,
-		struct adb_solve_solution *solution,
+int adb_solution_add_pobjects(struct adb_solve_solution *solution,
 		struct adb_pobject *pobjects, int num_pobjects);
 
-int adb_solve_prep_solution(struct adb_solve_solution *solution,
+int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 	double fov, double mag_limit, int table_id);
 
 int adb_solve_get_pobject_count(struct adb_solve *solve,
@@ -197,11 +201,9 @@ void adb_solution_plate_to_equ_position_fast(struct adb_solve_solution *solution
 void adb_solution_equ_to_plate_position_fast(struct adb_solve_solution *solution,
 		double ra, double dec, double *x,  double *y);
 
-int adb_solve_photometry(struct adb_solve *solve,
-		struct adb_solve_solution *solution);
+int adb_solution_calc_photometry(struct adb_solve_solution *solution);
 
-int adb_solve_astrometry(struct adb_solve *solve,
-		struct adb_solve_solution *solution);
+int adb_solution_calc_astrometry(struct adb_solve_solution *solution);
 
 void adb_solve_stop(struct adb_solve *solve);
 

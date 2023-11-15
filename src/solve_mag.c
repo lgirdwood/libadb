@@ -198,7 +198,10 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 	return source->num_objects - 1;
 }
 
-/* compare pattern objects magnitude against source objects */
+/*
+ * Search the db objects using the primary as the brightest object from
+ * our object pattern and find candidate pattern[idx] objects
+ */
 int mag_solve_object(struct solve_runtime *runtime,
 		const struct adb_object *primary, int idx)
 {

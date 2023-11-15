@@ -116,8 +116,7 @@ static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 
 /* TODO: investigate speedup with only 4 ref objects found in soln */
 /* calculate the magnitude of an unsolved plate object */
-static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
-	struct adb_solve_solution *solution, int target)
+static void calc_unsolved_plate_magnitude(struct adb_solve_solution *solution, int target)
 {
 	struct adb_reference_object *ref;
 	int i, count = 0;
@@ -143,8 +142,7 @@ static void calc_unsolved_plate_magnitude(struct adb_solve *solve,
 	solution->solve_object[target].mag = mean / count;
 }
 
-void mag_calc_plate_coefficients(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
+void mag_calc_plate_coefficients(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
 	int i, count = 0, tries = 10, lastcount;
@@ -213,8 +211,7 @@ void mag_calc_plate_coefficients(struct adb_solve *solve,
 }
 
 /* calculate the magnitude of all unsolved plate objects */
-void mag_calc_unsolved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
+void mag_calc_unsolved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_solve_object *solve_object;
 	int i;
@@ -228,14 +225,13 @@ void mag_calc_unsolved_plate(struct adb_solve *solve,
 		if (solve_object->object)
 				continue;
 
-		calc_unsolved_plate_magnitude(solve, solution, i);
+		calc_unsolved_plate_magnitude(solution, i);
 	}
 }
 
 /* calculate the magnitude, mag delta mean and mag delta sigma
  * of a solved plate object */
-void mag_calc_solved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution)
+void mag_calc_solved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
 	int i, idx;

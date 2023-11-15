@@ -81,6 +81,12 @@ struct solve_constraint {
 	double max_mag;
 	double min_fov;
 	double max_fov;
+	double min_area;
+	double max_area;
+	double min_JD;
+	double max_JD;
+	double min_pobjects;
+	double max_pobjects;
 };
 
 struct adb_reference_object {
@@ -455,28 +461,28 @@ void target_create_single(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct solve_runtime *runtime);
 
-void mag_calc_plate_coefficients(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+void mag_calc_plate_coefficients(struct adb_solve_solution *solution);
 
 /* calculate the magnitude of all unsolved plate objects */
-void mag_calc_unsolved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+void mag_calc_unsolved_plate(struct adb_solve_solution *solution);
 
 /* calculate the magnitude, mag delta mean and mag delta sigma
  * of a solved plate object */
-void mag_calc_solved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+void mag_calc_solved_plate(struct adb_solve_solution *solution);
 
-void posn_clip_plate_coefficients(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+void posn_clip_plate_coefficients(struct adb_solve_solution *solution);
 
 /* calculate the position of unsolved plate objects */
-void posn_calc_unsolved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+void posn_calc_unsolved_plate(struct adb_solve_solution *solution);
 
 /* calculate the position of solved plate objects */
-void posn_calc_solved_plate(struct adb_solve *solve,
-	struct adb_solve_solution *solution);
+void posn_calc_solved_plate(struct adb_solve_solution *solution);
+
+void posn_equ_to_plate_fast(struct adb_solve_solution *solution,
+	double ra, double dec, double *x_, double *y_);
+
+void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
+	struct adb_pobject *primary, double *ra_, double *dec_);
 
 #endif
 

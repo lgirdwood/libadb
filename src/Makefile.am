@@ -25,7 +25,8 @@ libastrodb_la_SOURCES = \
 	solve_mag.c \
 	solve_target.c \
 	astrometry.c \
-	photometry.c
+	photometry.c \
+	solution.c
 
 noinst_HEADERS = \
 	readme.h \

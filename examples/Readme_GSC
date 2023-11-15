@@ -5,41 +5,20 @@ GSC 1.1 support is a little more complex as the files are divided up and compres
 
 1. Download GSC1.1
 
-  wget -r -t 5  ftp://cdsarc.u-strasbg.fr/pub/cats/I/220/
+  wget -r -t 5  ftp://cdsarc.u-strasbg.fr/pub/cats/I/254/
 
-2. Patch the GSC decoder (found in the GSC/src/ directory). The GSC decoder supplied with GSC1.1 inserts some new lines and text between each file it decodes. This can stop the adb importer and needs the following simple fix :-
+2. Download and build the decoder by running make in the src directory. This will generate some binaries with .exe file extensions.
 
---- decode.c	1996-04-25 07:43:31.000000000 +0100
-+++ decode.c	2015-08-02 16:03:07.367803776 +0100
-@@ -42,7 +42,7 @@
- 
- 		fp = open(*argv, O_BINARY);
- 		if(fp < 0) { perror(*argv); exit(1); }
--		if (n) puts("");	/* Empty line between files */
-+//		if (n) puts("");	/* Empty line between files */
- 		n++;
- 
- 		/* Print the Header line of the GSC binary file	*/
-@@ -51,7 +51,7 @@
- 			fprintf(stderr, "****Bad GSC binary file: %s\n", *argv);
- 			exit(1);
- 		}
--		puts(ptr);
-+//		puts(ptr);
- 
- 		/* Display the decoded contents of the GSC binary file */
- 		while(read(fp,c,12) == 12)
-
-3. Build the decoder by running make in the src directory. This will generate some binaries with .exe file extensions.
-
-4. Decode the GSC files
+3. Decode the GSC files
 
 	./decode.exe GSC/N*/* > gsc.dat
 	./decode.exe GSC/S*/* >> gsc.dat
 
-5. There will now be a large decoded text file (about 1.5G) that can now be imported with adb. Please copy gsc.dat to your adb catalog directory I/220/gsc.dat and run 
+4. There will now be a large decoded text file (about 1.5G) that can be imported with adb after stripping headers. 
+
+5. Please copy gsc.dat to your adb catalog directory I/220/gsc.dat and run 
 
  ./examples/gsc -i <path to your top level catalog dir>
 
-There it will find the GSC data under I/220/gsc.dat and import it. Please note that this may take some time (about 2hrs on my laptop).
+There it will find the GSC data under I/254/gsc.dat and import it. Please note that this may take some time (about 2hrs on my laptop).
 

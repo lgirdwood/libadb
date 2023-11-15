@@ -220,8 +220,8 @@ int gsc_query(char *lib_dir)
 	//adb_set_msg_level(db, ADB_MSG_DEBUG);
 	//adb_set_log_level(db, ADB_LOG_ALL);
 
-	/* use CDS catalog class VII, #118, dataset gsc2000 */
-	table_id = adb_table_open(db, "I", "220", "gsc");
+	/* use CDS catalog class I, #254, dataset gsc2000 */
+	table_id = adb_table_open(db, "I", "254", "gsc");
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create table\n");
 		ret = table_id;
@@ -267,7 +267,7 @@ int gsc_import(char *lib_dir)
 	adb_set_msg_level(db, ADB_MSG_DEBUG);
 	adb_set_log_level(db, ADB_LOG_ALL);
 
-	table_id = adb_table_import_new(db, "I", "220", "out",
+	table_id = adb_table_import_new(db, "I", "254", "out",
 				"Pmag", -2.0, 17.0, ADB_IMPORT_INC);
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create import table\n");

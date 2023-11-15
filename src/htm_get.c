@@ -565,8 +565,7 @@ int htm_get_clipped_objects(struct adb_object_set *set)
 	return populated_trixels;
 }
 
-/*! \fn void adb_table_clion_fov (adb_table* table, double ra, double dec, double radius,
-double faint_mag, double bright_mag);
+/*! \fn void adb_table_clion_fov (struct adb_db *db, int table_id);
  * \brief Set dataset clipping area based on field of view
  * \ingroup dataset
  */

@@ -52,10 +52,18 @@ static int tycid1_sp_insert(struct adb_object *object, int offset, char *src)
 static int tycid2_sp_insert(struct adb_object *object, int offset, char *src)
 {
 	char *dest = (char*)object + offset;
+	char tmp[128];
 	int i = atoi(src);
+	int len;
 
-	sprintf(dest, "%s-%d", object->designation, i);
-	return 0;
+	len = snprintf(tmp, 128, "%s-%d", object->designation, i);
+	if (len < sizeof(object->designation)) {
+		memcpy(dest, tmp, len);
+		return 0;
+	} else {
+		fprintf(stderr, "object designation \"%s\" is too long\n", tmp);
+		return -EINVAL;
+	}
 }
 
 static struct adb_schema_field tycho_fields[] = {

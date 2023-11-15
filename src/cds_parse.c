@@ -82,7 +82,9 @@ static int get_designation(struct readme *readme, FILE *fp)
 	if (end == NULL)
 		return 0;
 
-	strncpy(readme->designation, line, 6);
+	snprintf(readme->designation, RM_DSGN_SIZE, "%.*s", RM_DSGN_SIZE - 1, line);
+
+	/* find next space and pad zeros */
 	return  0;
 }
 
