@@ -90,3 +90,7 @@ examples/sky2k
 _CPack_Packages/
 CPackConfig.cmake
 CPackSourceConfig.cmake
+
+# Do not ignore specific test files
+!tests/VII/118/
+!tests/VII/118/*
