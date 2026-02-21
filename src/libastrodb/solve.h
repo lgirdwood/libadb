@@ -106,15 +106,15 @@ struct adb_solve_object {
 struct adb_solve_solution;
 struct adb_solve;
 
-/*! \fn adb_search* adb_search_new(adb_table *table);
- * \brief Creates an new search object
- * \ingroup search
+/**
+ * \brief Creates a new solver context
+ * \ingroup solve
  */
 struct adb_solve *adb_solve_new(struct adb_db *db, int table_id);
 
-/*! \fn void adb_search_free(adb_search* search);
- * \brief Free's a search and it resources
- * \ingroup search
+/**
+ * \brief Free a solver and its resources
+ * \ingroup solve
  */
 void adb_solve_free(struct adb_solve *solve);
 
@@ -124,28 +124,23 @@ int adb_solve_set_distance_delta(struct adb_solve *solve, double delta_pixels);
 
 int adb_solve_set_pa_delta(struct adb_solve *solve, double delta_degrees);
 
-/*! \fn int adb_search_add_operator(adb_search* search, adb_operator op);
- * \brief Add an operation in RPN to the search
- * \ingroup search
+/**
+ * \brief Add a plate object to the solver
+ * \ingroup solve
  */
 int adb_solve_add_plate_object(struct adb_solve *solve,
                                struct adb_pobject *pobject);
 
-/*! \fn int adb_search_add_comparator(adb_search* search, char* field,
-                                        adb_comparator compare, char* value);
- * \brief Add a comparator_t in RPN to the search
- * \ingroup search
+/**
+ * \brief Set a solver constraint
+ * \ingroup solve
  */
 int adb_solve_constraint(struct adb_solve *solve, enum adb_constraint type,
                          double min, double max);
 
-/*! \fn int adb_solve(struct adb_solve *solve,
-                                struct adb_object_set *set,
-                                struct adb_solve_objects **solve_objects[],
-                                double dist_coeff, double mag_coeff,
-                                double pa_coeff);
- * \brief Execute a search
- * \ingroup search
+/**
+ * \brief Execute the solve process
+ * \ingroup solve
  */
 int adb_solve(struct adb_solve *solve, struct adb_object_set *set,
               enum adb_find find);
@@ -153,9 +148,9 @@ int adb_solve(struct adb_solve *solve, struct adb_object_set *set,
 struct adb_solve_solution *adb_solve_get_solution(struct adb_solve *solve,
                                                   unsigned int solution);
 
-/*! \fn int adb_solution_get_objects(struct adb_solve_solution *solution);
- * \brief Execute a search
- * \ingroup search
+/**
+ * \brief Retrieve objects from a valid solution
+ * \ingroup solve
  */
 int adb_solution_get_objects(struct adb_solve_solution *solution);
 

@@ -62,14 +62,18 @@ static int create_lib_local_dirs(struct adb_library *lib,
   return ret;
 }
 
-/*! \fn adb_library* adb_open_library(char* remote, char* local)
- * \param local Local library repository location
- * \param remote Remote repository location
- * \returns A adb_library object or NULL on failure
+/**
+ * \brief Open and initialize a CDS library local repository.
  *
- * Initialises a CDS library structure on disk at location specified.
+ * Initializes a CDS library structure and ensures the local directory hierarchy
+ * (I through IX, B) is created at the specified local path.
+ * This typically only needs to be called once per program execution.
  *
- * This typically only needs to be called once per program.
+ * \param host Host URL or name
+ * \param remote Remote repository location/URL
+ * \param local Local library repository location on disk
+ * \return A pointer to the newly allocated adb_library object, or NULL on
+ * failure
  */
 
 struct adb_library *adb_open_library(const char *host, const char *remote,
@@ -107,10 +111,13 @@ err:
   return NULL;
 }
 
-/*! \fn void adb_close_library(adb_library* lib)
- * \param lib Library to free
+/**
+ * \brief Close a library and release its resources.
  *
- * Free's all library resources.
+ * Frees all memory associated with the library path configurations and the
+ * library structure itself.
+ *
+ * \param lib Library object to free
  */
 void adb_close_library(struct adb_library *lib) {
   free(lib->remote);
@@ -129,9 +136,17 @@ void adb_set_log_level(struct adb_db *db, unsigned int log) {
   db->htm->msg_flags = log;
 }
 
-/*! \fn struct adb_db *adb_create_db(struct adb_library *lib, int depth, int
- * tables)
- * \brief Create database
+/**
+ * \brief Create a new database catalog instance.
+ *
+ * Allocates a new database structure associated with the specified library.
+ * It also initializes the underlying HTM (Hierarchical Triangular Mesh) index
+ * structure with the specified depth and table capacity.
+ *
+ * \param lib Library repository to bind the database to
+ * \param depth HTM resolution depth
+ * \param tables Number of tables
+ * \return A pointer to the newly allocated adb_db object, or NULL on failure
  */
 struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables) {
   struct adb_db *db;
@@ -156,10 +171,13 @@ struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables) {
   return db;
 }
 
-/*! \fn void adb_db_free (adb_db *db)
- * \param db Catalog
+/**
+ * \brief Free an active catalog database.
  *
- * Free's all catalog resources
+ * Frees all resources allocated by the catalog database, including its
+ * underlying HTM structures.
+ *
+ * \param db Catalog database to free
  */
 void adb_db_free(struct adb_db *db) {
   // TODO: free tables and htm
@@ -167,9 +185,11 @@ void adb_db_free(struct adb_db *db) {
   free(db);
 }
 
-/*! \fn const char* adb_get_version(void);
- * \return libastrodb version
+/**
+ * \brief Retrieve the library version string.
  *
- * Get the libastrodb version number.
+ * Returns the compile-time version tag of libastrodb.
+ *
+ * \return A constant string representing the libastrodb version number.
  */
 const char *adb_get_version(void) { return VERSION; }

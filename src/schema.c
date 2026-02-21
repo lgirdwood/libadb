@@ -275,12 +275,18 @@ static int schema_add_field_nofile(struct adb_db *db, struct adb_table *table,
   return 0;
 }
 
-/*! \fn int schema_add_field(adb_table * table, adb_schema_object* field)
- * \param table dataset
- * \param field Field name to add
- * \return 0 on success
+/**
+ * \brief Add a custom struct field to a dataset for import.
  *
- * Add a custom struct field to a dataset for import.
+ * Registers a new custom schema field definition to the specified dataset
+ * table. Depending on whether the file information is available, it adds a
+ * field using the file-based schema or a completely custom schema without file
+ * backing.
+ *
+ * \param db Catalog database pointer
+ * \param table Dataset to add the field to
+ * \param new_schema_object Field specification to add
+ * \return 0 on success, or a negative error code on failure
  */
 int schema_add_field(struct adb_db *db, struct adb_table *table,
                      struct adb_schema_field *new_schema_object) {
@@ -366,8 +372,16 @@ out:
   return ret;
 }
 
-/*! \fn int schema_read(struct adb_db *db, struct adb_table *table)
- * Load a dataset header from disk
+/**
+ * \brief Load a dataset header and schema from disk.
+ *
+ * Opens the `.schema` file associated with the table, reads its header and
+ * field descriptors, and populates the table structure with the loaded
+ * object count, schema fields, and depth map limits.
+ *
+ * \param db Database catalog to log against
+ * \param table Table object whose schema should be loaded
+ * \return 0 on success, or a negative error code on failure (-EIO or -EINVAL)
  */
 int schema_read(struct adb_db *db, struct adb_table *table) {
   struct table_file_index *hdr = &table->file_index;

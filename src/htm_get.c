@@ -550,9 +550,16 @@ int htm_get_clipped_objects(struct adb_object_set *set) {
   return populated_trixels;
 }
 
-/*! \fn struct adb_object_set *adb_table_set_new(struct adb_db *db, int
- * table_id)
- * \brief Create dataset set clipping area based on field of view
+/**
+ * \brief Create a new dataset object subset (clipping area).
+ *
+ * Allocates and initializes an `adb_object_set` bounded area. By default, the
+ * field of view is set to 2*PI (the entire table) and is linked to the
+ * underlying dataset's HTM depth limits.
+ *
+ * \param db Database catalog to query
+ * \param table_id Target ID of the table
+ * \return A pointer to a newly allocated `adb_object_set`, or NULL on failure
  * \ingroup dataset
  */
 struct adb_object_set *adb_table_set_new(struct adb_db *db, int table_id) {
@@ -607,10 +614,13 @@ int adb_table_set_constraints(struct adb_object_set *set, double ra, double dec,
                   start, end);
 }
 
-/*! \fn void adb_table_set_free(struct adb_object_set *set)
- * \param set dataset set object
+/**
+ * \brief Free a dataset object subset allocation.
  *
- * Free the dataset set bounds
+ * Releases memory resources for the designated subset's bounded trixels,
+ * object headers, and the set object itself.
+ *
+ * \param set Dataset object set to free
  */
 void adb_table_set_free(struct adb_object_set *set) {
   if (set == NULL)
@@ -621,11 +631,15 @@ void adb_table_set_free(struct adb_object_set *set) {
   free(set);
 }
 
-/*! \fn int adb_set_get_objects(struct adb_object_set *set)
- * \param set dataset set object
- * \return number of objects, or negative for failed
+/**
+ * \brief Retrieve objects from a dataset based on clipping boundaries.
  *
- * Get objects from dataset based on clipping area.
+ * Reads or utilizes previously clipped HTM trixels within the dataset
+ * set's declared spatial bounds, returning the number of valid constrained
+ * trixels mapped for examination.
+ *
+ * \param set Configured dataset set object boundary
+ * \return The number of populated object head trixels, or a negative error code
  */
 int adb_set_get_objects(struct adb_object_set *set) {
   /* check for previous "get" since trixels will still be valid */

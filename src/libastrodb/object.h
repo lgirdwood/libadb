@@ -84,8 +84,7 @@ struct adb_object {
 
 /****************** Table Clipping ********************************************/
 
-/*! \fn struct adb_object_set *adb_table_set_new(struct adb_db *db, int
- * table_id)
+/**
  * \brief Create new dataset set
  * \ingroup dataset
  */
@@ -94,7 +93,7 @@ struct adb_object_set *adb_table_set_new(struct adb_db *db, int table_id);
 int adb_table_set_constraints(struct adb_object_set *set, double ra, double dec,
                               double fov, double min_Z, double max_Z);
 
-/*! \fn void adb_table_set_free(struct adb_object_set *set);
+/**
  * \brief Unclip dataset clipping area to full boundaries
  * \ingroup dataset
  */
@@ -121,7 +120,7 @@ int adb_set_get_objects(struct adb_object_set *set);
 
 int adb_set_hash_key(struct adb_object_set *set, const char *key);
 
-/*! \fn void* adb_table_get_object (adb_table *table, char *id, char *field);
+/**
  * \brief Get object from catalog based on ID
  * \return pointer to object or NULL
  * \ingroup dataset

@@ -207,8 +207,15 @@ static int double_alt_import(struct adb_object *object, int offset, char *src,
   return 0;
 }
 
-/*! \fn adb_ctype table_get_column_ctype(char *type)
- * \brief Get C type from ASCII type
+/**
+ * \brief Convert an ASCII format character to a C type enumeration.
+ *
+ * Translates CDS specific type character descriptions (like 'I' for int, 'A'
+ * for string, 'F' for float) into the `adb_ctype` format used internally by
+ * libastrodb.
+ *
+ * \param type Pointer to the ASCII type string/character
+ * \return The corresponding `adb_ctype` enumeration
  */
 adb_ctype table_get_column_ctype(char *type) {
   if (*type == 'I')
@@ -224,8 +231,13 @@ adb_ctype table_get_column_ctype(char *type) {
   return ADB_CTYPE_NULL;
 }
 
-/*! \fn int table_get_column_csize(char *type)
- * \brief Get C size from ASCII size
+/**
+ * \brief Get the expected byte size in C from an ASCII size description.
+ *
+ * Looks up the size needed to store the memory translation of the string value.
+ *
+ * \param type Pointer to the ASCII type string format
+ * \return The corresponding standard C data type byte size
  */
 int table_get_column_csize(char *type) {
   if (*type == 'I')
@@ -241,8 +253,16 @@ int table_get_column_csize(char *type) {
   return 0;
 }
 
-/*! \fn adb_field_import1 table_get_column_import(struct adb_db *db, adb_ctype
- * type) Get dataset type import
+/**
+ * \brief Get the table column import callback associated with a C type.
+ *
+ * Returns a function pointer (`adb_field_import1`) capable of parsing string
+ * buffer data encoded under the specifications of `adb_ctype` into the correct
+ * memory location of a structured dataset record.
+ *
+ * \param db Database catalog
+ * \param type The C data type enumeration to find a callback for
+ * \return The appropriate import parsing function callback
  */
 adb_field_import1 table_get_column_import(struct adb_db *db, adb_ctype type) {
   switch (type) {
@@ -280,8 +300,15 @@ adb_field_import1 table_get_column_import(struct adb_db *db, adb_ctype type) {
   return NULL;
 }
 
-/*! \fn void *table_get_alt_key_import(adb_ctype type)
- * Get dataset type import
+/**
+ * \brief Get the table column alternative import callback for a C type.
+ *
+ * Returns a function pointer (`adb_field_import2`) capable of parsing an
+ * alternate text source if the primary source text yields failure.
+ *
+ * \param db Database catalog
+ * \param type The C data type enumeration to find a callback for
+ * \return The appropriate alternative import parsing function callback
  */
 adb_field_import2 table_get_alt_key_import(struct adb_db *db, adb_ctype type) {
   switch (type) {
@@ -862,9 +889,17 @@ out:
   return count;
 }
 
-/*! \fn int table_import(adb_table * table, char *file_name, adb_progress
- * progress)
- * \brief Import an ASCII dataset into table tile array
+/**
+ * \brief Import an ASCII dataset into the table object array.
+ *
+ * Processes the raw downloaded flat ASCII file, mapping the string columns
+ * into tightly packed binary values mapped to the specific loaded schema of the
+ * dataset table. This process also constructs the spatial KD-Tree locally.
+ *
+ * \param db Database catalog
+ * \param table_id Target ID of the table to import to
+ * \param file Path to the data file to import
+ * \return The total number of valid imported records, or a negative error code
  */
 int table_import(struct adb_db *db, int table_id, char *file) {
   struct adb_table *table;
@@ -920,15 +955,18 @@ out:
   return ret;
 }
 
-/*! \fn int adb_table_import_field(struct adb_db *db, int table_id, const char
- * *field, const char *alt, int flags)
- * \param db database
- * \param table_id table id
- * \param field Primary field
- * \param alt Alternative field
- * \param flags flags
+/**
+ * \brief Set an alternative import data field as a fallback.
  *
- * Set an alternative import field if the primary field is blank.
+ * Instructs the import routine to utilize an alternative field column location
+ * when the original primary field column is missing or blank data.
+ *
+ * \param db Database catalog
+ * \param table_id Target table ID
+ * \param field Symbol/name of the primary field
+ * \param alt Name of the alternate field to use as fallback
+ * \param flags Flags to configure alternate usage
+ * \return 0 on success, or a negative error code on failure
  */
 int adb_table_import_field(struct adb_db *db, int table_id, const char *field,
                            const char *alt, int flags) {
@@ -959,16 +997,20 @@ int adb_table_import_field(struct adb_db *db, int table_id, const char *field,
   return 0;
 }
 
-/*! \fn int adb_table_import_schema(struct adb_db *db, int table_id, struct
- * adb_schema_field *schema, int num_schema_fields, int object_size)
- * \param db Catalog
- * \param table_id Table ID
- * \param schema Schema fields
- * \param num_schema_fields Number of schema fields
- * \param object_size Object size in bytes
- * \return 0 on success
+/**
+ * \brief Register a new custom structured schema.
  *
- * Register a new custom schema type
+ * Attaches a manual list of schema field structures to the dataset table as
+ * opposed to automatically parsing schema attributes from a CDS ReadMe standard
+ * file. Requires the `depth_field` marker to configure KD-Tree logic.
+ *
+ * \param db Database catalog
+ * \param table_id Table ID
+ * \param schema Array of schema fields metadata
+ * \param num_schema_fields Number of elements in the schema array
+ * \param object_size Size of the full object struct row in bytes
+ * \return Number of successfully loaded fields on success, or a negative error
+ * code
  */
 int adb_table_import_schema(struct adb_db *db, int table_id,
                             struct adb_schema_field *schema,
@@ -1013,20 +1055,27 @@ int adb_table_import_alt_dataset(struct adb_db *db, int table_id,
   return 0;
 }
 
-/*! \fn int adb_table_import_new(struct adb_db *db, const char *cat_class, const
- * char *cat_id, const char *table_name, const char *depth_field, float
- * min_limit, float max_limit, adb_import_type otype)
- * \param db Catalog
- * \param cat_class Catalog class
- * \param cat_id Catalog ID
- * \param table_name Dataset name (dataset file_name name in ReadMe)
- * \param depth_field field for depth
- * \param min_limit minimum depth limit
- * \param max_limit maximum depth limit
- * \param otype object import type
- * \return A table ID for success or < 0 on error
+/**
+ * \brief Prepare a new database table context for direct import.
  *
- * Creates a dataset object.
+ * Initializes a new dataset object, allocates its ID from the pool, structures
+ * the internal remote/local mapping properties, and attempts to pull the
+ * underlying metadata rules (ReadMe catalog info).
+ *
+ * \param db Database catalog instance
+ * \param cat_class Catalog class categorization (e.g. "I", "II")
+ * \param cat_id Catalog catalog index number / identifier
+ * \param table_name Designated filename string identifying the core dataset
+ * file
+ * \param depth_field Schema symbol indicating the HTM indexing depth constraint
+ * target
+ * \param min_limit Floor scale boundary limit for KD-Trixel spatial indexing
+ * depth targeting
+ * \param max_limit Ceiling limit scale indicator
+ * \param otype Target representation object type handling metadata during
+ * ingestion processing
+ * \return A newly acquired open Table ID on success, or negative identifier on
+ * failure (-EINVAL)
  */
 int adb_table_import_new(struct adb_db *db, const char *cat_class,
                          const char *cat_id, const char *table_name,

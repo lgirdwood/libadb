@@ -38,8 +38,8 @@ struct adb_object_set;
  * Search operators
  */
 enum adb_operator {
-	ADB_OP_AND,				/*!< AND */
-	ADB_OP_OR				/*!< OR */
+  ADB_OP_AND, /*!< AND */
+  ADB_OP_OR   /*!< OR */
 };
 
 /*! \typedef enum adb_comparator
@@ -48,10 +48,10 @@ enum adb_operator {
  * Search field comparators
  */
 enum adb_comparator {
-	ADB_COMP_LT,			/*!< less than */
-	ADB_COMP_GT, 			/*!< greater than */
-	ADB_COMP_EQ,			/*!< equal to */
-	ADB_COMP_NE			/*!< not equal to */
+  ADB_COMP_LT, /*!< less than */
+  ADB_COMP_GT, /*!< greater than */
+  ADB_COMP_EQ, /*!< equal to */
+  ADB_COMP_NE  /*!< not equal to */
 };
 
 /*! \typedef int (*adb_custom_comparator)(void* object);
@@ -60,57 +60,53 @@ enum adb_comparator {
  */
 typedef int (*adb_custom_comparator)(void *object);
 
-/*! \fn adb_search* adb_search_new(adb_table *table);
+/**
  * \brief Creates an new search object
  * \ingroup search
  */
 struct adb_search *adb_search_new(struct adb_db *db, int table_id);
 
-/*! \fn void adb_search_free(adb_search* search);
+/**
  * \brief Free's a search and it resources
  * \ingroup search
  */
 void adb_search_free(struct adb_search *search);
 
-/*! \fn int adb_search_add_operator(adb_search* search, adb_operator op);
+/**
  * \brief Add an operation in RPN to the search
  * \ingroup search
  */
-int adb_search_add_operator(struct adb_search *search,
-				enum adb_operator op);
+int adb_search_add_operator(struct adb_search *search, enum adb_operator op);
 
-/*! \fn int adb_search_add_comparator(adb_search* search, char* field,
-					adb_comparator compare, char* value);
+/**
  * \brief Add a comparator_t in RPN to the search
  * \ingroup search
  */
-int adb_search_add_comparator(struct adb_search *search,
-		const char* field, enum adb_comparator comp, const char* value);
+int adb_search_add_comparator(struct adb_search *search, const char *field,
+                              enum adb_comparator comp, const char *value);
 
-/*! \fn int adb_search_add_custom_comparator(adb_search* search,
-						adb_custom_comparator compare);
- * \brief Add a comparator_t in RPN to the search
+/**
+ * \brief Add a custom comparator_t in RPN to the search
  * \ingroup search
  */
 int adb_search_add_custom_comparator(struct adb_search *search,
-					adb_custom_comparator comp);
+                                     adb_custom_comparator comp);
 
-/*! \fn int adb_search_get_results(adb_search* search, adb_progress progress,
-					adb_slist **result, unsigned int src);
+/**
  * \brief Execute a search
  * \ingroup search
  */
 int adb_search_get_results(struct adb_search *search,
-				struct adb_object_set *set,
-				const struct adb_object **objects[]);
+                           struct adb_object_set *set,
+                           const struct adb_object **objects[]);
 
-/*! \fn int adb_search_get_hits(adb_search* search);
+/**
  * \brief Get the number of search hit_count.
  * \ingroup search
  */
 int adb_search_get_hits(struct adb_search *search);
 
-/*! \fn int adb_search_get_tests(adb_search* search);
+/**
  * \brief Get the number of search test_count
  * \ingroup search
  */

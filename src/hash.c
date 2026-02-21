@@ -36,10 +36,17 @@
 #include <libastrodb/db.h>
 #include <libastrodb/object.h>
 
-/*! \fn int hash_string(const char *data, int len, int mod)
- * \brief Calculate hash based on string <data> and in range <mod>
+/**
+ * \brief Calculate a hash value for a string.
  *
- * We don't hash ' ' or '-'.
+ * Computes an integer hash value based on the characters in the string `data`
+ * up to length `len`, modulo the given `mod` value. Spaces (' ') and hyphens
+ * ('-') are explicitly ignored during the hashing process.
+ *
+ * \param data The string to hash
+ * \param len Length of the string
+ * \param mod Modulo to apply to the final hash value
+ * \return The calculated integer hash value in the range [0, mod-1]
  */
 int hash_string(const char *data, int len, int mod) {
   int val = 0;
@@ -59,9 +66,15 @@ int hash_string(const char *data, int len, int mod) {
   return val;
 }
 
-/*! \fn int hash_int(int val, int mod)
- * \brief Calculate hash based on int <val> and in range <mod>
+/**
+ * \brief Calculate a hash value for an integer.
  *
+ * Computes an integer hash value based on the integer `val`,
+ * modulo the given `mod` value. Returns the absolute value of the modulus.
+ *
+ * \param val The integer value to hash
+ * \param mod Modulo to apply to the final hash value
+ * \return The calculated integer hash value in the range [0, mod-1]
  */
 int hash_int(int val, int mod) { return abs(val % mod); }
 

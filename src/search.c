@@ -289,11 +289,16 @@ static comparator_t get_comparator(enum adb_comparator comp, adb_ctype ctype) {
   return NULL;
 }
 
-/*! \fn adb_search* adb_search_new(adb_table *table)
- * \param table dataset
- * \returns adb_search object on success or NULL on failure
+/**
+ * \brief Create a new search object.
  *
- * Creates an new search object
+ * Allocates and initializes a new search operation context targeting a specific
+ * table. The search object manages the execution tree and results.
+ *
+ * \param db Database catalog
+ * \param table_id Table ID to search within
+ * \return A pointer to the newly allocated adb_search object, or NULL on
+ * failure
  */
 struct adb_search *adb_search_new(struct adb_db *db, int table_id) {
   struct adb_table *table = &db->table[table_id];
@@ -328,10 +333,13 @@ static inline void free_branch(struct adb_search_branch *branch) {
   free(branch);
 }
 
-/*! \fn void adb_search_free(adb_search* search);
- * \param search Search
+/**
+ * \brief Free a search object and its resources.
  *
- * Free's a search and it resources
+ * Releases all memory used by the search search constraints, execution tree
+ * branches, and the result object references.
+ *
+ * \param search Search object to free
  */
 void adb_search_free(struct adb_search *search) {
   free(search->objects);
@@ -339,12 +347,16 @@ void adb_search_free(struct adb_search *search) {
   free(search);
 }
 
-/*! \fn int adb_search_add_operator(adb_search* search, adb_operator op);
- * \param search Search
- * \param op Operator
- * \returns 0 on success
+/**
+ * \brief Add a logical operator to the search in Reverse Polish Notation (RPN).
  *
- * Add a test operation in RPN to the search
+ * Connects previously unlinked branch or test conditions using a logical
+ * operator (such as AND, OR) to construct the search execution tree.
+ *
+ * \param search Search context
+ * \param op The logical operator (`ADB_OP_AND` or `ADB_OP_OR`)
+ * \return 0 on success, or a negative error code (-EINVAL) if the RPN stack is
+ * invalid
  */
 int adb_search_add_operator(struct adb_search *search, enum adb_operator op) {
   struct adb_search_branch *branch;
@@ -433,14 +445,20 @@ int adb_search_add_operator(struct adb_search *search, enum adb_operator op) {
   return 0;
 }
 
-/*! \fn int adb_search_add_comparator(adb_search* search, char* field,
- * adb_comparator compare, char* value);
- * \param search Search
- * \param field Field name
- * \param compare Comparator
- * \param value Compare value
+/**
+ * \brief Add a comparator test to the search tree in Reverse Polish Notation
+ * (RPN).
  *
- * Add a comparator_t in RPN to the search
+ * Creates a new test condition that compares the value of the specified schema
+ * `field` against the provided `value` string based on the `compare` operation
+ * (e.g. =, >, <). The string `value` is automatically converted to the correct
+ * C-type for the field.
+ *
+ * \param search Search context
+ * \param field Schema field name to test against
+ * \param comp Comparison operator (e.g. `ADB_COMP_EQ`, `ADB_COMP_GT`)
+ * \param value String representation of the value to test against the field
+ * \return 0 on success, or a negative error code on failure
  */
 int adb_search_add_comparator(struct adb_search *search, const char *field,
                               enum adb_comparator comp, const char *value) {
@@ -530,14 +548,16 @@ err:
   return -ENOMEM;
 }
 
-/*! \fn int adb_search_add_custom_comparator(adb_search* search,
- * adb_custom_comparator compare)
- * \param search Search
- * \param compare Custom comparator_t function
- * \returns 0 on success
+/**
+ * \brief Add a custom comparator function to the search.
  *
- * Add a custom search comparator_t. It should return 1 for a match and 0 for a
- * search miss.
+ * Associates a user-provided custom evaluation function to the search RPN
+ * stack. The custom comparator must return 1 for a successful match and 0 for a
+ * miss.
+ *
+ * \param search Search context
+ * \param comp Custom comparator callback function
+ * \return 0 on success (Currently unimplemented, returns -EINVAL)
  */
 int adb_search_add_custom_comparator(struct adb_search *search,
                                      adb_custom_comparator comp) {
@@ -549,14 +569,19 @@ static inline int check_object(struct adb_search_branch *branch,
   return branch->operator(object, branch, branch->test_count);
 }
 
-/*! \fn int adb_search_get_results(adb_search* search, adb_progress progress,
- * adb_slist **result, unsigned int src)
- * \param search Search
- * \param progress Progress callback
- * \param result Search results
- * \param src Object source
+/**
+ * \brief Execute the search and retrieve matching objects.
  *
- * Get search results.
+ * Processes the completely built RPN logic execution tree across all objects
+ * within the given dataset boundary (object set). It populates an array with
+ * pointers to the objects that successfully satisfy the search conditions.
+ *
+ * \param search Configured search context
+ * \param set The object dataset boundary to iterate through
+ * \param objects Pointer to an array of object pointers to populate with
+ * results
+ * \return The number of matching hit objects, or a negative error code for
+ * invalid configuration
  */
 int adb_search_get_results(struct adb_search *search,
                            struct adb_object_set *set,
@@ -608,19 +633,25 @@ int adb_search_get_results(struct adb_search *search,
   return search->hit_count;
 }
 
-/*! \fn int adb_search_get_hits(adb_search* search);
- * \param search Search
- * \returns Hits
+/**
+ * \brief Get the number of successful search hits.
  *
- * Get the number of search hit_count.
+ * Returns the hit count registered during the latest invocation of
+ * `adb_search_get_results`.
+ *
+ * \param search Search context
+ * \return Number of matching objects
  */
 int adb_search_get_hits(struct adb_search *search) { return search->hit_count; }
 
-/*! \fn int adb_search_get_tests(adb_search* search);
- * \param search Search
- * \returns Tests
+/**
+ * \brief Get the number of specific test evaluations during the search.
  *
- * Get the number of search test_count
+ * Returns the number of individual objects that the root execution branch
+ * evaluated during the last search query.
+ *
+ * \param search Search context
+ * \return Number of objects checked
  */
 int adb_search_get_tests(struct adb_search *search) {
   return search->test_count;
