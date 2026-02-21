@@ -16,6 +16,10 @@ GSC 1.1 support is a little more complex as the files are divided up and compres
 
 4. There will now be a large decoded text file (about 1.5G) that can be imported with adb after stripping headers. 
 
+4.1 blank line remove 
+
+sed -i '/^$/d' gsc.dat
+
 5. Please copy gsc.dat to your adb catalog directory I/220/gsc.dat and run 
 
  ./examples/gsc -i <path to your top level catalog dir>

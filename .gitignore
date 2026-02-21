@@ -48,3 +48,28 @@ lntest/lntest
 
 doc/man/*
 doc/html/*
+
+# CMake
+build/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
+
+# Developer tools / IDEs
+.settings/
+.autotools
+.vscode/
+.idea/
+
+# Old autotools / make leftovers
+.version
+libastrodb.pc
+
+# Executables
+examples/gsc
+examples/hyperleda
+examples/tycho
+examples/ngc
+examples/sky2k
