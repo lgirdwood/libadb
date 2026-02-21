@@ -78,3 +78,14 @@ examples/hyperleda
 examples/tycho
 examples/ngc
 examples/sky2k
+
+# Packages
+*.deb
+*.rpm
+*.tar.gz
+*.tar.bz2
+*.tar.Z
+*.zip
+_CPack_Packages/
+CPackConfig.cmake
+CPackSourceConfig.cmake

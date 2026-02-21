@@ -63,6 +63,21 @@ The CMake build system defines the following targets:
    sudo cmake --install build
    ```
 
+4. **Create Packages (Optional)**
+
+   To build `.deb` and `.rpm` packages for distribution, you can use `cpack` from within the build directory (after compiling):
+
+   ```bash
+   cd build
+   cpack -G "DEB;RPM"
+   ```
+
+   Alternatively, you can build the packages directly using `make`:
+
+   ```bash
+   make package
+   ```
+
 ## Usage
 
 After building, you can find the compiled shared library in `build/src/` and the example executables in `build/examples/`.

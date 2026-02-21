@@ -108,3 +108,13 @@ set(VERSION ${LIBASTRODB_VERSION})
 configure_file(libastrodb.pc.in libastrodb.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libastrodb.pc
         DESTINATION lib/pkgconfig)
+
+# Packaging support
+set(CPACK_PACKAGE_NAME "libastrodb")
+set(CPACK_PACKAGE_VERSION "${LIBASTRODB_VERSION}")
+set(CPACK_PACKAGE_VENDOR "Liam Girdwood")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AstroDB library for astrometry and photometry")
+set(CPACK_PACKAGE_CONTACT "Liam Girdwood")
+set(CPACK_GENERATOR "DEB;RPM")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liam Girdwood")
+include(CPack)

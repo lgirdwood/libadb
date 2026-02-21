@@ -1,0 +1,10 @@
+/usr/lib/pkgconfig/libastrodb.pc
+/usr/lib/libastrodb.so.0.3.0
+/usr/lib/libastrodb.so.0
+/usr/lib/libastrodb.so
+/usr/include/libastrodb/astrodb.h
+/usr/include/libastrodb/solve.h
+/usr/include/libastrodb/search.h
+/usr/include/libastrodb/db.h
+/usr/include/libastrodb/db-import.h
+/usr/include/libastrodb/object.h

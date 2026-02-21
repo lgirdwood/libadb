@@ -49,8 +49,8 @@ target_link_libraries(astrodb m z ftp)
 
 # Include directories
 target_include_directories(astrodb PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libastrodb>
-    $<INSTALL_INTERFACE:include/libastrodb>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 
 # Install rules
