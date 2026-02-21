@@ -49,6 +49,11 @@ lntest/lntest
 doc/man/*
 doc/html/*
 
+# Doxygen output
+html/
+latex/
+doxygen.log
+
 # CMake
 build/
 CMakeCache.txt

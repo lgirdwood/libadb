@@ -25,11 +25,11 @@
 extern "C" {
 #endif
 
-#define ADB_OBJECT_NAME_SIZE	16
+#define ADB_OBJECT_NAME_SIZE 16
 
-#define adb_offset(x,y) (long)(&((x*)0)->y) 	/*!< offset in struct */
-#define adb_sizeof(x,y) sizeof(((x*)0)->y) 		/*!< size in struct */
-#define adb_size(x) (sizeof(x)/sizeof(x[0]))	/*!< array size */
+#define adb_offset(x, y) (long)(&((x *)0)->y)  /*!< offset in struct */
+#define adb_sizeof(x, y) sizeof(((x *)0)->y)   /*!< size in struct */
+#define adb_size(x) (sizeof(x) / sizeof(x[0])) /*!< array size */
 
 struct adb_db;
 
@@ -39,8 +39,10 @@ struct adb_db;
  * KD tree
  */
 struct adb_kd_tree {
-	/* KD tree - indexs */
-	int32_t child[2], parent, index;
+  /* KD tree - indexs */
+  int32_t child[2]; /*!< children */
+  int32_t parent;   /*!< parent */
+  int32_t index;    /*!< index */
 };
 
 /*! \struct adb_import
@@ -49,9 +51,9 @@ struct adb_kd_tree {
  * Import
  */
 struct adb_import {
-	/* next object (in Vmag or size) or NULL */
-	struct adb_object *next;
-	struct adb_kd_tree *kd;
+  /* next object (in Vmag or size) or NULL */
+  struct adb_object *next; /*!< next object */
+  struct adb_kd_tree *kd;  /*!< kd tree */
 };
 
 /*! \struct adb_object
@@ -60,50 +62,43 @@ struct adb_import {
  * Import
  */
 struct adb_object {
-	/* primary keys for object hash based access */
-	union {
-		unsigned long id;
-		char designation[ADB_OBJECT_NAME_SIZE];
-	};
+  /* primary keys for object hash based access */
+  union {
+    unsigned long id;
+    char designation[ADB_OBJECT_NAME_SIZE];
+  };
 
-	/* primary keys for object attribute based access */
-	double ra;
-	double dec;
-	float mag;
-	float size;
+  /* primary keys for object attribute based access */
+  double ra;  /*!< Right Ascension */
+  double dec; /*!< Declination */
+  float mag;  /*!< magnitude */
+  float size; /*!< size */
 
-	union {
-		struct adb_import import; /* only used for importing */
-		struct adb_kd_tree kd;	/* only used for imported data */
-	};
+  union {
+    struct adb_import import; /* only used for importing */
+    struct adb_kd_tree kd;    /* only used for imported data */
+  };
 
-	/* remainder of object here - variable size and type */
+  /* remainder of object here - variable size and type */
 };
-
 
 /****************** Table Clipping ********************************************/
 
-/*! \fn void adb_table_clip_on_fov (adb_table *table, double ra, double dec,
-					double clip_fov, double faint_mag,
-					double bright_mag);
- * \brief Set dataset clipping area based on field of view
+/*! \fn struct adb_object_set *adb_table_set_new(struct adb_db *db, int
+ * table_id)
+ * \brief Create new dataset set
  * \ingroup dataset
  */
-struct adb_object_set *adb_table_set_new(struct adb_db *db,
-	int table_id);
+struct adb_object_set *adb_table_set_new(struct adb_db *db, int table_id);
 
-int adb_table_set_constraints(struct adb_object_set *set,
-				double ra, double dec,
-				double fov, double min_Z,
-				double max_Z);
+int adb_table_set_constraints(struct adb_object_set *set, double ra, double dec,
+                              double fov, double min_Z, double max_Z);
 
-/*! \fn void adb_table_unclip (adb_table *table);
+/*! \fn void adb_table_set_free(struct adb_object_set *set);
  * \brief Unclip dataset clipping area to full boundaries
  * \ingroup dataset
  */
 void adb_table_set_free(struct adb_object_set *set);
-
-
 
 /******************* Table Object Get *****************************************/
 
@@ -112,11 +107,14 @@ void adb_table_set_free(struct adb_object_set *set);
 #define adb_object_mag(object) object->mag
 #define adb_object_size(object) object->size
 
-#define ADB_FIELD_DESIGNATION	"_DESIGNATION"
+#define ADB_FIELD_DESIGNATION "_DESIGNATION"
 
+/*! \struct adb_object_head
+ * \brief Object head
+ */
 struct adb_object_head {
-	const void *objects;
-	unsigned int count;
+  const void *objects; /*!< array of objects */
+  unsigned int count;  /*!< number of objects */
 };
 
 int adb_set_get_objects(struct adb_object_set *set);
@@ -128,21 +126,22 @@ int adb_set_hash_key(struct adb_object_set *set, const char *key);
  * \return pointer to object or NULL
  * \ingroup dataset
  */
-int adb_set_get_object(struct adb_object_set *set,
-	const void *id, const char *field, const struct adb_object **object);
+int adb_set_get_object(struct adb_object_set *set, const void *id,
+                       const char *field, const struct adb_object **object);
 
-int adb_table_get_object(struct adb_db *db, int table_id,
-	const void *id, const char *field, const struct adb_object **object);
+int adb_table_get_object(struct adb_db *db, int table_id, const void *id,
+                         const char *field, const struct adb_object **object);
 
-const struct adb_object *adb_table_set_get_nearest_on_object(
-	struct adb_object_set *set, const struct adb_object *object);
+const struct adb_object *
+adb_table_set_get_nearest_on_object(struct adb_object_set *set,
+                                    const struct adb_object *object);
 
-const struct adb_object *adb_table_set_get_nearest_on_pos(
-	struct adb_object_set *set, double ra, double dec);
+const struct adb_object *
+adb_table_set_get_nearest_on_pos(struct adb_object_set *set, double ra,
+                                 double dec);
 
 struct adb_object_head *adb_set_get_head(struct adb_object_set *set);
 int adb_set_get_count(struct adb_object_set *set);
-
 
 #ifdef __cplusplus
 };
