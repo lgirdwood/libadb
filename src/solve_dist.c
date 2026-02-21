@@ -82,7 +82,7 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
-	struct magnitude_range *range = &runtime->pot_magnitude;
+	struct target_solve_mag *range = &runtime->pot_magnitude;
 	int i, count = 0;
 	double distance, diff[4], diverge;
 
@@ -90,7 +90,7 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 	runtime->num_pot_distance = 0;
 
 	/* check t0 candidates */
-	for (i = range->start[0]; i < range->end[0]; i++) {
+	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
 
 		s = solution->source.objects[i];
 
@@ -164,7 +164,7 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
-	struct magnitude_range *range = &runtime->pot_magnitude;
+	struct target_solve_mag *range = &runtime->pot_magnitude;
 	int i, count = 0;
 	double distance, diff[4], diverge, size;
 
@@ -172,7 +172,7 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	runtime->num_pot_distance = 0;
 
 	/* check t0 candidates */
-	for (i = range->start[0]; i < range->end[0]; i++) {
+	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
 
 		s = solution->source.objects[i];
 
@@ -252,9 +252,9 @@ int distance_solve_object(struct solve_runtime *runtime,
 	const struct adb_object *primary)
 {
 	const struct adb_object *s[3];
-	struct target_object *t0, *t1, *t2;
+	struct needle_object *t0, *t1, *t2;
 	struct adb_solve *solve = runtime->solve;
-	struct magnitude_range *range = &runtime->pot_magnitude;
+	struct target_solve_mag *range = &runtime->pot_magnitude;
 	int i, j, k, count = 0;
 	double distance0, distance1, distance2, rad_per_pixel;
 	double t1_min, t1_max, t2_max, t2_min;
@@ -266,14 +266,14 @@ int distance_solve_object(struct solve_runtime *runtime,
 	runtime->num_pot_distance = 0;
 
 	DOBJ_CHECK(1, primary);
-	adb_info(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n", range->start[0], range->end[0]);
-	adb_info(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n", range->start[1], range->end[1]);
-	adb_info(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n", range->start[2], range->end[2]);
+	adb_info(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n", range->start_pos[0], range->end_pos[0]);
+	adb_info(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n", range->start_pos[1], range->end_pos[1]);
+	adb_info(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n", range->start_pos[2], range->end_pos[2]);
 	/* check t0 candidates */
-	for (i = range->start[0]; i < range->end[0]; i++) {
+	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
 
 		/* dont solve against ourself */
-		s[0] = solve->source.objects[i];
+		s[0] = solve->haystack.objects[i];
 		if (s[0] == primary)
 			continue;
 
@@ -295,13 +295,13 @@ int distance_solve_object(struct solve_runtime *runtime,
 		t1_max = t1->distance.pattern_max * rad_per_pixel;
 
 		DOBJ_CHECK_DIST(1, primary, s[0], distance0, 0.0, 0.0,
-				range->end[0] - range->start[0], i);
+				range->end_pos[0] - range->start_pos[0], i);
 
 		/* check each t1 candidates against t0 <-> primary distance ratio */
-		for (j = range->start[1]; j < range->end[1]; j++) {
+		for (j = range->start_pos[1]; j < range->end_pos[1]; j++) {
 
 			/* dont solve against ourself */
-			s[1] = solve->source.objects[j];
+			s[1] = solve->haystack.objects[j];
 			if (s[0] == s[1] || s[1] == primary)
 				continue;
 
@@ -321,7 +321,7 @@ int distance_solve_object(struct solve_runtime *runtime,
 				continue;
 
 			DOBJ_CHECK_DIST(2, primary, s[1], distance1, t1_min, t1_max,
-					range->end[1] - range->start[1], j);
+					range->end_pos[1] - range->start_pos[1], j);
 
 			/* is this t1 candidate within t0 primary ratio */
 			if (distance1 >= t1_min && distance1 <= t1_max) {
@@ -330,10 +330,10 @@ int distance_solve_object(struct solve_runtime *runtime,
 				t2_max = t2->distance.pattern_max * rad_per_pixel;
 
 				/* check t2 candidates */
-				for (k = range->start[2]; k < range->end[2]; k++) {
+				for (k = range->start_pos[2]; k < range->end_pos[2]; k++) {
 
 					/* dont solve against ourself */
-					s[2] = solve->source.objects[k];
+					s[2] = solve->haystack.objects[k];
 					if (s[0] == s[2] || s[1] == s[2] || s[2] == primary)
 						continue;
 
@@ -365,7 +365,7 @@ int distance_solve_object(struct solve_runtime *runtime,
 
 						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
 
-						target_add_match_on_distance(runtime, primary, &solve->source,
+						target_add_match_on_distance(runtime, primary, &solve->haystack,
 							i, j, k, delta, tri_avg(rad_per_pixel, ratio1, ratio2));
 						count++;
 					}

@@ -51,8 +51,8 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime,
 	struct adb_solve_solution *s = &runtime->pot_pa[pot];
 	double plate_diff, db_diff;
 
-	plate_diff = mag_get_plate_diff(&solve->pobject[idx],
-			&solve->pobject[idx + 1]);
+	plate_diff = mag_get_plate_diff(&solve->plate.object[idx],
+			&solve->plate.object[idx + 1]);
 
 	db_diff = s->object[idx]->mag -
 			s->object[idx + 1]->mag;
@@ -214,7 +214,7 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 #if HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:count, progress)
 #endif
-	for (i = 0; i < solve->source.num_objects; i++) {
+	for (i = 0; i < solve->haystack.num_objects; i++) {
 
 		progress++;
 		solve->progress++;
@@ -223,7 +223,7 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 		if (solve->exit)
 			continue;
 
-		count += try_object_as_primary(solve, solve->source.objects[i]);
+		count += try_object_as_primary(solve, solve->haystack.objects[i]);
 	}
 
 	if (count >= MAX_RT_SOLUTIONS)
@@ -244,7 +244,7 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 #if HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:progress)
 #endif
-	for (i = 0; i < solve->source.num_objects; i++) {
+	for (i = 0; i < solve->haystack.num_objects; i++) {
 
 		adb_info(solve->db, ADB_LOG_SOLVE, " check %d\n", i);
 		progress++;
@@ -254,7 +254,7 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 		if (count || solve->exit)
 			continue;
 
-		if (try_object_as_primary(solve, solve->source.objects[i])) {
+		if (try_object_as_primary(solve, solve->haystack.objects[i])) {
 			count = 1;
 /* TODO OpenMP cancel is supported in gcc 4.9 */
 /* #pragma omp cancel for */
@@ -272,7 +272,7 @@ int adb_solve_add_plate_object(struct adb_solve *solve,
 				struct adb_pobject *pobject)
 {
 	/* must be within target limit */
-	if (solve->num_plate_objects == ADB_NUM_TARGETS - 1) {
+	if (solve->plate.num_objects == ADB_NUM_TARGETS - 1) {
 		adb_error(solve->db, "too many adb_source_objects %d\n",
 			ADB_NUM_TARGETS);
 		return -EINVAL;
@@ -285,7 +285,7 @@ int adb_solve_add_plate_object(struct adb_solve *solve,
 	}
 
 	/* copy to free plate object entry in array */
-	memcpy(&solve->pobject[solve->num_plate_objects++], pobject,
+	memcpy(&solve->plate.object[solve->plate.num_objects++], pobject,
 		sizeof(struct adb_pobject));
 
 	return 0;
@@ -347,15 +347,15 @@ int adb_solve(struct adb_solve *solve,
 	int ret, i, count = 0;
 
 	/* do we have enough plate adb_source_objects to solve */
-	if (solve->num_plate_objects < MIN_PLATE_OBJECTS) {
+	if (solve->plate.num_objects < MIN_PLATE_OBJECTS) {
 		adb_error(solve->db,
 			"not enough plate adb_source_objects, need %d have %d\n",
-			MIN_PLATE_OBJECTS, solve->num_plate_objects);
+			MIN_PLATE_OBJECTS, solve->plate.num_objects);
 		return -EINVAL;
 	}
 
 	/* prepare the set of objects to use for solving */
-	ret = target_prepare_source_objects(solve, set, &solve->source);
+	ret = target_prepare_source_objects(solve, set, &solve->haystack);
 	if (ret <= 0) {
 		adb_error(solve->db, "cant get trixels %d\n", ret);
 		return ret;
@@ -370,16 +370,16 @@ int adb_solve(struct adb_solve *solve,
 	 * the solve pattern. We do this as some objects may not be in a catalog
 	 * like planets, asteroids, comets and man made objects.
 	 */
-	for (i = 0; i <= solve->num_plate_objects - MIN_PLATE_OBJECTS; i++) {
+	for (i = 0; i <= solve->plate.num_objects - MIN_PLATE_OBJECTS; i++) {
 
 		/* set the window bounds */
-		solve->plate_idx_start = i;
-		solve->plate_idx_end = MIN_PLATE_OBJECTS + i;
+		solve->plate.window_start = i;
+		solve->plate.window_end = MIN_PLATE_OBJECTS + i;
 
 		adb_info(solve->db, ADB_LOG_SOLVE,
 			"solving plate object[%d] -> object[%d] window from total %d\n",
-			solve->plate_idx_start, solve->plate_idx_end - 1,
-			solve->num_plate_objects);
+			solve->plate.window_start, solve->plate.window_end - 1,
+			solve->plate.num_objects);
 
 		/* create the target pattern from the current window */
 		target_create_pattern(solve);
@@ -429,10 +429,10 @@ int adb_solve_set_pa_delta(struct adb_solve *solve,
 void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 		int height,  double ra, double dec)
 {
-	solve->plate_width = width;
-	solve->plate_height = height;
-	solve->plate_ra = ra ;
-	solve->plate_dec = dec;
+	solve->plate.width = width;
+	solve->plate.height = height;
+	solve->plate.ra = ra ;
+	solve->plate.dec = dec;
 }
 
 struct adb_solve_solution *adb_solve_get_solution(struct adb_solve *solve,
@@ -466,7 +466,7 @@ void adb_solve_stop(struct adb_solve *solve)
  */
 float adb_solve_get_progress(struct adb_solve *solve)
 {
-	return (float)solve->source.num_objects / solve->progress;
+	return (float)solve->haystack.num_objects / solve->progress;
 }
 
 /*
@@ -533,7 +533,7 @@ void adb_solve_free(struct adb_solve *solve)
 		free(solution->source.objects);
 	}
 
-	free(solve->source.objects);
+	free(solve->haystack.objects);
 	free(solve);
 }
 

@@ -1250,16 +1250,18 @@ prepare:
 import:
 	/* now import the CDS data into table and save schema and table objects*/
 	for (i = 0; i < adb_size(file_extensions); i++) {
+		memset(file, 0, ADB_PATH_SIZE);
 		sprintf(file, "%s%s", table->path.file, file_extensions[i]);
 		adb_info(db, ADB_LOG_CDS_TABLE, "Importing CDS ASCII data %s\n", file);
 		ret = table_import(db, table_id, file);
 		if (ret < 0) {
 			adb_warn(db, ADB_LOG_CDS_TABLE,
 				"Error failed to import CDS table %s %d\n", table->path.file, ret);
-			free(table->path.file);
 		} else
 			goto schema;
 	}
+
+	free(table->path.file);
 	adb_error(db, "Error failed to import CDS table %s %d\n",
 		table->path.file, ret);
 	return ret;

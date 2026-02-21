@@ -77,7 +77,7 @@ static void add_pot_on_pa(struct solve_runtime *runtime,
 	runtime->pot_pa[runtime->num_pot_pa++] = *p;
 }
 
-static inline int pa_valid(struct target_object *t, double delta, int flip)
+static inline int pa_valid(struct needle_object *t, double delta, int flip)
 {
 	if (flip) {
 		/* min/max swapped for flipped */
@@ -98,7 +98,7 @@ int pa_solve_object(struct solve_runtime *runtime,
 {
 	struct adb_solve_solution *p;
 	struct adb_solve *solve = runtime->solve;
-	struct target_object *t0, *t1, *t2;
+	struct needle_object *t0, *t1, *t2;
 	double pa1, pa2, pa3, pa_delta12, pa_delta23, pa_delta31, delta;
 	int i, count = 0;
 

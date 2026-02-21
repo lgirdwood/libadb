@@ -528,17 +528,17 @@ void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
 
 	switch (bounds) {
 	case ADB_BOUND_TOP_RIGHT:
-		p.x = solve->plate_width;
-		p.y = solve->plate_height;
+		p.x = solve->plate.width;
+		p.y = solve->plate.height;
 		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_TOP_LEFT:
 		p.x = 0;
-		p.y = solve->plate_height;
+		p.y = solve->plate.height;
 		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_BOTTOM_RIGHT:
-		p.x = solve->plate_width;
+		p.x = solve->plate.width;
 		p.y = 0;
 		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
@@ -548,8 +548,8 @@ void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
 		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	case ADB_BOUND_CENTRE:
-		p.x = solve->plate_width / 2;
-		p.y = solve->plate_height / 2;
+		p.x = solve->plate.width / 2;
+		p.y = solve->plate.height / 2;
 		posn_plate_to_equ(solution, &p, ra, dec);
 		break;
 	default:

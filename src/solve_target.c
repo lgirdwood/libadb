@@ -74,7 +74,7 @@ int target_add_ref_object(struct adb_solve_solution *soln, int id,
 static void create_pattern_object(struct adb_solve *solve, int target,
 	struct adb_pobject *primary, struct adb_pobject *secondary)
 {
-	struct target_object *t = &solve->target.secondary[target];
+	struct needle_object *t = &solve->target.secondary[target];
 
 	t->pobject = secondary;
 
@@ -97,17 +97,17 @@ static void create_pattern_object(struct adb_solve *solve, int target,
 /* create a pattern of plate targets and sort by magnitude */
 void target_create_pattern(struct adb_solve *solve)
 {
-	struct target_object *t0, *t1, *t2;
+	struct needle_object *t0, *t1, *t2;
 	int i, j;
 
 	/* sort plate object on brightness */
-	qsort(solve->pobject, solve->num_plate_objects,
+	qsort(solve->plate.object, solve->plate.num_objects,
 		sizeof(struct adb_pobject), plate_object_cmp);
 
 	/* create target pattern */
-	for (i = solve->plate_idx_start + 1, j = 0; i < solve->plate_idx_end; i++, j++)
+	for (i = solve->plate.window_start + 1, j = 0; i < solve->plate.window_end; i++, j++)
 		create_pattern_object(solve, j,
-			&solve->pobject[solve->plate_idx_start], &solve->pobject[i]);
+			&solve->plate.object[solve->plate.window_start], &solve->plate.object[i]);
 
 	/* work out PA tolerances */
 	t0 = &solve->target.secondary[0];
@@ -164,7 +164,7 @@ static void create_single_object(struct adb_solve *solve, int target,
 	struct adb_pobject *primary, struct adb_pobject *secondary,
 	struct solve_runtime *runtime, struct adb_solve_solution *solution)
 {
-	struct target_object *t = &runtime->soln_target[target];
+	struct needle_object *t = &runtime->soln_target[target];
 
 	t->pobject = secondary;
 
@@ -190,13 +190,13 @@ void target_create_single(struct adb_solve *solve,
 	struct adb_solve_solution *solution,
 	struct solve_runtime *runtime)
 {
-	struct target_object *t0, *t1, *t2, *t3;
+	struct needle_object *t0, *t1, *t2, *t3;
 	int i, j;
 
 	/* create target pattern - use pobject as primary  */
-	for (i = solve->plate_idx_start, j = 0; i < solve->plate_idx_end; i++, j++)
+	for (i = solve->plate.window_start, j = 0; i < solve->plate.window_end; i++, j++)
 		create_single_object(solve, j, pobject,
-			&solve->pobject[i], runtime, solution);
+			&solve->plate.object[i], runtime, solution);
 
 	/* work out PA tolerances */
 	t0 = &runtime->soln_target[0];
@@ -281,10 +281,10 @@ void target_add_match_on_distance(struct solve_runtime *runtime,
 	p->object[1] = source->objects[i];
 	p->object[2] = source->objects[j];
 	p->object[3] = source->objects[k];
-	p->soln_pobject[0] = solve->pobject[solve->plate_idx_start];
-	p->soln_pobject[1] = solve->pobject[solve->plate_idx_start + 1];
-	p->soln_pobject[2] = solve->pobject[solve->plate_idx_start + 2];
-	p->soln_pobject[3] = solve->pobject[solve->plate_idx_start + 3];
+	p->soln_pobject[0] = solve->plate.object[solve->plate.window_start];
+	p->soln_pobject[1] = solve->plate.object[solve->plate.window_start + 1];
+	p->soln_pobject[2] = solve->plate.object[solve->plate.window_start + 2];
+	p->soln_pobject[3] = solve->plate.object[solve->plate.window_start + 3];
 	p->delta.dist = delta;
 	p->rad_per_pix = rad_per_pix;
 	runtime->num_pot_distance++;

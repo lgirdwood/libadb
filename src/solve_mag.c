@@ -27,6 +27,7 @@
 
 #include "solve.h"
 
+/* qsort() compare object magnitude callback */
 int mag_object_cmp(const void *o1, const void *o2)
 {
 	const struct adb_object *p1 = *(const struct adb_object **)o1,
@@ -40,22 +41,25 @@ int mag_object_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
-/* ratio of magnitude from primary to secondary */
-double mag_get_plate_diff(struct adb_pobject *primary,
-	struct adb_pobject *secondary)
+/*
+ * Ratio of magnitude from objects A,B
+ */
+double mag_get_plate_diff(struct adb_pobject *a,
+	struct adb_pobject *b)
 {
-	double s_adu = secondary->adu, p_adu = primary->adu;
+	double b_adu = b->adu, a_adu = a->adu;
 
 	/* catch any objects with 0 ADU */
-	if (s_adu == 0)
-		s_adu = 1;
-	if (p_adu == 0)
-		p_adu = 1;
+	if (b_adu == 0)
+		b_adu = 1;
+	if (a_adu == 0)
+		a_adu = 1;
 
-	return -2.5 * log10(s_adu / p_adu);
+	return -2.5 * log10(b_adu / a_adu);
 }
 
-/* calculate the average difference between plate ADU values and solution
+/*
+ * Calculate the average difference between plate ADU values and solution
  * objects. Use this as basis for calculating magnitudes based on plate ADU.
  */
 float mag_get_plate(struct adb_solve *solve,
@@ -78,34 +82,45 @@ float mag_get_plate(struct adb_solve *solve,
 		count++;
 	}
 
+	/* catch div by 0 */
 	if (count == 0)
 		return mag;
 
 	return mag / (float)count;
 }
 
-/* binary search the set for magnitude head */
-static int bsearch_head(const struct adb_object **adb_source_objects,
-	double value, int start, int end, int idx)
+/*
+ * Binary search the haystack for object with magnitude nearest value
+ */
+static int bsearch_object(const struct adb_object **adb_source_objects,
+	double value, int start, int end, int pos)
 {
-	const struct adb_object *object = adb_source_objects[idx];
+	const struct adb_object *object = adb_source_objects[pos];
 
-	/* search complete */
+	/* search complete  ? */
 	if (end - start < 2)
-		return idx;
+		return pos;		/* search exhausted - return current position */
 
-	/* narrow search */
+	/* narrow search - binary chop it */
 	if (object->mag > value)
-		return bsearch_head(adb_source_objects, value, start, idx - 1,
-				start + ((idx - start) / 2));
+		/* look ahead of current object */
+		return bsearch_object(adb_source_objects, value,
+				start,		/* current start position */
+				pos - 1,	/* new end position */
+				start + ((pos - start) / 2)); /* new mid point */
 	else if (object->mag < value)
-		return bsearch_head(adb_source_objects, value, idx + 1, end,
-				idx + ((end - idx) / 2));
+		/* look behind current object */
+		return bsearch_object(adb_source_objects, value,
+				pos + 1,	/* new start position */
+				end,		/* current end position */
+				pos + ((end - pos) / 2));	/* new mid point */
 	else
-		return idx;
+		return pos;		/* magnitude equal - return position */
 }
 
-/* get first object with magnitude >= Vmag */
+/*
+ * Find first object with in haystack magnitude >= Vmag
+ */
 static int object_get_first_on_mag(struct adb_source_objects *source,
 	double vmag, int start_idx)
 {
@@ -113,7 +128,7 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 	int idx;
 
 	/* find one of the first adb_source_objects >= vmag  */
-	idx = bsearch_head(source->objects, vmag, start_idx,
+	idx = bsearch_object(source->objects, vmag, start_idx,
 		source->num_objects - 1, (source->num_objects - 1) / 2);
 	object = source->objects[idx];
 
@@ -141,28 +156,9 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 	return 0;
 }
 
-/* binary search the set for magnitude tail */
-static int bsearch_tail(const struct adb_object **adb_source_objects,
-	double value, int start, int end, int idx)
-{
-	const struct adb_object *object = adb_source_objects[idx];
-
-	/* search complete */
-	if (end - start < 2)
-		return idx;
-
-	/* narrow search */
-	if (object->mag > value)
-		return bsearch_tail(adb_source_objects, value, start, idx - 1,
-				start + ((idx - start) / 2));
-	else if (object->mag < value)
-		return bsearch_tail(adb_source_objects, value, idx + 1, end,
-				idx + ((end - idx) / 2));
-	else
-		return idx;
-}
-
-/* get last object with magnitude <= Vmag */
+/*
+ * Find last object with in haystack magnitude <= Vmag
+ */
 static int object_get_last_with_mag(struct adb_source_objects *source,
 		double vmag, int start_idx)
 {
@@ -170,7 +166,7 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 	int idx;
 
 	/* find one of the last adb_source_objects <= vmag  */
-	idx = bsearch_tail(source->objects, vmag, start_idx,
+	idx = bsearch_object(source->objects, vmag, start_idx,
 		source->num_objects - 1, (source->num_objects - 1) / 2);
 	object = source->objects[idx];
 
@@ -199,16 +195,17 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 }
 
 /*
- * Search the db objects using the primary as the brightest object from
- * our object pattern and find candidate pattern[idx] objects
+ * Search the haystack db objects using the primary as the reference object and
+ * then search the haystack for objects within the brightness ration for the target
+ * pattern[idx] object.
  */
 int mag_solve_object(struct solve_runtime *runtime,
 		const struct adb_object *primary, int idx)
 {
-	struct magnitude_range *range = &runtime->pot_magnitude;
+	struct target_solve_mag *pot_mag = &runtime->pot_magnitude;
 	struct adb_solve *solve = runtime->solve;
-	struct target_object *t = &solve->target.secondary[idx];
-	struct adb_source_objects *source = &solve->source;
+	struct needle_object *t = &solve->target.secondary[idx];
+	struct adb_source_objects *source = &solve->haystack;
 	int start, end, pos;
 
 	/* get search start position */
@@ -225,17 +222,17 @@ int mag_solve_object(struct solve_runtime *runtime,
 	if (start == end)
 		return 0;
 
-	range->end[idx] = end;
+	pot_mag->end_pos[idx] = end;
 
 	/* no object */
-	if (range->end[idx] < start)
+	if (pot_mag->end_pos[idx] < start)
 		return 0;
 
 	/* is start out of range */
-	range->start[idx] = start;
+	pot_mag->start_pos[idx] = start;
 
 	/* return number of candidate adb_source_objects based on vmag */
-	return range->end[idx] - range->start[idx];
+	return pot_mag->end_pos[idx] - pot_mag->start_pos[idx];
 }
 
 /* compare pattern objects magnitude against source objects */
@@ -243,7 +240,7 @@ int mag_solve_single_object(struct solve_runtime *runtime,
 		struct adb_solve_solution *solution,
 		struct adb_pobject *pobject)
 {
-	struct magnitude_range *range = &runtime->pot_magnitude;
+	struct target_solve_mag *pot_mag = &runtime->pot_magnitude;
 	struct adb_solve *solve = runtime->solve;
 	struct adb_source_objects *source = &solution->source;
 	int start, end;
@@ -268,15 +265,15 @@ int mag_solve_single_object(struct solve_runtime *runtime,
 	SOBJ_MAG(mag_min - solution->delta.mag,
 		mag_max + solution->delta.mag);
 
-	range->end[0] = end;
+	pot_mag->end_pos[0] = end;
 
 	/* no object */
-	if (range->end[0] < start)
+	if (pot_mag->end_pos[0] < start)
 		return 0;
 
 	/* is start out of range */
-	range->start[0] = start;
+	pot_mag->start_pos[0] = start;
 
 	/* return number of candidate adb_source_objects based on vmag */
-	return range->end[0] - range->start[0];
+	return pot_mag->end_pos[0] - pot_mag->start_pos[0];
 }

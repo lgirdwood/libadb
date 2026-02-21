@@ -44,7 +44,7 @@ struct tdata {
 	double plate_actual;
 };
 
-struct target_object {
+struct needle_object {
 	struct adb_pobject *pobject;
 	struct tdata distance;
 	struct tdata pa;
@@ -52,16 +52,16 @@ struct target_object {
 	struct tdata mag;
 };
 
-struct target_pattern {
-	struct target_object primary;
+struct needle_pattern {
+	//struct needle_object primary;
 	/* in order of brightness */
-	struct target_object secondary[ADB_NUM_TARGETS - 1];
+	struct needle_object secondary[ADB_NUM_TARGETS - 1];
 };
 
-struct magnitude_range {
+struct target_solve_mag {
 	/* plate object magnitude bounds */
-	int start[MIN_PLATE_OBJECTS - 1];
-	int end[MIN_PLATE_OBJECTS - 1];
+	int start_pos[MIN_PLATE_OBJECTS - 1];
+	int end_pos[MIN_PLATE_OBJECTS - 1];
 };
 
 struct solve_tolerance {
@@ -144,7 +144,7 @@ struct solve_runtime {
 	struct adb_solve *solve;
 
 	/* potential matches on magnitude */
-	struct magnitude_range pot_magnitude;
+	struct target_solve_mag pot_magnitude;
 
 	/* potential matches after magnitude and distance checks */
 	struct adb_solve_solution pot_distance[MAX_POTENTAL_MATCHES];
@@ -156,11 +156,29 @@ struct solve_runtime {
 	int num_pot_pa;
 
 	/* target cluster */
-	struct target_object soln_target[MIN_PLATE_OBJECTS];
+	struct needle_object soln_target[MIN_PLATE_OBJECTS];
 
 #ifdef DEBUG
 	int debug;
 #endif
+};
+
+struct adb_solve_plate {
+
+	/* plate object solve window */
+	int window_start;
+	int window_end;
+
+	/* plate width and height in pixels */
+	int width;
+	int height;
+
+	double ra;
+	double dec;
+
+	/* detected plate objects */
+	struct adb_pobject object[ADB_NUM_TARGETS];
+	int num_objects;
 };
 
 struct adb_solve {
@@ -168,19 +186,13 @@ struct adb_solve {
 	struct adb_table *table;
 	pthread_mutex_t mutex;
 
-	/* plate objects */
-	struct adb_pobject pobject[ADB_NUM_TARGETS];
-	int num_plate_objects;
-	int plate_idx_start;
-	int plate_idx_end;
-
 	struct solve_constraint constraint;
 
 	/* target cluster */
-	struct target_pattern target;
+	struct needle_pattern target;
 
 	/* source object set */
-	struct adb_source_objects source;
+	struct adb_source_objects haystack;
 
 	struct solve_tolerance tolerance;
 
@@ -189,10 +201,7 @@ struct adb_solve {
 	int num_solutions;
 
 	/* plate properties */
-	int plate_width;
-	int plate_height;
-	double plate_ra;
-	double plate_dec;
+	struct adb_solve_plate plate;
 
 	/* loop exit */
 	int exit;
