@@ -27,6 +27,7 @@ Makefile.in
 
 configure
 config.*
+!config.h.in
 configure.scan
 autoscan.log
 
