@@ -3,17 +3,119 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <libastrodb/db-import.h>
 #include <libastrodb/db.h>
 #include <libastrodb/object.h>
 
+static void test_query_all_objects(struct adb_db *db, int table_id)
+{
+	struct adb_object_set *set;
+	int count, heads;
+
+	printf("Running Query 1: Get all objects\n");
+	set = adb_table_set_new(db, table_id);
+	assert(set != NULL);
+
+	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, 0.0, 16.0);
+	heads = adb_set_get_objects(set);
+	count = adb_set_get_count(set);
+    
+	printf(" -> Found %d list heads and %d objects.\n", heads, count);
+	
+	/* Validate expected counts exactly as the original test_ngc.c did */
+	assert(heads == 2706);
+	assert(count == 7765);
+    
+	adb_table_set_free(set);
+}
+
+static void test_query_bright_objects(struct adb_db *db, int table_id)
+{
+	struct adb_object_set *set;
+	int count;
+
+	printf("Running Query 2: Get bright objects (mag < 10.0)\n");
+	set = adb_table_set_new(db, table_id);
+	assert(set != NULL);
+
+	/* Contrain by magnitudes up to 10.0 */
+	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, 0.0, 10.0);
+	adb_set_get_objects(set);
+	count = adb_set_get_count(set);
+
+	printf(" -> Found %d bright objects.\n", count);
+	/* Ensure filtering happened */
+	assert(count > 0 && count < 7765);
+    
+	adb_table_set_free(set);
+}
+
+static void test_query_specific_region(struct adb_db *db, int table_id)
+{
+	struct adb_object_set *set;
+	int count;
+
+	printf("Running Query 3: Get objects in a specific region (RA 11h, DEC 10 deg)\n");
+	set = adb_table_set_new(db, table_id);
+	assert(set != NULL);
+
+	/* Center at RA=11h(2.87rad), DEC=10deg(0.17rad), radius=10deg(0.17rad) */
+	adb_table_set_constraints(set, 2.87, 0.17, 0.17, 0.0, 16.0);
+	adb_set_get_objects(set);
+	count = adb_set_get_count(set);
+
+	printf(" -> Found %d objects in region.\n", count);
+	assert(count > 0 && count < 7765);
+    
+	adb_table_set_free(set);
+}
+
+static void test_query_faint_objects(struct adb_db *db, int table_id)
+{
+	struct adb_object_set *set;
+	int count;
+
+	printf("Running Query 4: Get very faint objects (mag 14.0 - 16.0)\n");
+	set = adb_table_set_new(db, table_id);
+	assert(set != NULL);
+
+	/* Contrain by magnitude */
+	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, 14.0, 16.0);
+	adb_set_get_objects(set);
+	count = adb_set_get_count(set);
+
+	printf(" -> Found %d faint objects.\n", count);
+    assert(count > 0 && count < 7765);
+	
+	adb_table_set_free(set);
+}
+
+static void test_query_north_pole(struct adb_db *db, int table_id)
+{
+	struct adb_object_set *set;
+	int count;
+
+	printf("Running Query 5: Get objects near North Celestial Pole (DEC > 80 deg)\n");
+	set = adb_table_set_new(db, table_id);
+	assert(set != NULL);
+
+	/* Center at RA=0, DEC=90 deg (1.57 rad), radius=10 deg (0.17 rad) */
+	adb_table_set_constraints(set, 0.0, 1.57, 0.17, 0.0, 16.0);
+	adb_set_get_objects(set);
+	count = adb_set_get_count(set);
+
+	printf(" -> Found %d objects near North Pole.\n", count);
+    assert(count > 0 && count < 7765);
+    
+	adb_table_set_free(set);
+}
+
 int ngc_query_test(const char *lib_dir) {
   struct adb_library *lib;
   struct adb_db *db;
   int ret = 0, table_id;
-  struct adb_object_set *set;
-  int count, heads;
 
   /* set the remote CDS server and initialise local repository/cache */
   /* We use NULL for remote since we're using local tests dir */
@@ -41,30 +143,11 @@ int ngc_query_test(const char *lib_dir) {
     goto table_err;
   }
 
-  /* Search the whole sky */
-  set = adb_table_set_new(db, table_id);
-  if (!set) {
-    ret = -ENOMEM;
-    goto table_err;
-  }
-
-  adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, 0.0, 16.0);
-
-  heads = adb_set_get_objects(set);
-  count = adb_set_get_count(set);
-
-  printf("Found %d list heads and %d objects\n", heads, count);
-
-  /* Validate expected counts */
-  if (heads != 2706 || count != 7765) {
-    fprintf(stderr,
-            "Validation failed: expected 2706 list heads and 7765 objects, but "
-            "got %d and %d\n",
-            heads, count);
-    ret = -1;
-  }
-
-  adb_table_set_free(set);
+  test_query_all_objects(db, table_id);
+  test_query_bright_objects(db, table_id);
+  test_query_specific_region(db, table_id);
+  test_query_faint_objects(db, table_id);
+  test_query_north_pole(db, table_id);
 
 table_err:
   adb_table_close(db, table_id);
