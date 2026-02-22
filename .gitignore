@@ -93,4 +93,8 @@ CPackSourceConfig.cmake
 
 # Do not ignore specific test files
 !tests/VII/118/
-!tests/VII/118/*
+!tests/VII/118/*.db
+!tests/VII/118/*.schema
+!tests/V/109/
+!tests/V/109/*.schema
+!tests/V/109/*.db

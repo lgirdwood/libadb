@@ -723,7 +723,7 @@ static int get4(struct adb_db *db, int table_id)
 	return 0;
 }
 
-static int sky2k_import(char *lib_dir)
+static int sky2k_import(char *lib_dir, float mag_limit)
 {
 	struct adb_library *lib;
 	struct adb_db *db;
@@ -747,7 +747,7 @@ static int sky2k_import(char *lib_dir)
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	table_id = adb_table_import_new(db, "V", "109", "sky2kv4",
-			"Vmag", -2.0, 12.0, ADB_IMPORT_INC);
+			"Vmag", -2.0, mag_limit, ADB_IMPORT_INC);
 	if (table_id < 0) {
 		fprintf(stderr, "failed to create import table\n");
 		ret = table_id;
@@ -885,7 +885,7 @@ static int sky2k_solve(char *lib_dir)
 		goto set_err;
 
 	/* set sky area constraints for solver */
-	adb_table_set_constraints(set, 57.0 * D2R, 24.0 * D2R, 5.0 * D2R, -2.0, 5.0);
+	adb_table_set_constraints(set, 0.0 * D2R, 0.0 * D2R, 360.0 * D2R, -90.0, 90.0);
 
 	/* we can now solve images */
 	solve = adb_solve_new(db, table_id);
@@ -955,9 +955,9 @@ lib_err:
 
 static void usage(char *argv)
 {
-	fprintf(stdout, "Import: %s: -i [import dir]", argv);
-	fprintf(stdout, "Query: %s: -q [library dir]", argv);
-	fprintf(stdout, "Solve: %s: -s [library dir]", argv);
+	fprintf(stdout, "Import: %s: -i [import dir] [-m max_mag]\n", argv);
+	fprintf(stdout, "Query: %s: -q [library dir]\n", argv);
+	fprintf(stdout, "Solve: %s: -s [library dir]\n", argv);
 
 	exit(0);
 }
@@ -965,19 +965,28 @@ static void usage(char *argv)
 int main(int argc, char *argv[])
 {
 	int i;
+	float mag_limit = 12.0;
 
 	fprintf(stdout, "%s using libastrodb %s\n\n", argv[0], adb_get_version());
 
 	if (argc < 3)
 		usage(argv[0]);
 
-	for (i = 1 ; i < argc - 1; i++) {
+	for (i = 1 ; i < argc; i++) {
+
+		/* mag limit */
+		if (!strcmp("-m", argv[i])) {
+			if (++i == argc)
+				usage(argv[0]);
+			mag_limit = atof(argv[i]);
+			continue;
+		}
 
 		/* import */
 		if (!strcmp("-i", argv[i])) {
 			if (++i == argc)
 				usage(argv[0]);
-			sky2k_import(argv[i]);
+			sky2k_import(argv[i], mag_limit);
 			continue;
 		}
 

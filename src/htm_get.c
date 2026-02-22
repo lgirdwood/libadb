@@ -519,7 +519,7 @@ int htm_get_clipped_objects(struct adb_object_set *set) {
         set->trixels[i]->a->ra * R2D, set->trixels[i]->a->dec * R2D,
         set->trixels[i]->b->ra * R2D, set->trixels[i]->b->dec * R2D,
         set->trixels[i]->c->ra * R2D, set->trixels[i]->c->dec * R2D);
-    htm_dump_trixel_objects(htm, set->trixels[i], 0);
+    //htm_dump_trixel_objects(htm, set->trixels[i], 0);
 
     if (set->trixels[i]->depth < set->min_depth ||
         set->trixels[i]->depth > set->max_depth)

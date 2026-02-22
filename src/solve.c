@@ -160,27 +160,27 @@ static int try_object_as_primary(struct adb_solve *solve,
 
   memset(&runtime, 0, sizeof(runtime));
   runtime.solve = solve;
-  adb_info(solve->db, ADB_LOG_SOLVE, "\n");
+  adb_vdebug(solve->db, ADB_LOG_SOLVE, "\n");
   /* find secondary candidate adb_source_objects on magnitude */
   for (i = 0; i < MIN_PLATE_OBJECTS - 1; i++) {
     count = mag_solve_object(&runtime, primary, i);
     if (!count)
       return 0;
   }
-  adb_info(solve->db, ADB_LOG_SOLVE, "\n");
+  adb_vdebug(solve->db, ADB_LOG_SOLVE, "\n");
   /* at this point we have a range of candidate stars that match the
    * magnitude bounds of the primary object and each secondary object,
    * now check secondary candidates for distance alignment */
   count = distance_solve_object(&runtime, primary);
   if (!count)
     return 0;
-  adb_info(solve->db, ADB_LOG_SOLVE, "\n");
+  adb_vdebug(solve->db, ADB_LOG_SOLVE, "\n");
   /* At this point we have a list of clusters that match on magnitude and
    * distance, so we finally check the candidates clusters for PA alignment*/
   count = pa_solve_object(&runtime, primary, i);
   if (!count)
     return 0;
-  adb_info(solve->db, ADB_LOG_SOLVE, "\n");
+  adb_vdebug(solve->db, ADB_LOG_SOLVE, "\n");
   calc_cluster_divergence(&runtime);
 
   /* copy matching clusters to solver */
@@ -231,7 +231,7 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 #endif
   for (i = 0; i < solve->haystack.num_objects; i++) {
 
-    adb_info(solve->db, ADB_LOG_SOLVE, " check %d\n", i);
+    adb_vdebug(solve->db, ADB_LOG_SOLVE, " check %d\n", i);
     progress++;
     solve->progress++;
 

@@ -266,9 +266,9 @@ int distance_solve_object(struct solve_runtime *runtime,
 	runtime->num_pot_distance = 0;
 
 	DOBJ_CHECK(1, primary);
-	adb_info(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n", range->start_pos[0], range->end_pos[0]);
-	adb_info(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n", range->start_pos[1], range->end_pos[1]);
-	adb_info(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n", range->start_pos[2], range->end_pos[2]);
+	adb_vdebug(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n", range->start_pos[0], range->end_pos[0]);
+	adb_vdebug(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n", range->start_pos[1], range->end_pos[1]);
+	adb_vdebug(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n", range->start_pos[2], range->end_pos[2]);
 	/* check t0 candidates */
 	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
 
