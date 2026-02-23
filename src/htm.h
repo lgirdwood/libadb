@@ -102,32 +102,35 @@ struct htm_vertex {
 	struct htm_trixel **trixel;
 };
 
+/*! \struct htm_trixel_data
+ * \brief Array element managing HTM trixel objects associated natively
+ */
 struct htm_trixel_data {
-	struct adb_object *objects;	/*!< object catalog data */
-	int num_objects;
+	struct adb_object *objects;	/*!< object catalog data linked list head */
+	int num_objects; /*!< length of the linked object layout chunk */
 };
 
-/*
- * /struct htm_trixel
+/*! \struct htm_trixel
+ * \brief Hierarchical Triangular Mesh leaf node
  */
 struct htm_trixel {
 	/* geometry */
-	struct htm_vertex *a,*b,*c;		/* verticies */
-	struct htm_trixel *parent;			/* parent trixel */
-	struct htm_trixel *child;		/* child trixels - 0,1,2,3 */
+	struct htm_vertex *a,*b,*c;		/*!< verticies bounding area */
+	struct htm_trixel *parent;			/*!< parent trixel link */
+	struct htm_trixel *child;		/*!< base array to 4 child trixels */
 
 	struct htm_trixel_data data[ADB_MAX_TABLES]; 	/*!< object data */
 
 	/* flags */
-	unsigned int visible:2;		/* visible in query - partial or full */
-	unsigned int orientation:1;	/* up or down */
-	unsigned int num_datasets:4;
+	unsigned int visible:2;		/*!< visible in query - partial or full */
+	unsigned int orientation:1;	/*!< up or down configuration */
+	unsigned int num_datasets:4; /*!< tracked datasets intersecting */
 
 	/* ID */
-	unsigned int hemisphere:1;	/* north of south */
-	unsigned int quadrant:4;		/* quadrant */
-	unsigned int depth:4;			/* depth this trixel is at */
-	unsigned int position;		/* trixel position */
+	unsigned int hemisphere:1;	/*!< north or south pole */
+	unsigned int quadrant:4;		/*!< mapped quadrant area */
+	unsigned int depth:4;			/*!< structural depth context limit */
+	unsigned int position;		/*!< numerical location index matching pattern offset */
 };
 
 /*! \struct dec_domain
@@ -141,24 +144,30 @@ struct dec_strip {
 	struct htm_vertex *vertex; /* variable len array of vertices per quad */
 };
 
+/*! \struct htm_depth_map
+ * \brief Depth map limits for a dataset table
+ */
 struct htm_depth_map {
-	double boundary;
-	int object_count[ADB_MAX_TABLES];
+	double boundary; /*!< Boundary depth */
+	int object_count[ADB_MAX_TABLES]; /*!< Count of objects per table */
 };
 
+/*! \struct htm
+ * \brief Main Hierarchical Triangular Mesh context
+ */
 struct htm {
 	/* mesh specifics */
-	struct htm_trixel N[4];
-	struct htm_trixel S[4];
-	int depth;
+	struct htm_trixel N[4]; /*!< Northern hemisphere root trixels */
+	struct htm_trixel S[4]; /*!< Southern hemisphere root trixels */
+	int depth; /*!< Maximum HTM depth */
 
 	/* domain */
 	double dec_step;
 	struct dec_strip *dec;
 
 	/* mesh stats */
-	int trixel_count;
-	int vertex_count;
+	int trixel_count; /*!< Total allocated trixels */
+	int vertex_count; /*!< Total allocated vertices */
 	int dec_strip_count;
 
 	/* logging */
@@ -166,44 +175,140 @@ struct htm {
 	int msg_flags;
 };
 
-/* create and init new HTM */
+/**
+ * \brief create and init new HTM
+ * \param depth Maximum depth for this HTM mesh
+ * \param tables Maximum number of tables to support
+ * \return pointer to new htm context, or NULL on failure
+ */
 struct htm *htm_new(int depth, int tables);
 
-/* free HTM and resources */
+/**
+ * \brief free HTM and resources
+ * \param htm Context to free
+ */
 void htm_free(struct htm *htm);
 
+/**
+ * \brief Clip an HTM area to a specific object set boundary
+ * \param htm The HTM context
+ * \param set The object set defining the area
+ * \param ra Center RA in radians
+ * \param dec Center DEC in radians
+ * \param fov Field of view radius (radians)
+ * \param min_depth Minimum HTM depth level constraint
+ * \param max_depth Maximum HTM depth level constraint
+ * \return 0 on success, negative error on failure
+ */
 int htm_clip(struct htm *htm, struct adb_object_set *set,
 	double ra, double dec, double fov,
 	double min_depth, double max_depth);
 
+/**
+ * \brief Get trixels constrained within the clipped object set
+ * \param htm The HTM context
+ * \param set The object set
+ * \return Number of trixels found, or negative error code
+ */
 int htm_get_trixels(struct htm *htm, struct adb_object_set *set);
 
+/**
+ * \brief Find the minimum required HTM depth to represent a specific resolution
+ * \param resolution Angular resolution in radians
+ * \return Depth level required (integer)
+ */
 int htm_get_depth_from_resolution(double resolution);
 
+/**
+ * \brief Get object depth more
+ * \param htm HTM context
+ * \param value Search value
+ * \return Depth level
+ */
 int htm_get_object_depth_more(struct htm *htm, double value);
+
+/**
+ * \brief Get object depth less
+ * \param htm HTM context
+ * \param value Search value
+ * \return Depth level
+ */
 int htm_get_object_depth_less(struct htm *htm, double value);
 
+/**
+ * \brief Get starting depth calculated from optical magnitude
+ * \param htm HTM context
+ * \param mag Apparent magnitude
+ * \return Depth level
+ */
 int htm_get_depth_from_magnitude(struct htm *htm, double mag);
 
+/**
+ * \brief Retrieve the trixel encapsulating a specific spatial point
+ * \param htm HTM context
+ * \param point HTM vertex representing RA/DEC
+ * \param depth Constraints target search bounding depth
+ * \return Trixel containing the point, or NULL
+ */
 struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 		struct htm_vertex *point, int depth);
 
+/**
+ * \brief Retrieve depth for specific value matching
+ * \param htm HTM context
+ * \param value Lookup parameter 
+ * \return The resulting depth correlation
+ */
 int htm_get_object_depth(struct htm *htm, double value);
 
+/**
+ * \brief Fetch a specific HTM trixel globally by ID
+ * \param htm HTM context
+ * \param id Binary encoded ID for the target trixel
+ * \return Found trixel or NULL
+ */
 struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id);
 
+/**
+ * \brief Insert an astronomical object record directly into the mesh structure
+ * \param htm HTM context
+ * \param table Reference dataset
+ * \param object Object structure
+ * \param object_count Total elements currently cataloged
+ * \param trixel_id The designated root node or ID for insertion
+ * \return 0 on success, negative on error
+ */
 int htm_table_insert_object(struct htm *htm, struct adb_table *table,
 	struct adb_object *object, unsigned int object_count,
 	unsigned int trixel_id);
 
+/**
+ * \brief Importer helper placing items in ascending order distribution
+ * \param db Database catalog
+ * \param trixel Working trixel 
+ * \param new_object Parsed object
+ * \param table Target dataset table
+ */
 void htm_import_object_ascending(struct adb_db *db,
 	struct htm_trixel *trixel, struct adb_object *new_object,
 	struct adb_table *table);
 
+/**
+ * \brief Importer helper placing items in descending order distribution
+ * \param db Database catalog
+ * \param trixel Working trixel 
+ * \param new_object Parsed object
+ * \param table Target dataset table
+ */
 void htm_import_object_descending(struct adb_db *db,
 	struct htm_trixel *trixel, struct adb_object *new_object,
 	struct adb_table *table);
 
+/**
+ * \brief Formulate the structural 32-bit ID mask indexing a particular trixel
+ * \param trixel Source trixel data
+ * \return 32-bit integer packed ID
+ */
 static inline unsigned int htm_trixel_id(struct htm_trixel *trixel)
 {
 	return 1 << HTM_ID_VALID_SHIFT |
@@ -213,6 +318,10 @@ static inline unsigned int htm_trixel_id(struct htm_trixel *trixel)
 			trixel->position;
 }
 
+/**
+ * \brief Resolve coordinates mapping spherical space to internal octohedron HTM structure mapped unit representation
+ * \param v Vertex containing raw `ra` and `dec` targets, calculates and replaces `x, y, z` fields
+ */
 static inline void htm_vertex_update_unit(struct htm_vertex *v)
 {
 	double cos_dec = cos(v->dec);

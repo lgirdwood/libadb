@@ -36,11 +36,18 @@ int main(void) {
 #define TEST_SKY2K_PATH "./test_sky2k"
 #endif
 
+#ifndef TEST_HTM_PATH
+#define TEST_HTM_PATH "./test_htm"
+#endif
+
   total++;
   passed += run_test("NGC Unit Test", TEST_NGC_PATH);
 
   total++;
   passed += run_test("Sky2K Unit Test", TEST_SKY2K_PATH);
+
+  total++;
+  passed += run_test("HTM Unit Test", TEST_HTM_PATH);
 
   printf("====================================================================="
          "=\n");
