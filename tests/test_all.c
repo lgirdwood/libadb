@@ -40,6 +40,22 @@ int main(void) {
 #define TEST_HTM_PATH "./test_htm"
 #endif
 
+#ifndef TEST_KDTREE_PATH
+#define TEST_KDTREE_PATH "./test_kdtree"
+#endif
+
+#ifndef TEST_HASH_PATH
+#define TEST_HASH_PATH "./test_hash"
+#endif
+
+#ifndef TEST_IMPORT_PATH
+#define TEST_IMPORT_PATH "./test_import"
+#endif
+
+#ifndef TEST_SCHEMA_PATH
+#define TEST_SCHEMA_PATH "./test_schema"
+#endif
+
   total++;
   passed += run_test("NGC Unit Test", TEST_NGC_PATH);
 
@@ -48,6 +64,18 @@ int main(void) {
 
   total++;
   passed += run_test("HTM Unit Test", TEST_HTM_PATH);
+
+  total++;
+  passed += run_test("KD-Tree Unit Test", TEST_KDTREE_PATH);
+
+  total++;
+  passed += run_test("Hash Unit Test", TEST_HASH_PATH);
+
+  total++;
+  passed += run_test("Import Unit Test", TEST_IMPORT_PATH);
+
+  total++;
+  passed += run_test("Schema Unit Test", TEST_SCHEMA_PATH);
 
   printf("====================================================================="
          "=\n");

@@ -32,10 +32,16 @@
 
 struct adb_db;
 
+/*! \struct alt_field
+ * \brief Alternate field description.
+ * \ingroup table
+ *
+ * Describes an alternate field mapping and its importer.
+ */
 struct alt_field {
-	struct adb_schema_field key_field;     /* primary field index */
-	struct adb_schema_field alt_field;     /* alternate field index */
-	adb_field_import2 import; /*!< alt field importer */
+	struct adb_schema_field key_field;     /*!< Primary field index */
+	struct adb_schema_field alt_field;     /*!< Alternate field index */
+	adb_field_import2 import;              /*!< Alternate field importer function */
 };
 
 /*! \struct struct cds_importer
@@ -70,32 +76,78 @@ struct cds_importer {
 typedef int (*object_import) (struct adb_db *, struct adb_object *,
 	struct adb_table *);
 
+/*! \struct table_object
+ * \brief Table Object Storage Configuration.
+ * \ingroup table
+ *
+ * Defines layout, count, and bounds for objects stored in a table.
+ */
 struct table_object {
 	int bytes;				/*!< Object size (bytes) */
 	int count;      		/*!< Number of objects in set */
-	int field_count;		/*!< number of key and custom fields */
-	int num_alt_fields;                 /*!< number of alternative object fields */
-	object_import import;
-	int new;
-	float min_value;
-	float max_value;
-	adb_import_type otype;
+	int field_count;		/*!< Number of key and custom fields */
+	int num_alt_fields;     /*!< Number of alternative object fields */
+	object_import import;   /*!< Object insertion function */
+	int new;                /*!< New object flag */
+	float min_value;        /*!< Minimum value in range */
+	float max_value;        /*!< Maximum value in range */
+	adb_import_type otype;  /*!< Import data type */
 };
 
-/* init row insertion function */
-void table_init_object_import(struct adb_db *db, int table_id);
-
+/*!
+ * \brief Get the alternate key importer function.
+ *
+ * \param db Pointer to the database instance
+ * \param type C type of the field
+ * \return Function pointer to the importer, or NULL on error
+ */
 adb_field_import2 table_get_alt_key_import(struct adb_db *db,
 	adb_ctype type);
 
+/*!
+ * \brief Get the primary column importer function.
+ *
+ * \param db Pointer to the database instance
+ * \param type C type of the field
+ * \return Function pointer to the importer, or NULL on error
+ */
 adb_field_import1 table_get_column_import(struct adb_db *db,
 	adb_ctype type);
 
+/*!
+ * \brief Write the table objects to the filesystem as HTM trixels.
+ *
+ * \param db Pointer to the database instance
+ * \param table Pointer to the table to write
+ * \return 0 on success, or a negative error code on failure
+ */
 int table_write_trixels(struct adb_db *db, struct adb_table *table);
 
+/*!
+ * \brief Build the KD-Tree for the table during import.
+ *
+ * \param db Pointer to the database instance
+ * \param table Pointer to the table being imported
+ * \return 0 on success, or a negative error code on failure
+ */
 int import_build_kdtree(struct adb_db *db, struct adb_table *table);
 
+/*!
+ * \brief Get the maximum object depth value.
+ *
+ * \param table Pointer to the table
+ * \param value Base value to evaluate
+ * \return The calculated max depth integer
+ */
 int import_get_object_depth_max(struct adb_table *table, float value);
+
+/*!
+ * \brief Get the minimum object depth value.
+ *
+ * \param table Pointer to the table
+ * \param value Base value to evaluate
+ * \return The calculated min depth integer
+ */
 int import_get_object_depth_min(struct adb_table *table, float value);
 
 #endif

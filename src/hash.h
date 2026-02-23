@@ -32,18 +32,29 @@
 
 struct adb_table;
 
-/* points to array of objects that match hash number */
+/*! \struct hash_object
+ * \brief Object hash bucket.
+ * \ingroup table
+ *
+ * Points to an array of objects that match a hash number. We can store > 1 object to cope with hash collisions.
+ */
 struct hash_object {
-	int count; /* we can store > 1 object to cope with hash collisions */
-	const struct adb_object *object[];
+	int count; /*!< Number of objects in this block */
+	const struct adb_object *object[]; /*!< Array of objects matching this hash */
 };
 
+/*! \struct hash_map
+ * \brief Single hash map index.
+ * \ingroup table
+ *
+ * Defines a hash index over a specific field.
+ */
 struct hash_map {
 	struct hash_object **index;   /*!< Hash table pointing to objects */
-	int offset;					/*!< offset in object for hashed ID */
-	adb_ctype type;				/*!< C type  string or int */
-	int size;						/*!< size in bytes */
-	const char *key;
+	int offset;					/*!< Offset in object for hashed ID */
+	adb_ctype type;				/*!< C type (string or int) */
+	int size;						/*!< Size of the hashed field in bytes */
+	const char *key;              /*!< String key (field name) */
 };
 
 /*! \struct struct table_hash
@@ -57,10 +68,58 @@ struct table_hash {
 	int num;
 };
 
+/*!
+ * \brief Hash a string value.
+ *
+ * Computes a hash index for a given string.
+ *
+ * \param data The string data to hash
+ * \param len The length of the string
+ * \param mod Modulo divisor (number of buckets)
+ * \return The computed hash index
+ */
 int hash_string(const char *data, int len, int mod);
+
+/*!
+ * \brief Hash an integer value.
+ *
+ * Computes a hash index for a given integer.
+ *
+ * \param val The integer value to hash
+ * \param mod Modulo divisor (number of buckets)
+ * \return The computed hash index
+ */
 int hash_int(int val, int mod);
+
+/*!
+ * \brief Free hash maps in a table.
+ *
+ * Frees all dynamically allocated memory within a table's hash index array.
+ *
+ * \param table Database table pointer
+ */
 void hash_free_maps(struct adb_table *table);
+
+/*!
+ * \brief Build hash table maps.
+ *
+ * Populates a table's given hash map by hashing each object.
+ *
+ * \param table Database table to index
+ * \param map Index of the map inside `table->hash` to populate
+ * \return 0 on success, negative error code on failure
+ */
 int hash_build_table(struct adb_table *table, int map);
+
+/*!
+ * \brief Build hash map for an object set.
+ *
+ * Populates a subset's given hash map by hashing each object.
+ *
+ * \param set Target object set
+ * \param map Index of the map to populate
+ * \return 0 on success, negative error code on failure
+ */
 int hash_build_set(struct adb_object_set *set, int map);
 
 #endif

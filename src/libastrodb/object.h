@@ -36,13 +36,13 @@ struct adb_db;
 /*! \struct adb_kd_tree
  * \ingroup dataset
  *
- * KD tree
+ * \brief KD tree node representation
  */
 struct adb_kd_tree {
   /* KD tree - indexs */
-  int32_t child[2]; /*!< children */
-  int32_t parent;   /*!< parent */
-  int32_t index;    /*!< index */
+  int32_t child[2]; /*!< indices of child tree nodes */
+  int32_t parent;   /*!< index of parent node */
+  int32_t index;    /*!< dataset reference index */
 };
 
 /*! \struct adb_import
@@ -131,10 +131,25 @@ int adb_set_get_object(struct adb_object_set *set, const void *id,
 int adb_table_get_object(struct adb_db *db, int table_id, const void *id,
                          const char *field, const struct adb_object **object);
 
+/**
+ * \brief Find the nearest object in a set relative to an existing target object
+ * \param set Constrained initialized dataset of objects
+ * \param object The starting reference query object
+ * \return Pointer to nearest neighboring object, or NULL if not found
+ * \ingroup dataset
+ */
 const struct adb_object *
 adb_table_set_get_nearest_on_object(struct adb_object_set *set,
                                     const struct adb_object *object);
 
+/**
+ * \brief Find the nearest object in a set relative to raw coordinates
+ * \param set Constrained initialized dataset of objects
+ * \param ra Right Ascension coordinate query (radians)
+ * \param dec Declination coordinate query (radians)
+ * \return Pointer to nearest neighboring object, or NULL if not found
+ * \ingroup dataset
+ */
 const struct adb_object *
 adb_table_set_get_nearest_on_pos(struct adb_object_set *set, double ra,
                                  double dec);

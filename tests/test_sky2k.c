@@ -160,14 +160,14 @@ static void test_get4(struct adb_db *db, int table_id)
 	if (found) printf(" -> Found HD 58977\n");
 
 	found = adb_set_get_object(set, "21alp Sc", "Name", &object);
-	if (found) {
+	if (found > 0 && object != NULL) {
 		printf(" -> Found 21alp Sc\n");
-		// objectn = adb_table_set_get_nearest_on_object(set, object);
-		// if (objectn) printf(" -> Found nearest object to 21alp Sc\n");
+		objectn = adb_table_set_get_nearest_on_object(set, object);
+		if (objectn) printf(" -> Found nearest object to 21alp Sc\n");
 	}
 
-	// objectn = adb_table_set_get_nearest_on_pos(set, 0.0, M_PI_2);
-	// if (objectn) printf(" -> Found nearest object to north pole\n");
+	objectn = adb_table_set_get_nearest_on_pos(set, 0.0, M_PI_2);
+	if (objectn) printf(" -> Found nearest object to north pole\n");
 
 	adb_table_set_free(set);
 }
