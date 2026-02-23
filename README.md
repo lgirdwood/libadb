@@ -1,5 +1,7 @@
 # libastrodb
 
+[![CI](https://github.com/lgirdwood/libastrodb/actions/workflows/ci.yml/badge.svg)](https://github.com/lgirdwood/libastrodb/actions/workflows/ci.yml)
+
 Fast General Purpose Astronomical Database.
 
 `libastrodb` provides a fast and efficient way to query and interact with various astronomical catalogs. The project includes a core C library (`astrodb`) and several example applications that demonstrate importing and querying specific astronomical datasets (like NGC, Sky2000, Tycho, GSC, and HyperLeda).
