@@ -56,6 +56,14 @@ int main(void) {
 #define TEST_SCHEMA_PATH "./test_schema"
 #endif
 
+#ifndef TEST_TABLE_PATH
+#define TEST_TABLE_PATH "./test_table"
+#endif
+
+#ifndef TEST_SOLVE_PATH
+#define TEST_SOLVE_PATH "./test_solve"
+#endif
+
   total++;
   passed += run_test("NGC Unit Test", TEST_NGC_PATH);
 
@@ -76,6 +84,12 @@ int main(void) {
 
   total++;
   passed += run_test("Schema Unit Test", TEST_SCHEMA_PATH);
+
+  total++;
+  passed += run_test("Table Unit Test", TEST_TABLE_PATH);
+
+  total++;
+  passed += run_test("Solve Unit Test", TEST_SOLVE_PATH);
 
   printf("====================================================================="
          "=\n");

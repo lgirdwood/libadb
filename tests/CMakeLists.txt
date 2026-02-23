@@ -37,6 +37,16 @@ target_link_libraries(test_schema PRIVATE astrodb m)
 target_include_directories(test_schema PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME test_schema COMMAND test_schema WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
+add_executable(test_table test_table.c)
+target_link_libraries(test_table PRIVATE astrodb m)
+target_include_directories(test_table PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_table COMMAND test_table WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+add_executable(test_solve test_solve.c)
+target_link_libraries(test_solve PRIVATE astrodb m)
+target_include_directories(test_solve PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_solve COMMAND test_solve WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
 add_executable(test_all test_all.c)
 target_compile_definitions(test_all PRIVATE 
     TEST_NGC_PATH=\"$<TARGET_FILE:test_ngc>\"
@@ -46,5 +56,7 @@ target_compile_definitions(test_all PRIVATE
     TEST_HASH_PATH=\"$<TARGET_FILE:test_hash>\"
     TEST_IMPORT_PATH=\"$<TARGET_FILE:test_import>\"
     TEST_SCHEMA_PATH=\"$<TARGET_FILE:test_schema>\"
+    TEST_TABLE_PATH=\"$<TARGET_FILE:test_table>\"
+    TEST_SOLVE_PATH=\"$<TARGET_FILE:test_solve>\"
 )
 add_test(NAME test_suite_all COMMAND test_all WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
