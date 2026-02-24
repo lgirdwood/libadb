@@ -24,6 +24,11 @@
 #define ADB_TABLE_HISTOGRAM_DIVS	100
 #define ADB_TABLE_DEPTH_DIVS	100
 
+/*! \defgroup schema Schema
+ *
+ * Dataset schema definition and loader routines.
+ */
+
 struct adb_db;
 struct adb_table;
 struct adb_schema_field;
@@ -41,7 +46,7 @@ struct table_depth {
 
 /*! \struct table_file_index
  * \brief Dataset binary db index.
- * \ingroup dataset
+ * \ingroup schema
  *
  * Index data for binary catalog datasets.
  */
@@ -64,6 +69,7 @@ struct table_file_index {
 
 /*!
  * \brief Find a primary field index.
+ * \ingroup schema
  *
  * \param db Database instance
  * \param table Table containing the schema fields
@@ -75,6 +81,7 @@ int schema_get_field(struct adb_db *db, struct adb_table *table,
 
 /*!
  * \brief Find an alternate field index.
+ * \ingroup schema
  *
  * \param db Database instance
  * \param table Table containing the schema fields
@@ -86,6 +93,7 @@ int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
 
 /*!
  * \brief Add a primary schema field.
+ * \ingroup schema
  *
  * \param db Database instance
  * \param table Table to bind the new field column
@@ -97,6 +105,7 @@ int schema_add_field(struct adb_db *db, struct adb_table *table,
 
 /*!
  * \brief Add an alternative schema field logic mapping.
+ * \ingroup schema
  *
  * \param db Database instance
  * \param table Target database table
@@ -109,6 +118,7 @@ int schema_add_alternative_field(struct adb_db *db,
 
 /*!
  * \brief Sort the table fields array.
+ * \ingroup schema
  *
  * Orders the field indexes in the table schema block for consistent serialization.
  *
@@ -121,6 +131,7 @@ int schema_order_import_index(struct adb_db *db,
 
 /*!
  * \brief Write the binary schema mappings.
+ * \ingroup schema
  *
  * Serializes the schema structures into the output catalog disk file.
  *
@@ -132,6 +143,7 @@ int schema_write(struct adb_db *db, struct adb_table *table);
 
 /*!
  * \brief Read and load the table schema configurations.
+ * \ingroup schema
  *
  * Reads a native datastore binary representation and translates it 
  * into memory mappings on the library instance.

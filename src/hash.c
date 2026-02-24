@@ -38,6 +38,7 @@
 
 /**
  * \brief Calculate a hash value for a string.
+ * \ingroup hash
  *
  * Computes an integer hash value based on the characters in the string `data`
  * up to length `len`, modulo the given `mod` value. Spaces (' ') and hyphens
@@ -48,26 +49,28 @@
  * \param mod Modulo to apply to the final hash value
  * \return The calculated integer hash value in the range [0, mod-1]
  */
-int hash_string(const char *data, int len, int mod) {
-  int val = 0;
+int hash_string(const char *data, int len, int mod)
+{
+	int val = 0;
 
-  if (mod == 0) {
-    // adb_error(db, "mod is 0\n");
-    return 0;
-  }
+	if (mod == 0) {
+		// adb_error(db, "mod is 0\n");
+		return 0;
+	}
 
-  while (*data != 0) {
-    if (*data >= '0' && *data <= 'z')
-      val = ((val << 5) ^ (val >> 27)) ^ *data;
-    data++;
-  }
+	while (*data != 0) {
+		if (*data >= '0' && *data <= 'z')
+			val = ((val << 5) ^ (val >> 27)) ^ *data;
+		data++;
+	}
 
-  val = abs(val % mod);
-  return val;
+	val = abs(val % mod);
+	return val;
 }
 
 /**
  * \brief Calculate a hash value for an integer.
+ * \ingroup hash
  *
  * Computes an integer hash value based on the integer `val`,
  * modulo the given `mod` value. Returns the absolute value of the modulus.
@@ -76,210 +79,219 @@ int hash_string(const char *data, int len, int mod) {
  * \param mod Modulo to apply to the final hash value
  * \return The calculated integer hash value in the range [0, mod-1]
  */
-int hash_int(int val, int mod) { return abs(val % mod); }
+int hash_int(int val, int mod)
+{
+	return abs(val % mod);
+}
 
-void hash_free_maps(struct adb_table *table) {
-  int i, j;
+void hash_free_maps(struct adb_table *table)
+{
+	int i, j;
 
-  for (i = 0; i < table->hash.num; i++) {
+	for (i = 0; i < table->hash.num; i++) {
+		for (j = 0; j < table->object.count; j++) {
+			if (table->hash.map[i].index[j])
+				free(table->hash.map[i].index[j]);
+		}
 
-    for (j = 0; j < table->object.count; j++) {
-      if (table->hash.map[i].index[j])
-        free(table->hash.map[i].index[j]);
-    }
-
-    free(table->hash.map[i].index);
-  }
+		free(table->hash.map[i].index);
+	}
 }
 
 static int hash_insert_object(struct hash_map *hash_map,
-                              const struct adb_object *object,
-                              unsigned int index) {
-  int size, count;
+							  const struct adb_object *object,
+							  unsigned int index)
+{
+	int size, count;
 
-  if (hash_map->index[index]) {
+	if (hash_map->index[index]) {
+		/* hash exists, realloc and add to end*/
+		count = hash_map->index[index]->count + 1;
 
-    /* hash exists, realloc and add to end*/
-    count = hash_map->index[index]->count + 1;
+		size =
+			sizeof(struct hash_object *) + sizeof(struct adb_object *) * count;
 
-    size = sizeof(struct hash_object *) + sizeof(struct adb_object *) * count;
+		hash_map->index[index] = realloc(hash_map->index[index], size);
+		if (!hash_map->index[index])
+			return -ENOMEM;
 
-    hash_map->index[index] = realloc(hash_map->index[index], size);
-    if (!hash_map->index[index])
-      return -ENOMEM;
+		hash_map->index[index]->object[count - 1] = object;
+		hash_map->index[index]->count++;
+	} else {
+		/* no hash,so create new one */
+		hash_map->index[index] =
+			calloc(1, sizeof(struct hash_object) + sizeof(struct adb_object *));
+		if (!hash_map->index[index])
+			return -ENOMEM;
 
-    hash_map->index[index]->object[count - 1] = object;
-    hash_map->index[index]->count++;
-  } else {
+		hash_map->index[index]->object[0] = object;
+		hash_map->index[index]->count = 1;
+	}
 
-    /* no hash,so create new one */
-    hash_map->index[index] =
-        calloc(1, sizeof(struct hash_object) + sizeof(struct adb_object *));
-    if (!hash_map->index[index])
-      return -ENOMEM;
-
-    hash_map->index[index]->object[0] = object;
-    hash_map->index[index]->count = 1;
-  }
-
-  return 0;
+	return 0;
 }
 
-static void table_hash_string(struct adb_table *table, int map) {
-  const void *object = table->objects;
-  const void *field;
-  int i, index;
+static void table_hash_string(struct adb_table *table, int map)
+{
+	const void *object = table->objects;
+	const void *field;
+	int i, index;
 
-  /* hash object for this map */
-  for (i = 0; i < table->object.count; i++) {
-    field = object + table->hash.map[map].offset;
+	/* hash object for this map */
+	for (i = 0; i < table->object.count; i++) {
+		field = object + table->hash.map[map].offset;
 
-    index = hash_string(field, table->hash.map[map].size, table->object.count);
+		index =
+			hash_string(field, table->hash.map[map].size, table->object.count);
 
-    hash_insert_object(&table->hash.map[map], object, index);
-    object += table->object.bytes;
-  }
+		hash_insert_object(&table->hash.map[map], object, index);
+		object += table->object.bytes;
+	}
 }
 
-static void table_hash_int(struct adb_table *table, int map) {
-  const void *object = table->objects;
-  const void *field;
-  int i, index;
+static void table_hash_int(struct adb_table *table, int map)
+{
+	const void *object = table->objects;
+	const void *field;
+	int i, index;
 
-  /* hash object for this map */
-  for (i = 0; i < table->object.count; i++) {
-    field = object + table->hash.map[map].offset;
+	/* hash object for this map */
+	for (i = 0; i < table->object.count; i++) {
+		field = object + table->hash.map[map].offset;
 
-    index = hash_int(*((int *)field), table->object.count);
+		index = hash_int(*((int *)field), table->object.count);
 
-    hash_insert_object(&table->hash.map[map], object, index);
-    object += table->object.bytes;
-  }
+		hash_insert_object(&table->hash.map[map], object, index);
+		object += table->object.bytes;
+	}
 }
 
-int hash_build_table(struct adb_table *table, int map) {
-  struct hash_object **hash_object;
+int hash_build_table(struct adb_table *table, int map)
+{
+	struct hash_object **hash_object;
 
-  if (table->object.count == 0) {
-    adb_error(table->db, "table has no objects to hash\n");
-    return -EINVAL;
-  }
+	if (table->object.count == 0) {
+		adb_error(table->db, "table has no objects to hash\n");
+		return -EINVAL;
+	}
 
-  hash_object = calloc(sizeof(struct hash_object *), table->object.count);
-  if (hash_object == NULL)
-    return -ENOMEM;
+	hash_object = calloc(sizeof(struct hash_object *), table->object.count);
+	if (hash_object == NULL)
+		return -ENOMEM;
 
-  table->hash.map[map].index = hash_object;
+	table->hash.map[map].index = hash_object;
 
-  switch (table->hash.map[map].type) {
-  case ADB_CTYPE_STRING:
-    table_hash_string(table, map);
-    break;
-  case ADB_CTYPE_SHORT:
-  case ADB_CTYPE_INT:
-    table_hash_int(table, map);
-    break;
-  case ADB_CTYPE_DOUBLE_MPC:
-  case ADB_CTYPE_SIGN:
-  case ADB_CTYPE_NULL:
-  case ADB_CTYPE_FLOAT:
-  case ADB_CTYPE_DOUBLE:
-  case ADB_CTYPE_DEGREES:
-  case ADB_CTYPE_DOUBLE_DMS_DEGS:
-  case ADB_CTYPE_DOUBLE_DMS_MINS:
-  case ADB_CTYPE_DOUBLE_DMS_SECS:
-  case ADB_CTYPE_DOUBLE_HMS_HRS:
-  case ADB_CTYPE_DOUBLE_HMS_MINS:
-  case ADB_CTYPE_DOUBLE_HMS_SECS:
-    adb_error(table->db, "ctype %d not implemented\n",
-              table->hash.map[map].type);
-    break;
-  }
+	switch (table->hash.map[map].type) {
+	case ADB_CTYPE_STRING:
+		table_hash_string(table, map);
+		break;
+	case ADB_CTYPE_SHORT:
+	case ADB_CTYPE_INT:
+		table_hash_int(table, map);
+		break;
+	case ADB_CTYPE_DOUBLE_MPC:
+	case ADB_CTYPE_SIGN:
+	case ADB_CTYPE_NULL:
+	case ADB_CTYPE_FLOAT:
+	case ADB_CTYPE_DOUBLE:
+	case ADB_CTYPE_DEGREES:
+	case ADB_CTYPE_DOUBLE_DMS_DEGS:
+	case ADB_CTYPE_DOUBLE_DMS_MINS:
+	case ADB_CTYPE_DOUBLE_DMS_SECS:
+	case ADB_CTYPE_DOUBLE_HMS_HRS:
+	case ADB_CTYPE_DOUBLE_HMS_MINS:
+	case ADB_CTYPE_DOUBLE_HMS_SECS:
+		adb_error(table->db, "ctype %d not implemented\n",
+				  table->hash.map[map].type);
+		break;
+	}
 
-  return 0;
+	return 0;
 }
 
-static void set_hash_string(struct adb_object_set *set, int map) {
-  const struct adb_object_head *object_heads = set->object_heads;
-  const void *object;
-  const void *field;
-  int i, j, index;
+static void set_hash_string(struct adb_object_set *set, int map)
+{
+	const struct adb_object_head *object_heads = set->object_heads;
+	const void *object;
+	const void *field;
+	int i, j, index;
 
-  for (i = 0; i < set->head_count; i++) {
-    object = object_heads->objects;
+	for (i = 0; i < set->head_count; i++) {
+		object = object_heads->objects;
 
-    for (j = 0; j < object_heads->count; j++) {
+		for (j = 0; j < object_heads->count; j++) {
+			field = object + set->hash.map[map].offset;
+			index = hash_string(field, set->hash.map[map].size, set->count);
 
-      field = object + set->hash.map[map].offset;
-      index = hash_string(field, set->hash.map[map].size, set->count);
+			hash_insert_object(&set->hash.map[map], object, index);
+			object += set->table->object.bytes;
+		}
 
-      hash_insert_object(&set->hash.map[map], object, index);
-      object += set->table->object.bytes;
-    }
-
-    object_heads++;
-  }
+		object_heads++;
+	}
 }
 
-static void set_hash_int(struct adb_object_set *set, int map) {
-  const struct adb_object_head *object_heads = set->object_heads;
-  const void *object;
-  const void *field;
-  int i, j, index;
+static void set_hash_int(struct adb_object_set *set, int map)
+{
+	const struct adb_object_head *object_heads = set->object_heads;
+	const void *object;
+	const void *field;
+	int i, j, index;
 
-  for (i = 0; i < set->head_count; i++) {
-    object = object_heads->objects;
+	for (i = 0; i < set->head_count; i++) {
+		object = object_heads->objects;
 
-    for (j = 0; j < object_heads->count; j++) {
+		for (j = 0; j < object_heads->count; j++) {
+			field = object + set->hash.map[map].offset;
+			index = hash_int(*((int *)field), set->count);
 
-      field = object + set->hash.map[map].offset;
-      index = hash_int(*((int *)field), set->count);
+			hash_insert_object(&set->hash.map[map], object, index);
+			object += set->table->object.bytes;
+		}
 
-      hash_insert_object(&set->hash.map[map], object, index);
-      object += set->table->object.bytes;
-    }
-
-    object_heads++;
-  }
+		object_heads++;
+	}
 }
 
-int hash_build_set(struct adb_object_set *set, int map) {
-  struct hash_object **hash_object;
+int hash_build_set(struct adb_object_set *set, int map)
+{
+	struct hash_object **hash_object;
 
-  if (set->count == 0) {
-    adb_error(set->db, "set has no objects to hash\n");
-    return -EINVAL;
-  }
+	if (set->count == 0) {
+		adb_error(set->db, "set has no objects to hash\n");
+		return -EINVAL;
+	}
 
-  hash_object = calloc(sizeof(struct hash_object *), set->count);
-  if (hash_object == NULL)
-    return -ENOMEM;
+	hash_object = calloc(sizeof(struct hash_object *), set->count);
+	if (hash_object == NULL)
+		return -ENOMEM;
 
-  set->hash.map[map].index = hash_object;
+	set->hash.map[map].index = hash_object;
 
-  switch (set->hash.map[map].type) {
-  case ADB_CTYPE_STRING:
-    set_hash_string(set, map);
-    break;
-  case ADB_CTYPE_SHORT:
-  case ADB_CTYPE_INT:
-    set_hash_int(set, map);
-    break;
-  case ADB_CTYPE_DOUBLE_MPC:
-  case ADB_CTYPE_SIGN:
-  case ADB_CTYPE_NULL:
-  case ADB_CTYPE_FLOAT:
-  case ADB_CTYPE_DOUBLE:
-  case ADB_CTYPE_DEGREES:
-  case ADB_CTYPE_DOUBLE_DMS_DEGS:
-  case ADB_CTYPE_DOUBLE_DMS_MINS:
-  case ADB_CTYPE_DOUBLE_DMS_SECS:
-  case ADB_CTYPE_DOUBLE_HMS_HRS:
-  case ADB_CTYPE_DOUBLE_HMS_MINS:
-  case ADB_CTYPE_DOUBLE_HMS_SECS:
-    adb_error(set->db, "ctype %d not implemented\n", set->hash.map[map].type);
-    break;
-  }
+	switch (set->hash.map[map].type) {
+	case ADB_CTYPE_STRING:
+		set_hash_string(set, map);
+		break;
+	case ADB_CTYPE_SHORT:
+	case ADB_CTYPE_INT:
+		set_hash_int(set, map);
+		break;
+	case ADB_CTYPE_DOUBLE_MPC:
+	case ADB_CTYPE_SIGN:
+	case ADB_CTYPE_NULL:
+	case ADB_CTYPE_FLOAT:
+	case ADB_CTYPE_DOUBLE:
+	case ADB_CTYPE_DEGREES:
+	case ADB_CTYPE_DOUBLE_DMS_DEGS:
+	case ADB_CTYPE_DOUBLE_DMS_MINS:
+	case ADB_CTYPE_DOUBLE_DMS_SECS:
+	case ADB_CTYPE_DOUBLE_HMS_HRS:
+	case ADB_CTYPE_DOUBLE_HMS_MINS:
+	case ADB_CTYPE_DOUBLE_HMS_SECS:
+		adb_error(set->db, "ctype %d not implemented\n",
+				  set->hash.map[map].type);
+		break;
+	}
 
-  return 0;
+	return 0;
 }

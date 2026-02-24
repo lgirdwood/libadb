@@ -28,7 +28,12 @@
 #include "private.h"
 #include "htm.h"
 
-#define ADB_MAX_HASH_MAPS		16	/* number of hash maps */
+/*! \defgroup hash Hash
+ *
+ * Hash mapping functionality for fast table lookups.
+ */
+
+#define ADB_MAX_HASH_MAPS 16 /* number of hash maps */
 
 struct adb_table;
 
@@ -50,11 +55,11 @@ struct hash_object {
  * Defines a hash index over a specific field.
  */
 struct hash_map {
-	struct hash_object **index;   /*!< Hash table pointing to objects */
-	int offset;					/*!< Offset in object for hashed ID */
-	adb_ctype type;				/*!< C type (string or int) */
-	int size;						/*!< Size of the hashed field in bytes */
-	const char *key;              /*!< String key (field name) */
+	struct hash_object **index; /*!< Hash table pointing to objects */
+	int offset; /*!< Offset in object for hashed ID */
+	adb_ctype type; /*!< C type (string or int) */
+	int size; /*!< Size of the hashed field in bytes */
+	const char *key; /*!< String key (field name) */
 };
 
 /*! \struct struct table_hash
@@ -70,6 +75,7 @@ struct table_hash {
 
 /*!
  * \brief Hash a string value.
+ * \ingroup hash
  *
  * Computes a hash index for a given string.
  *
@@ -82,6 +88,7 @@ int hash_string(const char *data, int len, int mod);
 
 /*!
  * \brief Hash an integer value.
+ * \ingroup hash
  *
  * Computes a hash index for a given integer.
  *
@@ -93,6 +100,7 @@ int hash_int(int val, int mod);
 
 /*!
  * \brief Free hash maps in a table.
+ * \ingroup hash
  *
  * Frees all dynamically allocated memory within a table's hash index array.
  *
@@ -102,6 +110,7 @@ void hash_free_maps(struct adb_table *table);
 
 /*!
  * \brief Build hash table maps.
+ * \ingroup hash
  *
  * Populates a table's given hash map by hashing each object.
  *
@@ -113,6 +122,7 @@ int hash_build_table(struct adb_table *table, int map);
 
 /*!
  * \brief Build hash map for an object set.
+ * \ingroup hash
  *
  * Populates a subset's given hash map by hashing each object.
  *

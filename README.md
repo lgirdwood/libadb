@@ -1,14 +1,14 @@
-# libastrodb
+# libadb
 
-[![CI](https://github.com/lgirdwood/libastrodb/actions/workflows/ci.yml/badge.svg)](https://github.com/lgirdwood/libastrodb/actions/workflows/ci.yml)
+[![CI](https://github.com/lgirdwood/libadb/actions/workflows/ci.yml/badge.svg)](https://github.com/lgirdwood/libadb/actions/workflows/ci.yml)
 
 Fast General Purpose Astronomical Database.
 
-`libastrodb` provides a fast and efficient way to query and interact with various astronomical catalogs. The project includes a core C library (`astrodb`) and several example applications that demonstrate importing and querying specific astronomical datasets (like NGC, Sky2000, Tycho, GSC, and HyperLeda).
+`libadb` provides a fast and efficient way to query and interact with various astronomical catalogs. The project includes a core C library (`adb`) and several example applications that demonstrate importing and querying specific astronomical datasets (like NGC, Sky2000, Tycho, GSC, and HyperLeda).
 
 ## Dependencies
 
-To build `libastrodb`, you will need the following dependencies:
+To build `libadb`, you will need the following dependencies:
 
 *   **CMake** (version 3.10 or higher)
 *   **C Compiler** (supporting C99 standard, e.g., GCC or Clang)
@@ -25,7 +25,7 @@ To build `libastrodb`, you will need the following dependencies:
 
 The CMake build system defines the following targets:
 
-*   **`astrodb`** (Shared Library): The core library containing catalog parsing, spatial indexing (HTM/KD-Tree), and solving logic.
+*   **`adb`** (Shared Library): The core library containing catalog parsing, spatial indexing (HTM/KD-Tree), and solving logic.
 *   **Examples** (Executables):
     *   `sky2k`: Example for the Sky2000 catalog.
     *   `ngc`: Example for the NGC catalog.
@@ -35,7 +35,7 @@ The CMake build system defines the following targets:
 
 ## Build Instructions
 
-`libastrodb` uses CMake for its build system. 
+`libadb` uses CMake for its build system. 
 
 1. **Configure the Project**
 
@@ -59,7 +59,7 @@ The CMake build system defines the following targets:
 
 3. **Install (Optional)**
 
-   To install the `libastrodb` shared library, headers, and `pkg-config` file to your system (e.g., `/usr/local`):
+   To install the `libadb` shared library, headers, and `pkg-config` file to your system (e.g., `/usr/local`):
 
    ```bash
    sudo cmake --install build

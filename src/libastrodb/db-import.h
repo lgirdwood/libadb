@@ -31,138 +31,138 @@ struct adb_object;
 /********************** Table import ******************************************/
 
 /* convenience schema constructors */
-#define adb_member(lname, lsymbol, lagg, latom, ltype, lunits, lgposn,         \
-                   limport)                                                    \
-  {                                                                            \
-      .name = lname,                                                           \
-      .symbol = lsymbol,                                                       \
-      .struct_offset = adb_offset(lagg, latom),                                \
-      .struct_bytes = adb_sizeof(lagg, latom),                                 \
-      .units = lunits,                                                         \
-      .type = ltype,                                                           \
-      .units = lunits,                                                         \
-      .group_posn = lgposn,                                                    \
-      .import = limport,                                                       \
-  }
-#define adb_gmember(lname, lsymbol, lagg, latom, ltype, lunits, lgposn,        \
-                    limport)                                                   \
-  {                                                                            \
-      .name = lname,                                                           \
-      .symbol = lsymbol,                                                       \
-      .struct_offset = adb_offset(lagg, latom),                                \
-      .struct_bytes = adb_sizeof(lagg, latom),                                 \
-      .units = lunits,                                                         \
-      .type = ltype,                                                           \
-      .units = lunits,                                                         \
-      .import = limport,                                                       \
-      .group_posn = lgposn,                                                    \
-      .group_offset = adb_offset(lagg, latom),                                 \
-  }
+#define adb_member(lname, lsymbol, lagg, latom, ltype, lunits, lgposn, \
+				   limport)                                            \
+	{                                                                  \
+		.name = lname,                                                 \
+		.symbol = lsymbol,                                             \
+		.struct_offset = adb_offset(lagg, latom),                      \
+		.struct_bytes = adb_sizeof(lagg, latom),                       \
+		.units = lunits,                                               \
+		.type = ltype,                                                 \
+		.units = lunits,                                               \
+		.group_posn = lgposn,                                          \
+		.import = limport,                                             \
+	}
+#define adb_gmember(lname, lsymbol, lagg, latom, ltype, lunits, lgposn, \
+					limport)                                            \
+	{                                                                   \
+		.name = lname,                                                  \
+		.symbol = lsymbol,                                              \
+		.struct_offset = adb_offset(lagg, latom),                       \
+		.struct_bytes = adb_sizeof(lagg, latom),                        \
+		.units = lunits,                                                \
+		.type = ltype,                                                  \
+		.units = lunits,                                                \
+		.import = limport,                                              \
+		.group_posn = lgposn,                                           \
+		.group_offset = adb_offset(lagg, latom),                        \
+	}
 
 #define ADB_SCHEMA_NAME_SIZE 32
 #define ADB_SCHEMA_SYMBOL_SIZE 8
 #define ADB_SCHEMA_UNITS_SIZE 8
 
 /*! \typedef enum adb_ctype
- * \ingroup dataset
+ * \ingroup import
  *
  * C type of ASCII dataset field
  */
 typedef enum {
-  ADB_CTYPE_INT,             /*!< int */
-  ADB_CTYPE_SHORT,           /*!< short */
-  ADB_CTYPE_DOUBLE,          /*!< double */
-  ADB_CTYPE_DEGREES,         /*!< double degrees */
-  ADB_CTYPE_FLOAT,           /*!< float */
-  ADB_CTYPE_STRING,          /*!< string */
-  ADB_CTYPE_SIGN,            /*!< sign + or - */
-  ADB_CTYPE_DOUBLE_HMS_HRS,  /*!< degrees Hours (HMS)*/
-  ADB_CTYPE_DOUBLE_HMS_MINS, /*!< degrees Minutes  (HMS)*/
-  ADB_CTYPE_DOUBLE_HMS_SECS, /*!< degrees Seconds (HMS)*/
-  ADB_CTYPE_DOUBLE_DMS_DEGS, /*!< degrees (DMS) */
-  ADB_CTYPE_DOUBLE_DMS_MINS, /*!< degrees Minutes (DMS) */
-  ADB_CTYPE_DOUBLE_DMS_SECS, /*!< degrees Seconds (DMS) */
-  ADB_CTYPE_DOUBLE_MPC,      /*!< Minor planet centre date format */
-  ADB_CTYPE_NULL,            /*!< NULL */
+	ADB_CTYPE_INT, /*!< int */
+	ADB_CTYPE_SHORT, /*!< short */
+	ADB_CTYPE_DOUBLE, /*!< double */
+	ADB_CTYPE_DEGREES, /*!< double degrees */
+	ADB_CTYPE_FLOAT, /*!< float */
+	ADB_CTYPE_STRING, /*!< string */
+	ADB_CTYPE_SIGN, /*!< sign + or - */
+	ADB_CTYPE_DOUBLE_HMS_HRS, /*!< degrees Hours (HMS)*/
+	ADB_CTYPE_DOUBLE_HMS_MINS, /*!< degrees Minutes  (HMS)*/
+	ADB_CTYPE_DOUBLE_HMS_SECS, /*!< degrees Seconds (HMS)*/
+	ADB_CTYPE_DOUBLE_DMS_DEGS, /*!< degrees (DMS) */
+	ADB_CTYPE_DOUBLE_DMS_MINS, /*!< degrees Minutes (DMS) */
+	ADB_CTYPE_DOUBLE_DMS_SECS, /*!< degrees Seconds (DMS) */
+	ADB_CTYPE_DOUBLE_MPC, /*!< Minor planet centre date format */
+	ADB_CTYPE_NULL, /*!< NULL */
 } adb_ctype;
 
 typedef enum {
-  ADB_IMPORT_INC,
-  ADB_IMPORT_DEC,
+	ADB_IMPORT_INC,
+	ADB_IMPORT_DEC,
 } adb_import_type;
 
 typedef int (*adb_field_import1)(struct adb_object *, int, char *);
 typedef int (*adb_field_import2)(struct adb_object *, int, char *, char *);
 
 /*! \struct adb_schema_field
- * \ingroup dataset
+ * \ingroup import
  *
  * Represents a field within a dataset structure.
  */
 struct adb_schema_field {
-  char name[ADB_SCHEMA_NAME_SIZE];     /*!< field name */
-  char symbol[ADB_SCHEMA_SYMBOL_SIZE]; /*!< field symbol */
-  int32_t struct_offset;               /*!< struct offset */
-  int32_t struct_bytes;                /*!< struct size */
-  int32_t group_offset;                /*!< group offset, -1 if atomic */
-  int32_t group_posn;                  /*!< group posn, lowest is first */
-  int32_t text_size;                   /*!< line size */
-  int32_t text_offset;                 /*!< line offset */
-  adb_ctype type;                      /*!< field type */
-  char units[ADB_SCHEMA_UNITS_SIZE];   /*!< field units */
-  adb_field_import1 import;            /*!< custom insert method */
+	char name[ADB_SCHEMA_NAME_SIZE]; /*!< field name */
+	char symbol[ADB_SCHEMA_SYMBOL_SIZE]; /*!< field symbol */
+	int32_t struct_offset; /*!< struct offset */
+	int32_t struct_bytes; /*!< struct size */
+	int32_t group_offset; /*!< group offset, -1 if atomic */
+	int32_t group_posn; /*!< group posn, lowest is first */
+	int32_t text_size; /*!< line size */
+	int32_t text_offset; /*!< line offset */
+	adb_ctype type; /*!< field type */
+	char units[ADB_SCHEMA_UNITS_SIZE]; /*!< field units */
+	adb_field_import1 import; /*!< custom insert method */
 };
 
 /**
  * \brief Configure a new table for import
- * \ingroup dataset
+ * \ingroup import
  */
 int adb_table_import_new(struct adb_db *db, const char *cat_class,
-                         const char *cat_id, const char *table_name,
-                         const char *depth_field, float min_limit,
-                         float max_limit, adb_import_type otype);
+						 const char *cat_id, const char *table_name,
+						 const char *depth_field, float min_limit,
+						 float max_limit, adb_import_type otype);
 
 /**
  * \brief Register a new table schema
- * \ingroup table
+ * \ingroup import
  */
 int adb_table_import_schema(struct adb_db *db, int table_id,
-                            struct adb_schema_field *schema,
-                            int num_schema_fields, int object_size);
+							struct adb_schema_field *schema,
+							int num_schema_fields, int object_size);
 
 /**
  * \brief Set an alternative field if another field is blank
- * \ingroup dataset
+ * \ingroup import
  */
 int adb_table_import_field(struct adb_db *db, int table_id, const char *field,
-                           const char *alt, int flags);
+						   const char *alt, int flags);
 
 /**
  * \brief Import an ASCII dataset into table array
- * \ingroup dataset
+ * \ingroup import
  */
 int adb_table_import(struct adb_db *db, int table_id);
 
 /**
  * \brief Get field type in struct
- * \ingroup dataset
+ * \ingroup import
  */
 adb_ctype adb_table_get_field_type(struct adb_db *db, int table_id,
-                                   const char *field);
+								   const char *field);
 
 /**
  * \brief Get field offset in struct
- * \ingroup dataset
+ * \ingroup import
  */
 int adb_table_get_field_offset(struct adb_db *db, int table_id,
-                               const char *field);
+							   const char *field);
 
 /**
  * \brief Set the dataset name and object count manually.
- * \ingroup dataset
+ * \ingroup import
  */
 int adb_table_import_alt_dataset(struct adb_db *db, int table_id,
-                                 const char *dataset, int num_objects);
+								 const char *dataset, int num_objects);
 
 #ifdef __cplusplus
 };
