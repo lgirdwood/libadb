@@ -1,0 +1,55 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "CMake: Configure",
+			"type": "shell",
+			"command": "cmake -B build",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "CMake: Build All",
+			"type": "shell",
+			"command": "cmake --build build -j $(nproc)",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"dependsOn": [
+				"CMake: Configure"
+			]
+		},
+		{
+			"label": "CMake: Run Tests",
+			"type": "shell",
+			"command": "cd build && ctest --output-on-failure",
+			"group": "test",
+			"problemMatcher": []
+		},
+		{
+			"label": "CMake: Build Documentation (Doxygen)",
+			"type": "shell",
+			"command": "cmake --build build --target doxygen",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "CMake: Clean",
+			"type": "shell",
+			"command": "cmake --build build --target clean",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "CMake: Package",
+			"type": "shell",
+			"command": "cd build && cpack",
+			"group": "build",
+			"problemMatcher": []
+		}
+	]
+}
