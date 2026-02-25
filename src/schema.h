@@ -21,12 +21,16 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-#define ADB_TABLE_HISTOGRAM_DIVS	100
-#define ADB_TABLE_DEPTH_DIVS	100
+#define ADB_TABLE_HISTOGRAM_DIVS 100
+#define ADB_TABLE_DEPTH_DIVS 100
 
 /*! \defgroup schema Schema
  *
- * Dataset schema definition and loader routines.
+ * \brief Dataset schema definition and loader routines.
+ *
+ * Facilitates the mapping of raw catalog file fields to native library
+ * types, serializing custom column definitions and data ranges to 
+ * binary files on disk.
  */
 
 struct adb_db;
@@ -51,15 +55,15 @@ struct table_depth {
  * Index data for binary catalog datasets.
  */
 struct table_file_index {
-	int32_t catalog_magic;		/*!< Magic number identifying catalog format */
-	int32_t endian_magic;		/*!< Magic number to determine endianess */
-	int32_t max_depth;			/*!< Maximum KD-tree or HTM depth of table */
-	int32_t object_bytes;		/*!< Object size in bytes */
-	int32_t object_count;		/*!< Total number of objects in catalog */
-	int32_t field_count;		/*!< Number of custom indexed fields */
-	int32_t insert_id;			/*!< Object import function identifier */
-	uint32_t kd_root;           /*!< HTM root node offset */
-	uint32_t histo[ADB_TABLE_HISTOGRAM_DIVS];       /*!< Values density histogram */
+	int32_t catalog_magic; /*!< Magic number identifying catalog format */
+	int32_t endian_magic; /*!< Magic number to determine endianess */
+	int32_t max_depth; /*!< Maximum KD-tree or HTM depth of table */
+	int32_t object_bytes; /*!< Object size in bytes */
+	int32_t object_count; /*!< Total number of objects in catalog */
+	int32_t field_count; /*!< Number of custom indexed fields */
+	int32_t insert_id; /*!< Object import function identifier */
+	uint32_t kd_root; /*!< HTM root node offset */
+	uint32_t histo[ADB_TABLE_HISTOGRAM_DIVS]; /*!< Values density histogram */
 	struct table_depth depth[ADB_TABLE_DEPTH_DIVS]; /*!< Bounds per depth tier */
 } __attribute__((packed));
 
@@ -77,7 +81,7 @@ struct table_file_index {
  * \return The field index within the table's schema, or a negative error code
  */
 int schema_get_field(struct adb_db *db, struct adb_table *table,
-	const char *field);
+					 const char *field);
 
 /*!
  * \brief Find an alternate field index.
@@ -89,7 +93,7 @@ int schema_get_field(struct adb_db *db, struct adb_table *table,
  * \return The alternate field index within the table's schema, or a negative error code
  */
 int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
-	const char *field);
+						 const char *field);
 
 /*!
  * \brief Add a primary schema field.
@@ -101,7 +105,7 @@ int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
  * \return Native field offset ID, or negative error code
  */
 int schema_add_field(struct adb_db *db, struct adb_table *table,
-	struct adb_schema_field *new_schema_object);
+					 struct adb_schema_field *new_schema_object);
 
 /*!
  * \brief Add an alternative schema field logic mapping.
@@ -113,8 +117,8 @@ int schema_add_field(struct adb_db *db, struct adb_table *table,
  * \param pri_idx Target index of the existing primary field mapping
  * \return Alternate field ID, or negative error code
  */
-int schema_add_alternative_field(struct adb_db *db,
-	struct adb_table *table, const char *field, int pri_idx);
+int schema_add_alternative_field(struct adb_db *db, struct adb_table *table,
+								 const char *field, int pri_idx);
 
 /*!
  * \brief Sort the table fields array.
@@ -126,8 +130,7 @@ int schema_add_alternative_field(struct adb_db *db,
  * \param table Table whose indexes will be sorted
  * \return 0 on success, negative error code on failure
  */
-int schema_order_import_index(struct adb_db *db,
-	struct adb_table *table);
+int schema_order_import_index(struct adb_db *db, struct adb_table *table);
 
 /*!
  * \brief Write the binary schema mappings.

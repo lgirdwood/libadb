@@ -33,7 +33,11 @@
 
 /*! \defgroup table Table
  *
- * Database table management routines.
+ * \brief Database table management routines.
+ *
+ * Core structs and logic orchestrating higher level abstraction of loaded
+ * datasets. Exposes indexing (Hashing, KD-trees, HTM depth constraints)
+ * and metadata lifecycle management.
  */
 
 #define ADB_TABLE_MAX_FIELDS 128 /* max number of indexes */

@@ -28,7 +28,11 @@
 
 /*! \defgroup htm HTM
  *
- * Hierarchical Triangular Mesh routines.
+ * \brief Hierarchical Triangular Mesh routines.
+ *
+ * Spherically partitions coordinate space into trixel structures, 
+ * offering fast overlap filtering and depth-tiered object groupings 
+ * optimized for field-of-view queries.
  */
 
 #define INSIDE_UP_LIMIT -1.0e-5

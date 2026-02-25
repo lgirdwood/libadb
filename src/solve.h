@@ -29,7 +29,12 @@
 
 /*! \defgroup solve Solve
  *
- * Astronomical plate solving routines.
+ * \brief Astronomical plate solving routines.
+ *
+ * Engine for matching unrecognized star fields to known catalogs. It utilizes
+ * geometric asterism hashing (distances, parities, and magnitudes) across 
+ * quad-patterns to compute accurate equatorial coordinates (RA/DEC) from 
+ * raw plate focal geometries.
  */
 
 /* Turns on debug output for each solve stage */

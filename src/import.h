@@ -29,7 +29,11 @@
 
 /*! \defgroup import Import
  *
- * Dataset and table import routines.
+ * \brief Dataset and table import routines.
+ *
+ * Provides APIs and internal abstractions for importing external astronomical
+ * datasets (like CDS files) into structured database tables. Handles KD-Tree
+ * generation and HTM trixel partitioning during data insertion.
  */
 
 #define ADB_TABLE_MAX_FIELDS 128 /* max number of indexes */

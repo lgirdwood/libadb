@@ -42,7 +42,11 @@ struct kd_elem;
 
 /*! \defgroup kdtree KD-Tree
  *
- * KD-Tree implementation for spatial indexing.
+ * \brief KD-Tree implementation for spatial indexing.
+ *
+ * Contains algorithms to build and query balanced k-dimensional trees 
+ * for rapid spatial searches over astronomical datasets, supporting nearest 
+ * neighbor lookups and bounding box exclusions.
  */
 
 /*! \struct kd

@@ -30,7 +30,10 @@
 
 /*! \defgroup hash Hash
  *
- * Hash mapping functionality for fast table lookups.
+ * \brief Hash mapping functionality for fast table lookups.
+ *
+ * String and integer hashing frameworks allowing O(1) object 
+ * retrieval by designations or internal identifiers across loaded tables.
  */
 
 #define ADB_MAX_HASH_MAPS 16 /* number of hash maps */
