@@ -20,7 +20,7 @@ jobs:
         sudo apt-get install -y cmake build-essential zlib1g-dev libftp-dev
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Werror"
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build
