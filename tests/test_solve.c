@@ -49,6 +49,7 @@ static void test_solve_plate_pa(void)
 	double pa = pa_get_plate(&p1, &p2);
 	/* PA should be computable without crash and bounded by normal atan2 ranges */
 	assert(pa >= -M_PI && pa <= M_PI * 2.0);
+	(void)pa;
 	printf("    -> PASS\n");
 }
 

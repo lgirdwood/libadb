@@ -160,6 +160,31 @@ int import_get_object_depth_max(struct adb_table *table, float value);
  */
 int import_get_object_depth_min(struct adb_table *table, float value);
 
+/*!
+ * \brief Get index where limit% of remaining objects exist.
+ * \ingroup import
+ * 
+ * \param db Pointer to the database instance
+ * \param table Pointer to the table
+ * \param limit Fraction of remaining objects
+ * \param histo Histogram width
+ * \param index Start index to count down from
+ * \param remaining Pointer to remaining object count
+ * \return The calculated index
+ */
+int get_percent_limit(struct adb_db *db, struct adb_table *table, float limit,
+					  float histo, int index, int *remaining);
+
+/*!
+ * \brief Calculate histogram depth limits.
+ * \ingroup import
+ * 
+ * \param db Pointer to the database instance
+ * \param table Pointer to the table
+ * \param histo Histogram width
+ */
+void histo_depth_calc(struct adb_db *db, struct adb_table *table, float histo);
+
 #endif
 
 #endif

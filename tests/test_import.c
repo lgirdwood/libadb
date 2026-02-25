@@ -8,12 +8,14 @@
 #include "../src/table.h"
 #include "../src/lib.h"
 
-static void test_import_functions(void) {
+static void test_import_functions(void)
+{
 	printf("   Testing Import APIs...\n");
 
-	struct adb_library *lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
+	struct adb_library *lib =
+		adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
 	assert(lib != NULL);
-	
+
 	struct adb_db *db = adb_create_db(lib, 7, 1);
 	assert(db != NULL);
 
@@ -32,21 +34,27 @@ static void test_import_functions(void) {
 
 	int max_depth = import_get_object_depth_max(table, test_val);
 	int min_depth = import_get_object_depth_min(table, test_val);
-	
+
 	printf("      Depth calculations mapping verification...\n");
 	/* Result may be -EINVAL if histogram bounds aren't set in this specific table */
 	assert(max_depth >= -22);
 	assert(min_depth >= -22);
+	(void)max_depth;
+	(void)min_depth;
 
 	/* 2. Test fetching Column Importer (returns a function pointer) */
 	printf("      Testing primary column importer fetch...\n");
-	adb_field_import1 primary_import_func = table_get_column_import(db, ADB_CTYPE_DOUBLE);
+	adb_field_import1 primary_import_func =
+		table_get_column_import(db, ADB_CTYPE_DOUBLE);
 	assert(primary_import_func != NULL);
+	(void)primary_import_func;
 
 	/* 3. Test fetching Alternate Key Importer */
 	printf("      Testing alternate key importer fetch...\n");
-	adb_field_import2 alt_import_func = table_get_alt_key_import(db, ADB_CTYPE_DOUBLE);
+	adb_field_import2 alt_import_func =
+		table_get_alt_key_import(db, ADB_CTYPE_DOUBLE);
 	assert(alt_import_func != NULL);
+	(void)alt_import_func;
 
 	/* 4. Test missing declarations safely
 	 * The table_init_object_import declaration has been verified to be obsolete.
@@ -60,11 +68,64 @@ static void test_import_functions(void) {
 	printf("    -> PASS\n");
 }
 
-int main(void) {
+static void test_histogram_distribution(void)
+{
+	printf("   Testing Histogram Distribution...\n");
+
+	struct adb_library *lib =
+		adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
+	assert(lib != NULL);
+
+	struct adb_db *db = adb_create_db(lib, 7, 1);
+	assert(db != NULL);
+
+	int table_id = adb_table_open(db, "V", "109", "sky2kv4");
+	assert(table_id >= 0);
+
+	struct adb_table *table = &db->table[table_id];
+	assert(table != NULL);
+
+	int i;
+	table->object.count = 800;
+	table->object.min_value = 0.0f;
+	table->object.max_value = 100.0f;
+	for (i = 0; i < ADB_TABLE_HISTOGRAM_DIVS; i++) {
+		if (i < 80)
+			table->file_index.histo[i] = 10;
+		else
+			table->file_index.histo[i] = 0;
+	}
+
+	float histo = (table->object.max_value - table->object.min_value) /
+				  (ADB_TABLE_HISTOGRAM_DIVS - 1);
+
+	histo_depth_calc(db, table, histo);
+
+	float expected[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 5.0f, 20.0f };
+
+	for (i = 0; i < 8; i++) {
+		float expected_min = expected[i] * histo;
+		float actual_min = table->depth_map[i].min_value;
+		assert(actual_min - expected_min > -0.0001 &&
+			   actual_min - expected_min < 0.0001);
+		(void)expected_min;
+		(void)actual_min;
+	}
+
+	adb_table_close(db, table_id);
+	adb_db_free(db);
+	adb_close_library(lib);
+
+	printf("    -> PASS\n");
+}
+
+int main(void)
+{
 	printf("Starting Import Unit Tests...\n");
-	
+
 	test_import_functions();
-	
+	test_histogram_distribution();
+
 	printf("All Import Unit Tests Passed Successfully!\n");
 	return 0;
 }

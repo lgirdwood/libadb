@@ -423,32 +423,28 @@ static void get_histogram_keys(struct adb_db *db, struct adb_table *table)
 	}
 }
 
-static float hlimit[] = { 0.8, 0.75, 0.66, 0.5 };
-
-/* get index where limit% of remaining objects exist */
-static int get_percent_limit(struct adb_db *db, struct adb_table *table,
-							 float limit, float histo, int index,
-							 int *remaining)
+int get_percent_limit(struct adb_db *db, struct adb_table *table, float limit,
+					  float histo, int index, int *remaining)
 {
 	int required;
 	int i, c = 0, r = *remaining;
 
-	required = 0.8 * r;
+	required = limit * r;
 
 	for (i = index; i >= 0; i--) {
 		c += table->file_index.histo[i];
 		if (c >= required) {
-			*remaining = r - c + table->file_index.histo[i];
+			*remaining = r - c;
 			return i;
 		}
 	}
+	*remaining = r - c;
 	return 0;
 }
 
-static void histo_depth_calc(struct adb_db *db, struct adb_table *table,
-							 float histo)
+void histo_depth_calc(struct adb_db *db, struct adb_table *table, float histo)
 {
-	int i, j, start, old_start, remaining, limit = 0, total = 0;
+	int i, j, start, old_start, remaining, total = 0;
 
 	start = 0;
 	old_start = ADB_TABLE_HISTOGRAM_DIVS - 1;
@@ -456,7 +452,10 @@ static void histo_depth_calc(struct adb_db *db, struct adb_table *table,
 
 	/* sort objects by magnitude into htm depth levels */
 	for (j = db->htm->depth; j >= 0; j--) {
-		start = get_percent_limit(db, table, hlimit[limit], histo, old_start,
+		float limit_f =
+			(3.0f * powf(4.0f, (float)j)) / (powf(4.0f, (float)(j + 1)) - 1.0f);
+		int search_index = (j == db->htm->depth) ? old_start : old_start - 1;
+		start = get_percent_limit(db, table, limit_f, histo, search_index,
 								  &remaining);
 
 		table->depth_map[j].min_value = table->object.min_value + start * histo;

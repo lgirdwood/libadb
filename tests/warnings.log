@@ -1,0 +1,26 @@
+In file included from ../src/solve.h:24,
+                 from test_solve.c:7:
+../src/debug.h: In function ‘adbout_’:
+../src/debug.h:34:43: warning: unused parameter ‘db’ [-Wunused-parameter]
+   34 | static inline void adbout_(struct adb_db *db, const char *level,
+      |                            ~~~~~~~~~~~~~~~^~
+../src/debug.h: In function ‘adberr_’:
+../src/debug.h:45:43: warning: unused parameter ‘db’ [-Wunused-parameter]
+   45 | static inline void adberr_(struct adb_db *db, const char *level,
+      |                            ~~~~~~~~~~~~~~~^~
+../src/debug.h: In function ‘htmout_’:
+../src/debug.h:87:40: warning: unused parameter ‘htm’ [-Wunused-parameter]
+   87 | static inline void htmout_(struct htm *htm, const char *level,
+      |                            ~~~~~~~~~~~~^~~
+../src/debug.h: In function ‘htmerr_’:
+../src/debug.h:97:40: warning: unused parameter ‘htm’ [-Wunused-parameter]
+   97 | static inline void htmerr_(struct htm *htm, const char *level,
+      |                            ~~~~~~~~~~~~^~~
+../src/debug.h: In function ‘adboutl_’:
+../src/debug.h:138:49: warning: unused parameter ‘lib’ [-Wunused-parameter]
+  138 | static inline void adboutl_(struct adb_library *lib, const char *level,
+      |                             ~~~~~~~~~~~~~~~~~~~~^~~
+../src/debug.h: In function ‘adberrl_’:
+../src/debug.h:148:49: warning: unused parameter ‘lib’ [-Wunused-parameter]
+  148 | static inline void adberrl_(struct adb_library *lib, const char *level,
+      |                             ~~~~~~~~~~~~~~~~~~~~^~~
