@@ -21,13 +21,8 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-#include <stdlib.h>
-#include <math.h>
-
-#include <libastrodb/db-import.h>
-#include "private.h"
+#include "libastrodb/db-import.h"
 #include "htm.h"
-
 /*! \defgroup hash Hash
  *
  * \brief Hash mapping functionality for fast table lookups.

@@ -16,22 +16,23 @@
  *  Copyright (C) 2013 - 2014 Liam Girdwood
  */
 
-#include <stdlib.h>
+#ifdef DEBUG
 #include <stdio.h>
-#include <errno.h>
-#include <string.h>
+#endif
 #include <unistd.h>
 #include <math.h>
-#include <ctype.h>
+#include <pthread.h>
 #include <pthread.h>
 
 #include "solve.h"
 
 static void equ_to_plate(struct adb_solve_solution *solution,
-	const struct adb_object *o1, const struct adb_object *o2,
-	struct adb_pobject *p1, struct adb_pobject *p2,
-	double ra, double dec, int *x_, int *y_)
+						 const struct adb_object *o1,
+						 const struct adb_object *o2, struct adb_pobject *p1,
+						 struct adb_pobject *p2, double ra, double dec, int *x_,
+						 int *y_)
 {
+	(void)solution;
 	struct adb_object otarget;
 	double plate_pa, equ_pa, delta_pa;
 	double plate_dist, equ_dist;
@@ -67,10 +68,12 @@ static void equ_to_plate(struct adb_solve_solution *solution,
  * by someone more familiar with the problem.
  */
 static void plate_to_equ(struct adb_solve_solution *solution,
-	const struct adb_object *o1, const struct adb_object *o2,
-	struct adb_pobject *p1, struct adb_pobject *p2,
-	struct adb_pobject *ptarget, double *ra_, double *dec_)
+						 const struct adb_object *o1,
+						 const struct adb_object *o2, struct adb_pobject *p1,
+						 struct adb_pobject *p2, struct adb_pobject *ptarget,
+						 double *ra_, double *dec_)
 {
+	(void)solution;
 	double plate_pa, equ_pa, delta_pa;
 	double plate_dist, equ_dist;
 	double rad_per_pixel, target_pa, target_dist;
@@ -127,7 +130,7 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 /* compare plate object brightness against the brightness of all the reference
  * plate objects and then use the average differences to calculate magnitude */
 static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
-	int target)
+									  int target)
 {
 	struct adb_reference_object *ref, *reft;
 	double mean = 0.0, plate_dist, equ_dist, rad_per_pixel;
@@ -163,12 +166,13 @@ static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
 	if (count == 0)
 		return 0.0;
 
-	return mean / (double) count;
+	return mean / (double)count;
 }
 
 static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
-	int target, double mean)
+									   int target, double mean)
 {
+	(void)mean;
 	struct adb_reference_object *ref, *reft;
 	double sigma = 0.0, plate_dist, equ_dist, rad_per_pixel;
 	int i, count = 0;
@@ -212,17 +216,15 @@ static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
 /* calculate the average difference between plate position values and solution
  * objects. Use this as basis for calculating RA,DEC based on plate x,y.
  */
-void posn_equ_to_plate(struct adb_solve_solution *solution,
-	double ra, double dec, double *x_, double *y_)
+void posn_equ_to_plate(struct adb_solve_solution *solution, double ra,
+					   double dec, double *x_, double *y_)
 {
 	struct adb_reference_object *ref, *refn;
 	int x_sum = 0, y_sum = 0, i, j, count = 0, x, y;
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects; i++) {
-
 		for (j = 0; j < solution->num_ref_objects; j++) {
-
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
@@ -237,8 +239,8 @@ void posn_equ_to_plate(struct adb_solve_solution *solution,
 				ref->pobject.y == refn->pobject.y)
 				continue;
 
-			equ_to_plate(solution, ref->object, refn->object,
-				&ref->pobject, &refn->pobject, ra, dec, &x, &y);
+			equ_to_plate(solution, ref->object, refn->object, &ref->pobject,
+						 &refn->pobject, ra, dec, &x, &y);
 
 			x_sum += x;
 			y_sum += y;
@@ -255,8 +257,8 @@ void posn_equ_to_plate(struct adb_solve_solution *solution,
 	}
 }
 
-void posn_equ_to_plate_fast(struct adb_solve_solution *solution,
-	double ra, double dec, double *x_, double *y_)
+void posn_equ_to_plate_fast(struct adb_solve_solution *solution, double ra,
+							double dec, double *x_, double *y_)
 {
 	struct adb_reference_object *ref, *refn;
 	int x_sum = 0, y_sum = 0, i, j, count = 0, x, y, objects;
@@ -268,9 +270,7 @@ void posn_equ_to_plate_fast(struct adb_solve_solution *solution,
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < objects; i++) {
-
 		for (j = 0; j < objects; j++) {
-
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
@@ -282,8 +282,8 @@ void posn_equ_to_plate_fast(struct adb_solve_solution *solution,
 				ref->pobject.y == refn->pobject.y)
 				continue;
 
-			equ_to_plate(solution, ref->object, refn->object,
-				&ref->pobject, &refn->pobject, ra, dec, &x, &y);
+			equ_to_plate(solution, ref->object, refn->object, &ref->pobject,
+						 &refn->pobject, ra, dec, &x, &y);
 
 			x_sum += x;
 			y_sum += y;
@@ -304,7 +304,7 @@ void posn_equ_to_plate_fast(struct adb_solve_solution *solution,
  * objects. Use this as basis for calculating RA,DEC based on plate x,y.
  */
 void posn_plate_to_equ(struct adb_solve_solution *solution,
-	struct adb_pobject *primary, double *ra_, double *dec_)
+					   struct adb_pobject *primary, double *ra_, double *dec_)
 {
 	struct adb_reference_object *ref, *refn;
 	double ra_sum = 0.0, dec_sum = 0.0, ra, dec;
@@ -312,9 +312,7 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < solution->num_ref_objects; i++) {
-
 		for (j = 0; j < solution->num_ref_objects; j++) {
-
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
@@ -325,13 +323,11 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 				continue;
 
 			/* dont primary object against itself */
-			if (ref->pobject.x == primary->x &&
-				ref->pobject.y == primary->y)
+			if (ref->pobject.x == primary->x && ref->pobject.y == primary->y)
 				continue;
 
 			/* dont primary object against itself */
-			if (refn->pobject.x == primary->x &&
-				refn->pobject.y == primary->y)
+			if (refn->pobject.x == primary->x && refn->pobject.y == primary->y)
 				continue;
 
 			/* dont compare objects against itself */
@@ -339,9 +335,8 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 				ref->pobject.y == refn->pobject.y)
 				continue;
 
-			plate_to_equ(solution, ref->object, refn->object,
-				&ref->pobject, &refn->pobject,
-				primary, &ra, &dec);
+			plate_to_equ(solution, ref->object, refn->object, &ref->pobject,
+						 &refn->pobject, primary, &ra, &dec);
 
 			ra_sum += ra;
 			dec_sum += dec;
@@ -359,7 +354,8 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 }
 
 void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
-	struct adb_pobject *primary, double *ra_, double *dec_)
+							struct adb_pobject *primary, double *ra_,
+							double *dec_)
 {
 	struct adb_reference_object *ref, *refn;
 	double ra_sum = 0.0, dec_sum = 0.0, ra, dec;
@@ -372,9 +368,7 @@ void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 
 	/* get RA, DEC for each reference object */
 	for (i = 0; i < objects; i++) {
-
 		for (j = 0; j < objects; j++) {
-
 			ref = &solution->ref[i];
 			refn = &solution->ref[j];
 
@@ -382,13 +376,11 @@ void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 				continue;
 
 			/* dont primary object against itself */
-			if (ref->pobject.x == primary->x &&
-				ref->pobject.y == primary->y)
+			if (ref->pobject.x == primary->x && ref->pobject.y == primary->y)
 				continue;
 
 			/* dont primary object against itself */
-			if (refn->pobject.x == primary->x &&
-				refn->pobject.y == primary->y)
+			if (refn->pobject.x == primary->x && refn->pobject.y == primary->y)
 				continue;
 
 			/* dont compare objects against itself */
@@ -396,9 +388,8 @@ void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 				ref->pobject.y == refn->pobject.y)
 				continue;
 
-			plate_to_equ(solution, ref->object, refn->object,
-				&ref->pobject, &refn->pobject,
-				primary, &ra, &dec);
+			plate_to_equ(solution, ref->object, refn->object, &ref->pobject,
+						 &refn->pobject, primary, &ra, &dec);
 
 			ra_sum += ra;
 			dec_sum += dec;
@@ -426,7 +417,6 @@ void posn_clip_plate_coefficients(struct adb_solve_solution *solution)
 		return;
 
 	do {
-
 		lastcount = count;
 		count = 0;
 
@@ -438,8 +428,8 @@ void posn_clip_plate_coefficients(struct adb_solve_solution *solution)
 				continue;
 
 			ref->dist_mean = get_ref_posn_delta_mean(solution, i);
-			ref->posn_sigma = get_ref_posn_delta_sigma(solution,
-				i, ref->dist_mean);
+			ref->posn_sigma =
+				get_ref_posn_delta_sigma(solution, i, ref->dist_mean);
 
 			mean_sigma += ref->posn_sigma;
 			count++;
@@ -460,7 +450,7 @@ void posn_clip_plate_coefficients(struct adb_solve_solution *solution)
 				continue;
 
 			t = ref->posn_sigma - mean_sigma;
-			t *=t;
+			t *= t;
 			sigma_sigma += t;
 			count++;
 		}
@@ -496,7 +486,6 @@ void posn_calc_solved_plate(struct adb_solve_solution *solution)
 
 	/* compare each detected object against reference objects */
 	for (i = 0; i < solution->num_ref_objects; i++) {
-
 		ref = &solution->ref[i];
 		idx = ref->id;
 
@@ -505,8 +494,8 @@ void posn_calc_solved_plate(struct adb_solve_solution *solution)
 			continue;
 
 		posn_plate_to_equ(solution, &ref->pobject,
-				&solution->solve_object[idx].ra,
-				&solution->solve_object[idx].dec);
+						  &solution->solve_object[idx].ra,
+						  &solution->solve_object[idx].dec);
 	}
 }
 
@@ -518,15 +507,14 @@ void posn_calc_unsolved_plate(struct adb_solve_solution *solution)
 
 	/* compare each detected object against reference objects */
 	for (i = 0; i < solution->num_ref_objects; i++) {
-
 		solve_object = &solution->solve_object[i];
 
 		/* skip if the object is solved */
 		if (solve_object->object)
-				continue;
+			continue;
 
 		posn_plate_to_equ(solution, &solution->pobjects[i],
-				&solution->solve_object[i].ra,
-				&solution->solve_object[i].dec);
+						  &solution->solve_object[i].ra,
+						  &solution->solve_object[i].dec);
 	}
 }

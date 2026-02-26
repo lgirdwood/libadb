@@ -21,11 +21,10 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-#include "debug.h"
 #include "table.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
-#include <libastrodb/solve.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
+#include "libastrodb/solve.h"
 
 /*! \defgroup solve Solve
  *

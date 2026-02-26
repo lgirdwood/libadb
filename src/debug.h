@@ -25,15 +25,17 @@
 #include <stdarg.h>
 #include <execinfo.h>
 
-#include <libastrodb/db.h>
+#include "libastrodb/db.h"
 #include "htm.h"
 #include "lib.h"
 
-#define DEBUG_BUFFER	1024
+#define DEBUG_BUFFER 1024
 
 static inline void adbout_(struct adb_db *db, const char *level,
-	const char *file, const char *func, int line, const char *fmt, ...)
+						   const char *file, const char *func, int line,
+						   const char *fmt, ...)
 {
+	(void)db;
 	va_list va;
 	va_start(va, fmt);
 	fprintf(stdout, "%s:%s:%s:%d:  ", level, file, func, line);
@@ -43,8 +45,10 @@ static inline void adbout_(struct adb_db *db, const char *level,
 }
 
 static inline void adberr_(struct adb_db *db, const char *level,
-	const char *file, const char *func, int line, const char *fmt, ...)
+						   const char *file, const char *func, int line,
+						   const char *fmt, ...)
 {
+	(void)db;
 	int j, nptrs;
 	va_list va;
 	void *buffer[DEBUG_BUFFER];
@@ -66,27 +70,28 @@ static inline void adberr_(struct adb_db *db, const char *level,
 }
 
 #define adb_error(db, format, arg...) \
-	adberr_(db, "E", __FILE__, __func__, __LINE__, format, ## arg)
+	adberr_(db, "E", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_info(db, type, format, arg...) \
-	if (db->msg_level >= ADB_MSG_INFO  && type & db->msg_flags) \
-		adbout_(db, "  I", __FILE__, __func__, __LINE__, format, ## arg)
+#define adb_info(db, type, format, arg...)                     \
+	if (db->msg_level >= ADB_MSG_INFO && type & db->msg_flags) \
+	adbout_(db, "  I", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_warn(db, type, format, arg...) \
+#define adb_warn(db, type, format, arg...)                     \
 	if (db->msg_level >= ADB_MSG_WARN && type & db->msg_flags) \
-		adbout_(db, " W", __FILE__, __func__, __LINE__, format, ## arg)
+	adbout_(db, " W", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_debug(db, type, format, arg...) \
+#define adb_debug(db, type, format, arg...)                               \
 	if (unlikely(db->msg_level >= ADB_MSG_DEBUG) && type & db->msg_flags) \
-		adbout_(db, "   D", __FILE__, __func__, __LINE__, format, ## arg)
+	adbout_(db, "   D", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_vdebug(db, type, format, arg...) \
+#define adb_vdebug(db, type, format, arg...)                               \
 	if (unlikely(db->msg_level >= ADB_MSG_VDEBUG) && type & db->msg_flags) \
-		adbout_(db, "   D", __FILE__, __func__, __LINE__, format, ## arg)
+	adbout_(db, "   D", __FILE__, __func__, __LINE__, format, ##arg)
 
-static inline void htmout_(struct htm *htm, const char *level,
-	const char *file, const char *func, int line, const char *fmt, ...)
+static inline void htmout_(struct htm *htm, const char *level, const char *file,
+						   const char *func, int line, const char *fmt, ...)
 {
+	(void)htm;
 	va_list va;
 	va_start(va, fmt);
 	fprintf(stdout, "%s:%s:%s:%d:  ", level, file, func, line);
@@ -94,9 +99,10 @@ static inline void htmout_(struct htm *htm, const char *level,
 	va_end(va);
 }
 
-static inline void htmerr_(struct htm *htm, const char *level,
-	const char *file, const char *func, int line, const char *fmt, ...)
+static inline void htmerr_(struct htm *htm, const char *level, const char *file,
+						   const char *func, int line, const char *fmt, ...)
 {
+	(void)htm;
 	int j, nptrs;
 	va_list va;
 	void *buffer[DEBUG_BUFFER];
@@ -117,27 +123,29 @@ static inline void htmerr_(struct htm *htm, const char *level,
 }
 
 #define adb_htm_error(htm, format, arg...) \
-	htmerr_(htm, "E", __FILE__, __func__, __LINE__, format, ## arg)
+	htmerr_(htm, "E", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_htm_info(htm, type, format, arg...) \
-	if (htm->msg_level >= ADB_MSG_INFO  && type & htm->msg_flags) \
-		htmout_(htm, "  I", __FILE__, __func__, __LINE__, format, ## arg)
+#define adb_htm_info(htm, type, format, arg...)                  \
+	if (htm->msg_level >= ADB_MSG_INFO && type & htm->msg_flags) \
+	htmout_(htm, "  I", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_htm_warn(htm, type, format, arg...) \
+#define adb_htm_warn(htm, type, format, arg...)                  \
 	if (htm->msg_level >= ADB_MSG_WARN && type & htm->msg_flags) \
-		htmout_(htm, " W", __FILE__, __func__, __LINE__, format, ## arg)
+	htmout_(htm, " W", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_htm_debug(htm, type, format, arg...) \
+#define adb_htm_debug(htm, type, format, arg...)                            \
 	if (unlikely(htm->msg_level >= ADB_MSG_DEBUG) && type & htm->msg_flags) \
-		htmout_(htm, "   D", __FILE__, __func__, __LINE__, format, ## arg)
+	htmout_(htm, "   D", __FILE__, __func__, __LINE__, format, ##arg)
 
-#define adb_htm_vdebug(htm, type, format, arg...) \
+#define adb_htm_vdebug(htm, type, format, arg...)                            \
 	if (unlikely(htm->msg_level >= ADB_MSG_VDEBUG) && type & htm->msg_flags) \
-		htmout_(htm, "   D", __FILE__, __func__, __LINE__, format, ## arg)
+	htmout_(htm, "   D", __FILE__, __func__, __LINE__, format, ##arg)
 
 static inline void adboutl_(struct adb_library *lib, const char *level,
-	const char *file, const char *func, int line, const char *fmt, ...)
+							const char *file, const char *func, int line,
+							const char *fmt, ...)
 {
+	(void)lib;
 	va_list va;
 	va_start(va, fmt);
 	fprintf(stdout, "%s:%s:%s:%d:  ", level, file, func, line);
@@ -146,8 +154,10 @@ static inline void adboutl_(struct adb_library *lib, const char *level,
 }
 
 static inline void adberrl_(struct adb_library *lib, const char *level,
-	const char *file, const char *func, int line, const char *fmt, ...)
+							const char *file, const char *func, int line,
+							const char *fmt, ...)
 {
+	(void)lib;
 	int j, nptrs;
 	va_list va;
 	void *buffer[DEBUG_BUFFER];
@@ -168,10 +178,10 @@ static inline void adberrl_(struct adb_library *lib, const char *level,
 }
 
 #define astrolib_error(lib, format, arg...) \
-	adberrl_(lib, "E", __FILE__, __func__, __LINE__, format, ## arg)
+	adberrl_(lib, "E", __FILE__, __func__, __LINE__, format, ##arg)
 
 #define astrolib_info(lib, type, format, arg...) \
-		adboutl_(lib, "  I", __FILE__, __func__, __LINE__, format, ## arg)
+	adboutl_(lib, "  I", __FILE__, __func__, __LINE__, format, ##arg)
 
 #endif
 

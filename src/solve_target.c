@@ -17,14 +17,13 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
+#include <errno.h> // IWYU pragma: keep
 #include <unistd.h>
 #include <math.h>
-#include <ctype.h>
+#include <pthread.h>
 #include <pthread.h>
 
+#include "debug.h"
 #include "solve.h"
 
 static int plate_object_cmp(const void *o1, const void *o2)
@@ -41,7 +40,8 @@ static int plate_object_cmp(const void *o1, const void *o2)
 
 /* add a reference object to the solution */
 int target_add_ref_object(struct adb_solve_solution *soln, int id,
-	const struct adb_object *object, struct adb_pobject *pobject)
+						  const struct adb_object *object,
+						  struct adb_pobject *pobject)
 {
 	struct adb_reference_object *ref;
 	struct adb_solve *solve = soln->solve;
@@ -72,7 +72,8 @@ int target_add_ref_object(struct adb_solve_solution *soln, int id,
 
 /* calculate object pattern variables to match against source objects */
 static void create_pattern_object(struct adb_solve *solve, int target,
-	struct adb_pobject *primary, struct adb_pobject *secondary)
+								  struct adb_pobject *primary,
+								  struct adb_pobject *secondary)
 {
 	struct needle_object *t = &solve->target.secondary[target];
 
@@ -80,10 +81,8 @@ static void create_pattern_object(struct adb_solve *solve, int target,
 
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = distance_get_plate(primary, secondary);
-	t->distance.pattern_min =
-		t->distance.plate_actual - solve->tolerance.dist;
-	t->distance.pattern_max =
-		t->distance.plate_actual + solve->tolerance.dist;
+	t->distance.pattern_min = t->distance.plate_actual - solve->tolerance.dist;
+	t->distance.pattern_max = t->distance.plate_actual + solve->tolerance.dist;
 
 	/* calculate plate magnitude and min,max to primary */
 	t->mag.plate_actual = mag_get_plate_diff(primary, secondary);
@@ -102,12 +101,14 @@ void target_create_pattern(struct adb_solve *solve)
 
 	/* sort plate object on brightness */
 	qsort(solve->plate.object, solve->plate.num_objects,
-		sizeof(struct adb_pobject), plate_object_cmp);
+		  sizeof(struct adb_pobject), plate_object_cmp);
 
 	/* create target pattern */
-	for (i = solve->plate.window_start + 1, j = 0; i < solve->plate.window_end; i++, j++)
+	for (i = solve->plate.window_start + 1, j = 0; i < solve->plate.window_end;
+		 i++, j++)
 		create_pattern_object(solve, j,
-			&solve->plate.object[solve->plate.window_start], &solve->plate.object[i]);
+							  &solve->plate.object[solve->plate.window_start],
+							  &solve->plate.object[i]);
 
 	/* work out PA tolerances */
 	t0 = &solve->target.secondary[0];
@@ -132,18 +133,18 @@ void target_create_pattern(struct adb_solve *solve)
 	t2->pa.pattern_max = t2->pa.pattern_min + solve->tolerance.pa;
 	t2->pa.pattern_min -= solve->tolerance.pa;
 
-	t0->pa.plate_actual = t0->pa.pattern_min +
-			(t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
+	t0->pa.plate_actual =
+		t0->pa.pattern_min + (t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
 	if (t0->pa.plate_actual < 0.0)
-			t0->pa.plate_actual += 2.0 * M_PI;
-	t1->pa.plate_actual = t1->pa.pattern_min +
-			(t1->pa.pattern_max - t1->pa.pattern_min) / 2.0;
+		t0->pa.plate_actual += 2.0 * M_PI;
+	t1->pa.plate_actual =
+		t1->pa.pattern_min + (t1->pa.pattern_max - t1->pa.pattern_min) / 2.0;
 	if (t1->pa.plate_actual < 0.0)
-			t1->pa.plate_actual += 2.0 * M_PI;
-	t2->pa.plate_actual = t2->pa.pattern_min +
-			(t2->pa.pattern_max - t2->pa.pattern_min) / 2.0;
+		t1->pa.plate_actual += 2.0 * M_PI;
+	t2->pa.plate_actual =
+		t2->pa.pattern_min + (t2->pa.pattern_max - t2->pa.pattern_min) / 2.0;
 	if (t2->pa.plate_actual < 0.0)
-			t2->pa.plate_actual += 2.0 * M_PI;
+		t2->pa.plate_actual += 2.0 * M_PI;
 
 	/* calculate flip PA tolerances where image can be fliped */
 	t0->pa_flip.plate_actual = 2.0 * M_PI - t0->pa.plate_actual;
@@ -161,8 +162,10 @@ void target_create_pattern(struct adb_solve *solve)
 
 /* calculate object pattern variables to match against source objects */
 static void create_single_object(struct adb_solve *solve, int target,
-	struct adb_pobject *primary, struct adb_pobject *secondary,
-	struct solve_runtime *runtime, struct adb_solve_solution *solution)
+								 struct adb_pobject *primary,
+								 struct adb_pobject *secondary,
+								 struct solve_runtime *runtime,
+								 struct adb_solve_solution *solution)
 {
 	struct needle_object *t = &runtime->soln_target[target];
 
@@ -170,9 +173,11 @@ static void create_single_object(struct adb_solve *solve, int target,
 
 	/* calculate plate distance and min,max to primary */
 	t->distance.plate_actual = distance_get_plate(primary, secondary);
-	t->distance.pattern_min = solution->rad_per_pix *
+	t->distance.pattern_min =
+		solution->rad_per_pix *
 		(t->distance.plate_actual - solve->tolerance.dist);
-	t->distance.pattern_max = solution->rad_per_pix *
+	t->distance.pattern_max =
+		solution->rad_per_pix *
 		(t->distance.plate_actual + solve->tolerance.dist);
 
 	/* calculate plate magnitude and min,max to primary */
@@ -185,18 +190,18 @@ static void create_single_object(struct adb_solve *solve, int target,
 }
 
 /* create a pattern of plate targets and sort by magnitude */
-void target_create_single(struct adb_solve *solve,
-	struct adb_pobject *pobject,
-	struct adb_solve_solution *solution,
-	struct solve_runtime *runtime)
+void target_create_single(struct adb_solve *solve, struct adb_pobject *pobject,
+						  struct adb_solve_solution *solution,
+						  struct solve_runtime *runtime)
 {
 	struct needle_object *t0, *t1, *t2, *t3;
 	int i, j;
 
 	/* create target pattern - use pobject as primary  */
-	for (i = solve->plate.window_start, j = 0; i < solve->plate.window_end; i++, j++)
-		create_single_object(solve, j, pobject,
-			&solve->plate.object[i], runtime, solution);
+	for (i = solve->plate.window_start, j = 0; i < solve->plate.window_end;
+		 i++, j++)
+		create_single_object(solve, j, pobject, &solve->plate.object[i],
+							 runtime, solution);
 
 	/* work out PA tolerances */
 	t0 = &runtime->soln_target[0];
@@ -228,22 +233,22 @@ void target_create_single(struct adb_solve *solve,
 	t3->pa.pattern_max = t3->pa.pattern_min + solve->tolerance.pa;
 	t3->pa.pattern_min -= solve->tolerance.pa;
 
-	t0->pa.plate_actual = t0->pa.pattern_min +
-			(t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
+	t0->pa.plate_actual =
+		t0->pa.pattern_min + (t0->pa.pattern_max - t0->pa.pattern_min) / 2.0;
 	if (t0->pa.plate_actual < 0.0)
-			t0->pa.plate_actual += 2.0 * M_PI;
-	t1->pa.plate_actual = t1->pa.pattern_min +
-			(t1->pa.pattern_max - t1->pa.pattern_min) / 2.0;
+		t0->pa.plate_actual += 2.0 * M_PI;
+	t1->pa.plate_actual =
+		t1->pa.pattern_min + (t1->pa.pattern_max - t1->pa.pattern_min) / 2.0;
 	if (t1->pa.plate_actual < 0.0)
-			t1->pa.plate_actual += 2.0 * M_PI;
-	t2->pa.plate_actual = t2->pa.pattern_min +
-			(t2->pa.pattern_max - t2->pa.pattern_min) / 2.0;
+		t1->pa.plate_actual += 2.0 * M_PI;
+	t2->pa.plate_actual =
+		t2->pa.pattern_min + (t2->pa.pattern_max - t2->pa.pattern_min) / 2.0;
 	if (t2->pa.plate_actual < 0.0)
-			t2->pa.plate_actual += 2.0 * M_PI;
-	t3->pa.plate_actual = t3->pa.pattern_min +
-			(t3->pa.pattern_max - t3->pa.pattern_min) / 2.0;
+		t2->pa.plate_actual += 2.0 * M_PI;
+	t3->pa.plate_actual =
+		t3->pa.pattern_min + (t3->pa.pattern_max - t3->pa.pattern_min) / 2.0;
 	if (t3->pa.plate_actual < 0.0)
-			t3->pa.plate_actual += 2.0 * M_PI;
+		t3->pa.plate_actual += 2.0 * M_PI;
 
 	/* calculate flip PA tolerances where image can be fliped */
 	t0->pa_flip.plate_actual = 2.0 * M_PI - t0->pa.plate_actual;
@@ -265,9 +270,10 @@ void target_create_single(struct adb_solve *solve,
 
 /* add matching objects i,j,k to list of potentials on distance */
 void target_add_match_on_distance(struct solve_runtime *runtime,
-	const struct adb_object *primary,
-	struct adb_source_objects *source,
-	int i, int j, int k, double delta, double rad_per_pix)
+								  const struct adb_object *primary,
+								  struct adb_source_objects *source, int i,
+								  int j, int k, double delta,
+								  double rad_per_pix)
 {
 	struct adb_solve *solve = runtime->solve;
 	struct adb_solve_solution *p;
@@ -292,8 +298,9 @@ void target_add_match_on_distance(struct solve_runtime *runtime,
 
 /* add single object to list of potentials on distance */
 void target_add_single_match_on_distance(struct solve_runtime *runtime,
-	const struct adb_object *primary,
-	struct adb_source_objects *source, double delta, int flip)
+										 const struct adb_object *primary,
+										 struct adb_source_objects *source,
+										 double delta, int flip)
 {
 	struct adb_solve_solution *p;
 
@@ -309,8 +316,9 @@ void target_add_single_match_on_distance(struct solve_runtime *runtime,
 
 /* add single object to list of potentials on distance */
 void target_add_single_match_extended(struct solve_runtime *runtime,
-	const struct adb_object *primary,
-	struct adb_source_objects *source, double delta, int flip)
+									  const struct adb_object *primary,
+									  struct adb_source_objects *source,
+									  double delta, int flip)
 {
 	struct adb_solve_solution *p;
 
@@ -326,7 +334,8 @@ void target_add_single_match_extended(struct solve_runtime *runtime,
 
 /* get a set of source objects to check the pattern against */
 int target_prepare_source_objects(struct adb_solve *solve,
-	struct adb_object_set *set, struct adb_source_objects *source)
+								  struct adb_object_set *set,
+								  struct adb_source_objects *source)
 {
 	int object_heads, i, j, count = 0, warn_once = 1;
 
@@ -344,18 +353,19 @@ int target_prepare_source_objects(struct adb_solve *solve,
 
 	/* copy adb_source_objects ptrs from head set */
 	for (i = 0; i < object_heads; i++) {
-
 		const void *object = set->object_heads[i].objects;
 
 		/* copy individual objects */
-		for (j = 0; j < set->object_heads[i].count; j++)  {
+		for (j = 0; j < set->object_heads[i].count; j++) {
 			const struct adb_object *o = object;
 
 			/* ignore bogus objects - import errors ?*/
 			if (o->dec == 0.0 || o->ra == 0.0 || o->mag == 0.0) {
 				if (warn_once) {
 					warn_once = 0;
-					adb_error(solve->db, "object with zeroed attributes in db at head %d !\n");
+					adb_error(
+						solve->db,
+						"object with zeroed attributes in db at head %d !\n");
 				}
 			} else {
 				/* valid object */
@@ -372,12 +382,12 @@ int target_prepare_source_objects(struct adb_solve *solve,
 	}
 
 	/* sort adb_source_objects on magnitude */
-	qsort(source->objects, count, sizeof(struct adb_object *),
-		mag_object_cmp);
+	qsort(source->objects, count, sizeof(struct adb_object *), mag_object_cmp);
 	source->num_objects = count;
 
-	adb_info(solve->db, ADB_LOG_SOLVE, "using %d solver source objects from %d heads\n",
-			count, object_heads);
+	adb_info(solve->db, ADB_LOG_SOLVE,
+			 "using %d solver source objects from %d heads\n", count,
+			 object_heads);
 
 	return count;
 }

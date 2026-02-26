@@ -29,8 +29,8 @@
 #include "debug.h"
 #include "htm.h"
 #include "table.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 
 /*! \struct trixel_hdr
  * \brief trixel header

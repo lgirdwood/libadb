@@ -17,14 +17,13 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+#include <errno.h> // IWYU pragma: keep
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <ctype.h>
 #include <pthread.h>
 
+#include "lib.h"
 #include "solve.h"
 
 /* qsort comparison func */
@@ -44,7 +43,7 @@ static int solution_cmp(const void *o1, const void *o2)
  * Find plate object position within solution plate objects.
  */
 static int get_solve_plate(struct adb_solve_solution *solution,
-		struct adb_pobject *pobject)
+						   struct adb_pobject *pobject)
 {
 	int i;
 
@@ -62,8 +61,8 @@ static int get_solve_plate(struct adb_solve_solution *solution,
  * Calculate divergence between potential solution and plate object.
  */
 static void calc_object_divergence(struct solve_runtime *runtime,
-		struct adb_solve_solution *solution,
-		struct adb_pobject *pobject)
+								   struct adb_solve_solution *solution,
+								   struct adb_pobject *pobject)
 {
 	int i;
 
@@ -71,7 +70,7 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	for (i = 0; i < runtime->num_pot_pa; i++) {
 		runtime->pot_pa[i].delta.mag =
 			fabs(mag_get_plate(runtime->solve, solution, pobject) -
-			runtime->pot_pa[0].object[0]->mag);
+				 runtime->pot_pa[0].object[0]->mag);
 
 		runtime->pot_pa[i].divergance =
 			runtime->pot_pa[i].delta.mag * DELTA_MAG_COEFF +
@@ -82,8 +81,9 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 
 /* get object or estimated object magnitude & position for plate object */
 static int get_object(struct adb_solve *solve, int object_id,
-	struct adb_solve_solution *solution,
-	struct adb_pobject *pobject, struct adb_solve_object *sobject)
+					  struct adb_solve_solution *solution,
+					  struct adb_pobject *pobject,
+					  struct adb_solve_object *sobject)
 {
 	struct solve_runtime runtime;
 	int count = 0, plate, new;
@@ -101,8 +101,8 @@ static int get_object(struct adb_solve *solve, int object_id,
 
 		if (plate >= 0) {
 			sobject->object = solution->object[plate];
-			new = target_add_ref_object(solution, object_id,
-				sobject->object, pobject);
+			new = target_add_ref_object(solution, object_id, sobject->object,
+										pobject);
 			return new;
 		}
 	}
@@ -128,8 +128,8 @@ static int get_object(struct adb_solve *solve, int object_id,
 		return 0;
 
 	/* it's possible we may have > 1 potential object so order them */
-	qsort(&runtime.pot_pa, count,
-			sizeof(struct adb_solve_solution), solution_cmp);
+	qsort(&runtime.pot_pa, count, sizeof(struct adb_solve_solution),
+		  solution_cmp);
 
 	/* assign closest object */
 	sobject->object = runtime.pot_pa[0].object[0];
@@ -143,8 +143,9 @@ static int get_object(struct adb_solve *solve, int object_id,
 
 /* get object or estimated object magnitude & position for plate object */
 static int get_extended_object(struct adb_solve *solve, int object_id,
-	struct adb_solve_solution *solution,
-	struct adb_pobject *pobject, struct adb_solve_object *sobject)
+							   struct adb_solve_solution *solution,
+							   struct adb_pobject *pobject,
+							   struct adb_solve_object *sobject)
 {
 	struct solve_runtime runtime;
 	int count = 0;
@@ -176,13 +177,12 @@ static int get_extended_object(struct adb_solve *solve, int object_id,
 	return count;
 }
 
-
 /*
  * Initialise and set search limits for solution for subsequent object
  * searching.
  */
 int adb_solution_set_search_limits(struct adb_solve_solution *solution,
-	double fov, double mag_limit, int table_id)
+								   double fov, double mag_limit, int table_id)
 {
 	struct adb_table *table;
 	struct adb_object_set *set;
@@ -207,8 +207,8 @@ int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 		return -ENOMEM;
 	solution->set = set;
 
-	adb_table_set_constraints(set, centre_ra, centre_dec,
-			fov, -10.0, mag_limit);
+	adb_table_set_constraints(set, centre_ra, centre_dec, fov, -10.0,
+							  mag_limit);
 
 	/* get object heads */
 	object_heads = adb_set_get_objects(set);
@@ -219,8 +219,7 @@ int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 	}
 
 	/* allocate space for adb_source_objects */
-	solution->source.objects =
-		calloc(set->count, sizeof(struct adb_object *));
+	solution->source.objects = calloc(set->count, sizeof(struct adb_object *));
 	if (solution->source.objects == NULL) {
 		free(set);
 		solution->set = NULL;
@@ -229,25 +228,24 @@ int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 
 	/* copy adb_source_objects ptrs from head set */
 	for (i = 0; i < object_heads; i++) {
-
 		const void *object = set->object_heads[i].objects;
 
-		for (j = 0; j < set->object_heads[i].count; j++)  {
+		for (j = 0; j < set->object_heads[i].count; j++) {
 			solution->source.objects[count++] = object;
-			SOBJ_CHECK_SET(((struct adb_object*)object));
+			SOBJ_CHECK_SET(((struct adb_object *)object));
 			object += table->object.bytes;
 		}
 	}
 
 	/* sort adb_source_objects on magnitude */
-	qsort(solution->source.objects, set->count,
-		sizeof(struct adb_object *), mag_object_cmp);
+	qsort(solution->source.objects, set->count, sizeof(struct adb_object *),
+		  mag_object_cmp);
 	solution->source.num_objects = count;
 
 	/* allocate initial reference objects */
-	solution->ref = realloc(solution->ref,
-			sizeof(struct adb_reference_object) *
-			(solution->num_ref_objects + 4 + solution->num_pobjects));
+	solution->ref = realloc(solution->ref, sizeof(struct adb_reference_object) *
+											   (solution->num_ref_objects + 4 +
+												solution->num_pobjects));
 	if (solution->ref == NULL) {
 		free(solution->source.objects);
 		solution->source.objects = NULL;
@@ -260,7 +258,6 @@ int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 	return 0;
 }
 
-
 /* get plate objects or estimates of plate object position and magnitude */
 int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
 {
@@ -271,10 +268,11 @@ int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
 		return 0;
 
 	/* reallocate memory for new solved objects */
-	solution->solve_object = realloc(solution->solve_object,
-		sizeof(struct adb_solve_object) * solution->num_pobjects);
+	solution->solve_object =
+		realloc(solution->solve_object,
+				sizeof(struct adb_solve_object) * solution->num_pobjects);
 	memset(solution->solve_object, 0,
-		sizeof(struct adb_solve_object) * solution->num_pobjects);
+		   sizeof(struct adb_solve_object) * solution->num_pobjects);
 	if (solution->solve_object == NULL)
 		return -ENOMEM;
 
@@ -285,11 +283,10 @@ int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
 
 	/* solve each new plate object */
 #if HAVE_OPENMP
-#pragma omp parallel for schedule(dynamic, 10) \
-	private(ret) reduction (+:num_solved, num_unsolved)
+#pragma omp parallel for schedule(dynamic, 10) private(ret) \
+	reduction(+ : num_solved, num_unsolved)
 #endif
 	for (i = 0; i < solution->num_pobjects; i++) {
-
 		if (solve->exit)
 			continue;
 
@@ -298,7 +295,7 @@ int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
 			continue;
 
 		ret = get_extended_object(solve, i, solution, &solution->pobjects[i],
-					&solution->solve_object[i]);
+								  &solution->solve_object[i]);
 
 		if (ret < 0) {
 			fail = 1;
@@ -320,8 +317,8 @@ int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
 	solution->num_solved_objects = num_solved;
 	solution->num_unsolved_objects = num_unsolved;
 
-	solution->total_objects = solution->num_solved_objects +
-		solution->num_unsolved_objects;
+	solution->total_objects =
+		solution->num_solved_objects + solution->num_unsolved_objects;
 
 	return solution->num_solved_objects;
 }
@@ -330,21 +327,22 @@ int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
  * Add new plate objects to solution for searching.
  */
 int adb_solution_add_pobjects(struct adb_solve_solution *solution,
-		struct adb_pobject *pobjects, int num_pobjects)
+							  struct adb_pobject *pobjects, int num_pobjects)
 {
 	int i, j;
 
 	/* reallocate memory for new plate objects */
 	solution->pobjects = realloc(solution->pobjects,
-		sizeof(struct adb_solve_object) *
-		(solution->num_pobjects + num_pobjects));
+								 sizeof(struct adb_solve_object) *
+									 (solution->num_pobjects + num_pobjects));
 	if (solution->pobjects == NULL)
 		return -ENOMEM;
 
 	/* add new reference object to end */
-	solution->ref = realloc(solution->ref,
-		sizeof(struct adb_reference_object) *
-		(solution->num_ref_objects + num_pobjects + solution->num_pobjects));
+	solution->ref =
+		realloc(solution->ref, sizeof(struct adb_reference_object) *
+								   (solution->num_ref_objects + num_pobjects +
+									solution->num_pobjects));
 	if (solution->ref == NULL) {
 		free(solution->pobjects);
 		return -ENOMEM;
@@ -352,7 +350,7 @@ int adb_solution_add_pobjects(struct adb_solve_solution *solution,
 
 	/* copy each new plate object */
 	for (i = solution->num_pobjects, j = 0;
-			i < solution->num_pobjects + num_pobjects; i++, j++) {
+		 i < solution->num_pobjects + num_pobjects; i++, j++) {
 		solution->pobjects[i] = pobjects[j];
 	}
 
@@ -370,12 +368,13 @@ int adb_solution_get_objects(struct adb_solve_solution *solution)
 		return 0;
 
 	/* reallocate memory for new solved objects */
-	solution->solve_object = realloc(solution->solve_object,
-		sizeof(struct adb_solve_object) * solution->num_pobjects);
+	solution->solve_object =
+		realloc(solution->solve_object,
+				sizeof(struct adb_solve_object) * solution->num_pobjects);
 	if (!solution->solve_object)
 		return -ENOMEM;
 	memset(solution->solve_object, 0,
-			sizeof(struct adb_solve_object) * solution->num_pobjects);
+		   sizeof(struct adb_solve_object) * solution->num_pobjects);
 
 	solution->num_solved_objects = 0;
 	solution->num_unsolved_objects = 0;
@@ -384,11 +383,10 @@ int adb_solution_get_objects(struct adb_solve_solution *solution)
 
 	/* solve each new plate object */
 #if 0 /* race condition somewhere cause a few differences in detected objects */
-#pragma omp parallel for schedule(dynamic, 10) \
-		private(ret) reduction (+:num_solved, num_unsolved, fail)
+#pragma omp parallel for schedule(dynamic, 10) private(ret) \
+	reduction(+ : num_solved, num_unsolved, fail)
 #endif
 	for (i = 0; i < solution->num_pobjects; i++) {
-
 		if (solve->exit)
 			continue;
 
@@ -398,7 +396,7 @@ int adb_solution_get_objects(struct adb_solve_solution *solution)
 			continue;
 
 		ret = get_object(solve, i, solution, &solution->pobjects[i],
-					&solution->solve_object[i]);
+						 &solution->solve_object[i]);
 
 		if (ret < 0) {
 			fail++;
@@ -420,8 +418,8 @@ int adb_solution_get_objects(struct adb_solve_solution *solution)
 	solution->num_solved_objects = num_solved;
 	solution->num_unsolved_objects = num_unsolved;
 
-	solution->total_objects = solution->num_solved_objects +
-		solution->num_unsolved_objects;
+	solution->total_objects =
+		solution->num_solved_objects + solution->num_unsolved_objects;
 
 	return solution->num_solved_objects;
 }
@@ -449,14 +447,13 @@ int adb_solution_calc_photometry(struct adb_solve_solution *solution)
 	return 0;
 }
 
-
 double adb_solution_divergence(struct adb_solve_solution *solution)
 {
 	return solution->divergance;
 }
 
-struct adb_solve_object *adb_solution_get_object(
-	struct adb_solve_solution *solution, int index)
+struct adb_solve_object *
+adb_solution_get_object(struct adb_solve_solution *solution, int index)
 {
 	if (index >= solution->num_pobjects)
 		return NULL;
@@ -464,19 +461,18 @@ struct adb_solve_object *adb_solution_get_object(
 	return &solution->solve_object[index];
 }
 
-struct adb_solve_object *adb_solution_get_object_at(
-	struct adb_solve_solution *solution, int x, int y)
+struct adb_solve_object *
+adb_solution_get_object_at(struct adb_solve_solution *solution, int x, int y)
 {
 	int i;
 
 	for (i = 0; i < solution->num_pobjects; i++) {
 		if (x == solution->solve_object[i].pobject.x &&
-				y == solution->solve_object[i].pobject.y)
-				return &solution->solve_object[i];
+			y == solution->solve_object[i].pobject.y)
+			return &solution->solve_object[i];
 	}
 	return NULL;
 }
-
 
 double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 {
@@ -484,13 +480,14 @@ double adb_solution_get_pixel_size(struct adb_solve_solution *solution)
 }
 
 void adb_solution_equ_to_plate_position(struct adb_solve_solution *solution,
-		double ra, double dec, double *x,  double *y)
+										double ra, double dec, double *x,
+										double *y)
 {
-	posn_equ_to_plate(solution, ra, dec,  x,  y);
+	posn_equ_to_plate(solution, ra, dec, x, y);
 }
 
 void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
-		int x, int y, double *ra, double *dec)
+										int x, int y, double *ra, double *dec)
 {
 	struct adb_pobject p;
 
@@ -501,13 +498,14 @@ void adb_solution_plate_to_equ_position(struct adb_solve_solution *solution,
 }
 
 void adb_solution_equ_to_plate_position_fast(struct adb_solve_solution *solution,
-		double ra, double dec, double *x,  double *y)
+											 double ra, double dec, double *x,
+											 double *y)
 {
-	posn_equ_to_plate_fast(solution, ra, dec,  x,  y);
+	posn_equ_to_plate_fast(solution, ra, dec, x, y);
 }
 
-void adb_solution_plate_to_equ_position_fast(struct adb_solve_solution *solution,
-		int x, int y, double *ra, double *dec)
+void adb_solution_plate_to_equ_position_fast(
+	struct adb_solve_solution *solution, int x, int y, double *ra, double *dec)
 {
 	struct adb_pobject p;
 
@@ -521,7 +519,8 @@ void adb_solution_plate_to_equ_position_fast(struct adb_solve_solution *solution
  * Get the plate boundaries using solution.
  */
 void adb_solution_get_plate_equ_bounds(struct adb_solve_solution *solution,
-		enum adb_plate_bounds bounds, double *ra, double *dec)
+									   enum adb_plate_bounds bounds, double *ra,
+									   double *dec)
 {
 	struct adb_solve *solve = solution->solve;
 	struct adb_pobject p;

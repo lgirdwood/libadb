@@ -17,7 +17,7 @@
  */
 
 #include <dirent.h>
-#include <errno.h>
+#include <errno.h> // IWYU pragma: keep
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,8 +30,9 @@
 #include "readme.h"
 #include "schema.h"
 #include "table.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
+#include "libastrodb/db-import.h"
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 
 /* table type import's */
 static int int_import(struct adb_object *object, int offset, char *src)
@@ -1144,8 +1145,8 @@ int adb_table_import_new(struct adb_db *db, const char *cat_class,
 			 table_name, table_id, cat_class, cat_id, depth_field);
 
 	/* setup the paths */
-	table->cds.class = strdup(cat_class);
-	if (table->cds.class == NULL)
+	table->cds.cat_class = strdup(cat_class);
+	if (table->cds.cat_class == NULL)
 		goto err;
 	table->cds.index = strdup(cat_id);
 	if (table->cds.index == NULL)
@@ -1238,7 +1239,7 @@ int adb_table_import_new(struct adb_db *db, const char *cat_class,
 
 err:
 	adb_error(db, "Failed to create new table %s\n", table_name);
-	free(table->cds.class);
+	free(table->cds.cat_class);
 	free(table->cds.index);
 	free(table->path.remote);
 	free(table->path.local);

@@ -8,12 +8,14 @@
 #include "../src/table.h"
 #include "../src/lib.h"
 
-static void test_schema_lookups(void) {
+static void test_schema_lookups(void)
+{
 	printf("   Testing Schema API lookups...\n");
 
-	struct adb_library *lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
+	struct adb_library *lib =
+		adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
 	assert(lib != NULL);
-	
+
 	struct adb_db *db = adb_create_db(lib, 7, 1);
 	assert(db != NULL);
 
@@ -26,6 +28,7 @@ static void test_schema_lookups(void) {
 	/* test checking valid fields */
 	printf("      Testing primary field retrieval...\n");
 	int field_v_mag = schema_get_field(db, table, "V_mag");
+	(void)field_v_mag;
 	assert(field_v_mag >= 0);
 
 	/* In sky2kv4, Name is often defined as an alternate property or designation */
@@ -41,6 +44,7 @@ static void test_schema_lookups(void) {
 	/* Check for an invalid field to ensure we get a negative error code safely */
 	printf("      Testing missing field fetch error bounds...\n");
 	int field_invalid = schema_get_field(db, table, "FieldThatDoesNotExist");
+	(void)field_invalid;
 	assert(field_invalid < 0);
 
 	adb_table_close(db, table_id);
@@ -50,11 +54,12 @@ static void test_schema_lookups(void) {
 	printf("    -> PASS\n");
 }
 
-int main(void) {
+int main(void)
+{
 	printf("Starting Schema Unit Tests...\n");
-	
+
 	test_schema_lookups();
-	
+
 	printf("All Schema Unit Tests Passed Successfully!\n");
 	return 0;
 }

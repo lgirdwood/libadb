@@ -11,7 +11,8 @@
 
 #define D2R (1.7453292519943295769e-2)
 
-static void test_htm_lifecycle(void) {
+static void test_htm_lifecycle(void)
+{
 	printf("Running HTM Lifecycle Test...\n");
 	struct htm *htm = htm_new(7, 2);
 	assert(htm != NULL);
@@ -22,18 +23,20 @@ static void test_htm_lifecycle(void) {
 	printf(" -> PASS\n");
 }
 
-static void test_htm_depth_calculations(void) {
+static void test_htm_depth_calculations(void)
+{
 	printf("Running HTM Depth Calculation Test...\n");
-	
+
 	/* resolution testing */
 	int d1 = htm_get_depth_from_resolution(0.1 * D2R);
 	int d2 = htm_get_depth_from_resolution(1.0 * D2R);
+	(void)d2;
 	assert(d1 > d2); /* Higher resolution needs deeper HTM */
 	printf("   Resolution 0.1 deg gets depth %d\n", d1);
 
 	/* pseudo magnitude bounds, we need an HTM context */
 	struct htm *htm = htm_new(7, 1);
-	
+
 	/* Removed test for htm_get_depth_from_magnitude and htm_get_object_depth
 	 * because they are declared in htm.h but never defined in libastrodb. */
 
@@ -41,7 +44,8 @@ static void test_htm_depth_calculations(void) {
 	printf(" -> PASS\n");
 }
 
-static void test_htm_vertices_trixels(void) {
+static void test_htm_vertices_trixels(void)
+{
 	printf("Running HTM Vertices and Trixel Test...\n");
 	struct htm *htm = htm_new(7, 1);
 	assert(htm != NULL);
@@ -50,7 +54,7 @@ static void test_htm_vertices_trixels(void) {
 	v.ra = 45.0 * D2R;
 	v.dec = 45.0 * D2R;
 	htm_vertex_update_unit(&v);
-	
+
 	assert(v.x > 0);
 	assert(v.y > 0);
 	assert(v.z > 0);
@@ -63,6 +67,7 @@ static void test_htm_vertices_trixels(void) {
 	assert(id > 0);
 
 	struct htm_trixel *retrieved = htm_get_trixel(htm, id);
+	(void)retrieved;
 	assert(retrieved != NULL);
 	assert(retrieved == trixel);
 	printf("   Retrieved trixel ID %u matches\n", id);
@@ -71,13 +76,15 @@ static void test_htm_vertices_trixels(void) {
 	printf(" -> PASS\n");
 }
 
-static void test_htm_clip_region(void) {
+static void test_htm_clip_region(void)
+{
 	printf("Running HTM Clip Region Test...\n");
-	
+
 	/* For clip and get_trixels we need a valid adb_db and set mock.
 	 * Since htm_clip interacts with set->table and db->htm, we can setup standard instance */
-	
-	struct adb_library *lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
+
+	struct adb_library *lib =
+		adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", "tests");
 	assert(lib != NULL);
 	struct adb_db *db = adb_create_db(lib, 7, 1);
 	assert(db != NULL);
@@ -88,7 +95,9 @@ static void test_htm_clip_region(void) {
 		struct adb_object_set *set = adb_table_set_new(db, table_id);
 		assert(set != NULL);
 
-		int err = htm_clip(db->htm, set, 10.0 * D2R, 20.0 * D2R, 1.0 * D2R, 0, 5);
+		int err =
+			htm_clip(db->htm, set, 10.0 * D2R, 20.0 * D2R, 1.0 * D2R, 0, 5);
+		(void)err;
 		assert(err == 0);
 
 		int trixels = htm_get_trixels(db->htm, set);
@@ -105,7 +114,8 @@ static void test_htm_clip_region(void) {
 	printf(" -> PASS\n");
 }
 
-int main(void) {
+int main(void)
+{
 	printf("Starting HTM Unit Tests...\n");
 	test_htm_lifecycle();
 	test_htm_depth_calculations();

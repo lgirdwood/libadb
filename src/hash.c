@@ -33,8 +33,8 @@
 #include "private.h"
 #include "readme.h"
 #include "table.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 
 /**
  * \brief Calculate a hash value for a string.

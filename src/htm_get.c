@@ -16,7 +16,7 @@
  *  Copyright (C) 2008 - 2012 Liam Girdwood
  */
 
-#include <errno.h>
+#include <errno.h> // IWYU pragma: keep
 #include <math.h>
 #include <string.h>
 
@@ -24,8 +24,8 @@
 #include "htm.h"
 #include "private.h"
 #include "table.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 
 /* vertex multiplication */
 static inline double vertex_mult(struct htm_vertex *a, struct htm_vertex *b)
@@ -40,15 +40,6 @@ static inline void vertex_cross(struct htm_vertex *a, struct htm_vertex *b,
 	prod->x = a->y * b->z - b->y * a->z;
 	prod->y = a->z * b->x - b->z * a->x;
 	prod->z = a->x * b->y - b->x * a->y;
-}
-
-/* vertex dot product */
-static inline void vertex_dot(struct htm_vertex *a, struct htm_vertex *b,
-							  struct htm_vertex *prod)
-{
-	prod->x = a->x * b->x;
-	prod->y = a->y * b->y;
-	prod->z = a->z * b->z;
 }
 
 /* check vertex point is inside UP trixel */

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "libastrodb/db.h"
 #include "private.h"
 
 /*! \defgroup htm HTM

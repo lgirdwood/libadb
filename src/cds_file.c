@@ -28,15 +28,16 @@
 
 #include <zlib.h>
 
-#include <libastrodb/db.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 #include "debug.h"
 #include "private.h"
 
-#define GZ_CHUNK 	16384
-#define CHUNK_SIZE	(1024 * 32)
+#define GZ_CHUNK 16384
+#define CHUNK_SIZE (1024 * 32)
 
 static int inflate_file(struct adb_db *db, const char *path,
-	const char *src_file, const char *dest_file)
+						const char *src_file, const char *dest_file)
 {
 	gzFile src;
 	FILE *dest;
@@ -46,8 +47,7 @@ static int inflate_file(struct adb_db *db, const char *path,
 	snprintf(src_path, ADB_PATH_SIZE, "%s%s", path, src_file);
 	snprintf(dest_path, ADB_PATH_SIZE, "%s%s", path, dest_file);
 
-	adb_info(db, ADB_LOG_CDS_FTP, "inflating %s to %s\n",
-		src_path, dest_path);
+	adb_info(db, ADB_LOG_CDS_FTP, "inflating %s to %s\n", src_path, dest_path);
 
 	/* open gz file */
 	src = gzopen(src_path, "rb");
@@ -98,8 +98,7 @@ static int ftp_get_file(struct adb_table *table, const char *file)
 	/* for some reason Ftplib return 0 for errors */
 	ret = FtpConnect(table->cds.host, &nbuf);
 	if (ret == 0) {
-		adb_error(db, "FTP could not connect to %s\n",
-			table->cds.host);
+		adb_error(db, "FTP could not connect to %s\n", table->cds.host);
 		return -EIO;
 	}
 
@@ -136,15 +135,13 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 
 	snprintf(src, ADB_PATH_SIZE, "%s", table->path.remote);
 
-	adb_info(db, ADB_LOG_CDS_FTP, "FTP files %s pattern %s\n",
-		src, pattern);
+	adb_info(db, ADB_LOG_CDS_FTP, "FTP files %s pattern %s\n", src, pattern);
 
 	FtpInit();
 
 	ret = FtpConnect(table->cds.host, &nbuf);
 	if (ret == 0) {
-		adb_error(db, "FTP connect to %s failed\n",
-		table->cds.host);
+		adb_error(db, "FTP connect to %s failed\n", table->cds.host);
 		return -EIO;
 	}
 
@@ -170,8 +167,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 		/* read the directory */
 		ret = FtpRead(dir, ADB_PATH_SIZE, nbuf_dir);
 		if (ret == -1) {
-			adb_error(db, "FTP could not read directory %s\n",
-				src);
+			adb_error(db, "FTP could not read directory %s\n", src);
 			ret = -EIO;
 			goto out;
 		}
@@ -184,7 +180,7 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 			space++;
 		*space = 0;
 
-		count ++;
+		count++;
 	} while (ret > 0);
 
 	FtpClose(nbuf_dir);
@@ -203,11 +199,11 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 
 			/* download file by file*/
 			adb_info(db, ADB_LOG_CDS_FTP, "FTP downloading %s\n",
-				ftp_dir[count]);
+					 ftp_dir[count]);
 			err = FtpGet(dest, ftp_dir[count], FTPLIB_IMAGE, nbuf);
 			if (err == 0) {
-				adb_error(db, "FTP could not get %s to %s\n",
-					ftp_dir[count], dest);
+				adb_error(db, "FTP could not get %s to %s\n", ftp_dir[count],
+						  dest);
 				ret = -EIO;
 				goto out;
 			} else
@@ -220,14 +216,14 @@ static int ftp_get_files(struct adb_table *table, const char *pattern)
 	ret = got;
 
 out:
-	for (;count >= 0; count--)
+	for (; count >= 0; count--)
 		free(ftp_dir[count]);
 	FtpQuit(nbuf);
 	return ret;
 }
 
 static int concat_file(struct adb_table *table, struct dirent *dent,
-	const char *ofile, FILE *ofd)
+					   const char *ofile, FILE *ofd)
 {
 	struct adb_db *db = table->db;
 	char ifile[1024];
@@ -241,8 +237,7 @@ static int concat_file(struct adb_table *table, struct dirent *dent,
 	sprintf(ifile, "%s%s", table->path.local, dent->d_name);
 	ifd = fopen(ifile, "r");
 	if (ifd == NULL) {
-		adb_error(db, "Error can't open input file %s for reading\n",
-			ifd);
+		adb_error(db, "Error can't open input file %s for reading\n", ifd);
 		return -EIO;
 	}
 
@@ -315,7 +310,6 @@ static int table_concat_files(struct adb_table *table, const char *ext)
 
 	/* read each director entry */
 	while ((dent = readdir(dir)) != NULL) {
-
 		/* does it belong to table */
 		if (!strcmp(table->path.file, dent->d_name))
 			continue;
@@ -354,12 +348,11 @@ static int table_concat_files(struct adb_table *table, const char *ext)
 	ret = rename(ofile, nfile);
 	if (ret < 0)
 		adb_error(db, "error: %d failed to rename tmp file %s t %s\n", -errno,
-			ofile, nfile);
+				  ofile, nfile);
 	return ret;
 }
 
-int cds_get_dataset(struct adb_db *db, struct adb_table *table,
-	const char *ext)
+int cds_get_dataset(struct adb_db *db, struct adb_table *table, const char *ext)
 {
 	int ret;
 	char file[1024];
@@ -370,21 +363,22 @@ int cds_get_dataset(struct adb_db *db, struct adb_table *table,
 	ret = ftp_get_file(table, file);
 	if (ret <= 0) {
 		/* give up ! */
-		adb_warn(db, ADB_LOG_CDS_FTP, "couldn't download %s\n", table->path.file);
+		adb_warn(db, ADB_LOG_CDS_FTP, "couldn't download %s\n",
+				 table->path.file);
 		return -ENOENT;
 	} else
 		return 0;
 }
 
 int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
-	const char *ext)
+						  const char *ext)
 {
 	int ret;
 	char file[1024];
 
 	sprintf(file, "%s%s", table->path.file, ext);
 	adb_info(db, ADB_LOG_CDS_FTP, "Try to download %s  splits from CDS\n",
-		file);
+			 file);
 
 	ret = ftp_get_files(table, file);
 	if (ret <= 0) {
@@ -396,7 +390,7 @@ int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
 
 /* search the local directory for table CDS (ASCII) data files with extension */
 int cds_prepare_files(struct adb_db *db, struct adb_table *table,
-	const char *ext)
+					  const char *ext)
 {
 	struct dirent *dent;
 	DIR *dir;
@@ -410,12 +404,11 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 		return -EIO;
 	}
 
-	adb_info(db, ADB_LOG_CDS_FTP,"Searching %s for %s CDS data files\n",
-		table->path.local, ext ? ext : "");
+	adb_info(db, ADB_LOG_CDS_FTP, "Searching %s for %s CDS data files\n",
+			 table->path.local, ext ? ext : "");
 
 	/* check each directory entry */
 	while ((dent = readdir(dir)) != NULL) {
-
 		/* skip if filename does not match */
 		if (strncmp(table->path.file, dent->d_name, strlen(table->path.file)))
 			continue;
@@ -441,7 +434,6 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 
 			/* if the extension is .gz then inflate it */
 			if (strstr(dent->d_name, ".gz")) {
-
 				/* chop the .gz from the inflate destination file */
 				sprintf(dest, "%s", dent->d_name);
 				suffix = strstr(dest, ".gz");
@@ -452,7 +444,7 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 				err = inflate_file(db, table->path.local, dent->d_name, dest);
 				if (err < 0) {
 					adb_info(db, ADB_LOG_CDS_FTP,
-						"Error: failed to inflate %s \n", dent->d_name);
+							 "Error: failed to inflate %s \n", dent->d_name);
 					found--;
 				}
 			}
@@ -480,13 +472,12 @@ int cds_get_readme(struct adb_db *db, int table_id)
 	snprintf(file, ADB_PATH_SIZE, "%s%s", table->path.local, "ReadMe");
 	if (stat(file, &buf) == 0) {
 		adb_info(db, ADB_LOG_CDS_FTP, "Found local ReadMe version at %s\n",
-			file);
+				 file);
 		return ret;
 	}
 
 	/* local binary or ASCII not available, so download ASCII ReadMe*/
-	adb_info(db, ADB_LOG_CDS_FTP, "%s not found, using remote version\n",
-		file);
+	adb_info(db, ADB_LOG_CDS_FTP, "%s not found, using remote version\n", file);
 	ret = ftp_get_file(table, "ReadMe");
 	if (ret < 0)
 		adb_error(db, "failed to load ReadMe %d\n", ret);

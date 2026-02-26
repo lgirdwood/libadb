@@ -12,17 +12,18 @@
 #include <libastrodb/db.h>
 #include <libastrodb/object.h>
 
-#define D2R  (1.7453292519943295769e-2)  /* deg->radian */
-#define R2D  (5.7295779513082320877e1)   /* radian->deg */
+#define D2R (1.7453292519943295769e-2) /* deg->radian */
+#define R2D (5.7295779513082320877e1) /* radian->deg */
 
 /* Pleiades M45 plate objects */
 static struct adb_pobject pobject[] = {
-	{513, 434, 408725},  /* Alcyone 25 - RA 3h47m29s DEC 24d06m18s Mag 2.86 */
-	{141, 545, 123643},  /* 1 Atlas 27  - RA 3h49m09s DEC 24d03m12s Mag 3.62 */
-	{1049, 197, 128424}, /* P Electra 17 - RA 3h44m52s DEC 24d06m48s Mag 3.70 */
-	{956, 517, 106906},  /* 2 Maia 20   - RA 3h45m49s DEC 24d22m03s Mag 3.86 */
-	{682, 180, 98841},    /* 3 Morope 23 - RA 3h46m19s DEC 23d56m54s Mag 4.11 */
-	{173, 623, 37537},   /* Plione 28 - RA 3h49m11s DEC 24d08m12s Mag 5.04 */
+	{ 513, 434, 408725 }, /* Alcyone 25 - RA 3h47m29s DEC 24d06m18s Mag 2.86 */
+	{ 141, 545, 123643 }, /* 1 Atlas 27  - RA 3h49m09s DEC 24d03m12s Mag 3.62 */
+	{ 1049, 197,
+	  128424 }, /* P Electra 17 - RA 3h44m52s DEC 24d06m48s Mag 3.70 */
+	{ 956, 517, 106906 }, /* 2 Maia 20   - RA 3h45m49s DEC 24d22m03s Mag 3.86 */
+	{ 682, 180, 98841 }, /* 3 Morope 23 - RA 3h46m19s DEC 23d56m54s Mag 4.11 */
+	{ 173, 623, 37537 }, /* Plione 28 - RA 3h49m11s DEC 24d08m12s Mag 5.04 */
 };
 
 /*
@@ -53,14 +54,16 @@ static void test_search1(struct adb_db *db, int table_id)
 	adb_search_add_comparator(search, "RV", ADB_COMP_LT, "40");
 	adb_search_add_comparator(search, "RV", ADB_COMP_GT, "25");
 	adb_search_add_operator(search, ADB_OP_AND);
-	adb_search_add_operator(search, ADB_OP_AND); /* OR originally, but here it matches examples */
+	adb_search_add_operator(
+		search, ADB_OP_AND); /* OR originally, but here it matches examples */
 
 	err = adb_search_get_results(search, set, &object);
 	assert(err >= 0);
-	
+	(void)err;
+
 	/* Example data might have hits if we import enough. Just ensuring no crash. */
 	printf("   Search got %d objects out of %d tests\n",
-		adb_search_get_hits(search), adb_search_get_tests(search));
+		   adb_search_get_hits(search), adb_search_get_tests(search));
 
 	adb_search_free(search);
 	adb_table_set_free(set);
@@ -84,9 +87,10 @@ static void test_search2(struct adb_db *db, int table_id)
 
 	err = adb_search_get_results(search, set, &object);
 	assert(err >= 0);
+	(void)err;
 
 	printf("   Search got %d objects out of %d tests\n",
-		adb_search_get_hits(search), adb_search_get_tests(search));
+		   adb_search_get_hits(search), adb_search_get_tests(search));
 
 	adb_search_free(search);
 	adb_table_set_free(set);
@@ -104,9 +108,9 @@ static void test_get1(struct adb_db *db, int table_id)
 	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, -2.0, 16.0);
 	heads = adb_set_get_objects(set);
 	count = adb_set_get_count(set);
-	
+
 	printf(" -> Found %d list heads and %d objects\n", heads, count);
-	
+
 	adb_table_set_free(set);
 }
 
@@ -122,7 +126,7 @@ static void test_get2(struct adb_db *db, int table_id)
 	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, -2.0, 2.0);
 	adb_set_get_objects(set);
 	count = adb_set_get_count(set);
-	
+
 	printf(" -> Found %d objects\n", count);
 
 	adb_table_set_free(set);
@@ -140,7 +144,7 @@ static void test_get3(struct adb_db *db, int table_id)
 	adb_table_set_constraints(set, 0.0, 0.0, 30.0 * D2R, -2.0, 2.0);
 	adb_set_get_objects(set);
 	count = adb_set_get_count(set);
-	
+
 	printf(" -> Found %d objects\n", count);
 
 	adb_table_set_free(set);
@@ -157,37 +161,48 @@ static void test_get4(struct adb_db *db, int table_id)
 	assert(set != NULL);
 
 	found = adb_set_get_object(set, &id, "HD", &object);
-	if (found) printf(" -> Found HD 58977\n");
+	if (found)
+		printf(" -> Found HD 58977\n");
 
 	found = adb_set_get_object(set, "21alp Sc", "Name", &object);
 	if (found > 0 && object != NULL) {
 		printf(" -> Found 21alp Sc\n");
 		objectn = adb_table_set_get_nearest_on_object(set, object);
-		if (objectn) printf(" -> Found nearest object to 21alp Sc\n");
+		if (objectn)
+			printf(" -> Found nearest object to 21alp Sc\n");
 	}
 
 	objectn = adb_table_set_get_nearest_on_pos(set, 0.0, M_PI_2);
-	if (objectn) printf(" -> Found nearest object to north pole\n");
+	if (objectn)
+		printf(" -> Found nearest object to north pole\n");
 
 	adb_table_set_free(set);
 }
 
-static int sky2k_query_test(const char *lib_dir) {
+static int sky2k_query_test(const char *lib_dir)
+{
 	struct adb_library *lib;
 	struct adb_db *db;
 	int ret = 0, table_id;
 
 	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
-	if (!lib) return -ENOMEM;
+	if (!lib)
+		return -ENOMEM;
 
 	db = adb_create_db(lib, 7, 1);
-	if (!db) { ret = -ENOMEM; goto lib_err; }
+	if (!db) {
+		ret = -ENOMEM;
+		goto lib_err;
+	}
 
 	adb_set_msg_level(db, ADB_MSG_DEBUG);
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	table_id = adb_table_open(db, "V", "109", "sky2kv4");
-	if (table_id < 0) { ret = table_id; goto table_err; }
+	if (table_id < 0) {
+		ret = table_id;
+		goto table_err;
+	}
 
 	/* create a fast lookup hash on object HD number and name */
 	adb_table_hash_key(db, table_id, "HD");
@@ -208,7 +223,8 @@ lib_err:
 	return ret;
 }
 
-static int sky2k_solve_test(const char *lib_dir) {
+static int sky2k_solve_test(const char *lib_dir)
+{
 	struct adb_library *lib;
 	struct adb_db *db;
 	struct adb_solve *solve;
@@ -218,21 +234,30 @@ static int sky2k_solve_test(const char *lib_dir) {
 	printf("\nRunning sky2k_solve_test\n");
 
 	lib = adb_open_library("cdsarc.u-strasbg.fr", "/pub/cats", lib_dir);
-	if (!lib) return -ENOMEM;
+	if (!lib)
+		return -ENOMEM;
 
 	db = adb_create_db(lib, 7, 1);
-	if (!db) { ret = -ENOMEM; goto lib_err; }
+	if (!db) {
+		ret = -ENOMEM;
+		goto lib_err;
+	}
 
 	adb_set_msg_level(db, ADB_MSG_DEBUG);
 	adb_set_log_level(db, ADB_LOG_ALL);
 
 	table_id = adb_table_open(db, "V", "109", "sky2kv4");
-	if (table_id < 0) { ret = table_id; goto table_err; }
+	if (table_id < 0) {
+		ret = table_id;
+		goto table_err;
+	}
 
 	set = adb_table_set_new(db, table_id);
-	if (!set) goto set_err;
+	if (!set)
+		goto set_err;
 
-	adb_table_set_constraints(set, 0.0 * D2R, 0.0 * D2R, 360.0 * D2R, -90.0, 90.0);
+	adb_table_set_constraints(set, 0.0 * D2R, 0.0 * D2R, 360.0 * D2R, -90.0,
+							  90.0);
 
 	solve = adb_solve_new(db, table_id);
 	adb_solve_constraint(solve, ADB_CONSTRAINT_MAG, 6.0, -2.0);
@@ -251,7 +276,7 @@ static int sky2k_solve_test(const char *lib_dir) {
 
 	found = adb_solve(solve, set, ADB_FIND_FIRST);
 	printf(" -> found %d solutions\n", found);
-	
+
 	/* Even if found == 0, we're not explicitly asserting on finding solutions if data isn't complete, 
 	   but the flow must run without segfaults. */
 
@@ -263,11 +288,11 @@ table_err:
 	adb_db_free(db);
 lib_err:
 	adb_close_library(lib);
-	return ret; 
+	return ret;
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	int ret1, ret2;
 
 	ret1 = sky2k_query_test("tests");

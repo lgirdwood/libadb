@@ -69,6 +69,8 @@ Makefile
 .vscode/*
 !.vscode/tasks.json
 .idea/
+.cache/*
+compile_commands.json
 
 # Old autotools / make leftovers
 .version

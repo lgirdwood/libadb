@@ -42,17 +42,17 @@
  */
 
 struct table_cds {
-	char *class;			/*!< catalog class */
-	char *index;			/*!< catalog number (in repo) */
-	char *host;				/*!< remote host */
-	char *name;				/*!< table CDS file name */
+	char *cat_class; /*!< catalog class */
+	char *index; /*!< catalog number (in repo) */
+	char *host; /*!< remote host */
+	char *name; /*!< table CDS file name */
 };
 
 struct table_path {
 	/* file paths */
-	char *local;   			/*!< local catalog path */
-	char *remote;  			/*!< remote catalog path */
-	char *file;         	/*!< table local filename */
+	char *local; /*!< local catalog path */
+	char *remote; /*!< remote catalog path */
+	char *file; /*!< table local filename */
 };
 
 #endif

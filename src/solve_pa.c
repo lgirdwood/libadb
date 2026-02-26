@@ -16,20 +16,14 @@
  *  Copyright (C) 2013 - 2014 Liam Girdwood
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <math.h>
-#include <ctype.h>
 #include <pthread.h>
 
+#include "debug.h" // IWYU pragma: keep
 #include "solve.h"
 
 /* position angle in radians relative to plate north */
-double pa_get_plate(struct adb_pobject *primary,
-	struct adb_pobject *secondary)
+double pa_get_plate(struct adb_pobject *primary, struct adb_pobject *secondary)
 {
 	double x, y;
 
@@ -56,8 +50,7 @@ double pa_get_equ(const struct adb_object *o1, const struct adb_object *o2)
 	sin_pdec = sin(o2->dec);
 
 	/* calc scaling factor */
-	k = 2.0 / (1.0 + sin_pdec * sin_ra +
-		cos_pdec * cos_dec * cos_ra_delta);
+	k = 2.0 / (1.0 + sin_pdec * sin_ra + cos_pdec * cos_dec * cos_ra_delta);
 
 	/* calc plate X, Y */
 	x = k * (cos_dec * sin(ra_delta));
@@ -68,7 +61,7 @@ double pa_get_equ(const struct adb_object *o1, const struct adb_object *o2)
 
 /* add matching cluster to list of potentials */
 static void add_pot_on_pa(struct solve_runtime *runtime,
-		struct adb_solve_solution *p, double delta)
+						  struct adb_solve_solution *p, double delta)
 {
 	if (runtime->num_pot_pa >= MAX_ACTUAL_MATCHES)
 		return;
@@ -94,7 +87,7 @@ static inline int pa_valid(struct needle_object *t, double delta, int flip)
 }
 
 int pa_solve_object(struct solve_runtime *runtime,
-	const struct adb_object *primary, int idx)
+					const struct adb_object *primary, int idx)
 {
 	struct adb_solve_solution *p;
 	struct adb_solve *solve = runtime->solve;
@@ -107,9 +100,8 @@ int pa_solve_object(struct solve_runtime *runtime,
 	t2 = &solve->target.secondary[2];
 
 	/* for each potential cluster */
-	for (i = runtime->num_pot_distance_checked;
-		i < runtime->num_pot_distance; i++) {
-
+	for (i = runtime->num_pot_distance_checked; i < runtime->num_pot_distance;
+		 i++) {
 		p = &runtime->pot_distance[i];
 		p->flip = 0;
 
@@ -121,11 +113,11 @@ int pa_solve_object(struct solve_runtime *runtime,
 			pa_delta12 += 2.0 * M_PI;
 
 		DOBJ_PA_CHECK(p->object[0], p->object[1], p->object[2], pa_delta12,
-					t0->pa.pattern_min, t0->pa.pattern_max);
+					  t0->pa.pattern_min, t0->pa.pattern_max);
 
 		if (!pa_valid(t0, pa_delta12, 0)) {
 			DOBJ_PA_CHECK(p->object[0], p->object[1], p->object[2], pa_delta12,
-								t0->pa_flip.pattern_min, t0->pa_flip.pattern_max);
+						  t0->pa_flip.pattern_min, t0->pa_flip.pattern_max);
 			if (pa_valid(t0, pa_delta12, 1)) {
 				p->flip = 1;
 				goto next;
@@ -141,7 +133,7 @@ next:
 			pa_delta23 += 2.0 * M_PI;
 
 		DOBJ_PA_CHECK(p->object[0], p->object[2], p->object[3], pa_delta23,
-					t1->pa.pattern_min, t1->pa.pattern_max);
+					  t1->pa.pattern_min, t1->pa.pattern_max);
 
 		if (!pa_valid(t1, pa_delta23, p->flip))
 			continue;
@@ -152,14 +144,14 @@ next:
 			pa_delta31 += 2.0 * M_PI;
 
 		DOBJ_PA_CHECK(p->object[0], p->object[3], p->object[1], pa_delta31,
-					t2->pa.pattern_min, t2->pa.pattern_max);
+					  t2->pa.pattern_min, t2->pa.pattern_max);
 
 		if (!pa_valid(t2, pa_delta31, p->flip))
 			continue;
 
 		delta = tri_diff(pa_delta12 - t0->pa.plate_actual,
-				pa_delta23 - t1->pa.plate_actual,
-				pa_delta31 - t2->pa.plate_actual);
+						 pa_delta23 - t1->pa.plate_actual,
+						 pa_delta31 - t2->pa.plate_actual);
 		add_pot_on_pa(runtime, p, delta);
 		count++;
 	}
@@ -169,7 +161,7 @@ next:
 }
 
 int pa_solve_single_object(struct solve_runtime *runtime,
-	struct adb_solve_solution *solution)
+						   struct adb_solve_solution *solution)
 {
 	struct adb_solve_solution *p;
 	double pa0, pa1, pa2, pa3;
@@ -178,7 +170,6 @@ int pa_solve_single_object(struct solve_runtime *runtime,
 
 	/* for each potential cluster */
 	for (i = 0; i < runtime->num_pot_distance; i++) {
-
 		p = &runtime->pot_distance[i];
 
 		/* check object against 0 -> 1 */
@@ -215,9 +206,9 @@ int pa_solve_single_object(struct solve_runtime *runtime,
 			continue;
 
 		delta = quad_diff(pa_delta01 - runtime->soln_target[0].pa.plate_actual,
-				pa_delta12 - runtime->soln_target[1].pa.plate_actual,
-				pa_delta23 - runtime->soln_target[2].pa.plate_actual,
-				pa_delta30 - runtime->soln_target[3].pa.plate_actual);
+						  pa_delta12 - runtime->soln_target[1].pa.plate_actual,
+						  pa_delta23 - runtime->soln_target[2].pa.plate_actual,
+						  pa_delta30 - runtime->soln_target[3].pa.plate_actual);
 		add_pot_on_pa(runtime, p, delta);
 		count++;
 	}

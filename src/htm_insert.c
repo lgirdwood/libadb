@@ -24,17 +24,19 @@
 #include <math.h>
 #include <ctype.h>
 
-#include <libastrodb/db.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 #include "table.h"
 #include "debug.h"
-
 
 /* import object into trixel in magnitude order -
  * lowest (brightest) -> highest (faintest)
  */
 static inline void htm_insert_object_ascending(struct htm *htm,
-	struct adb_table *table, struct htm_trixel *trixel,
-	struct adb_object *new_object, unsigned int object_count)
+											   struct adb_table *table,
+											   struct htm_trixel *trixel,
+											   struct adb_object *new_object,
+											   unsigned int object_count)
 {
 	int table_id = table->id;
 
@@ -70,8 +72,8 @@ static inline void htm_insert_object_descending(struct htm *htm,
 
 /* used by file reader */
 int htm_table_insert_object(struct htm *htm, struct adb_table *table,
-	struct adb_object *object, unsigned int object_count,
-	unsigned int trixel_id)
+							struct adb_object *object,
+							unsigned int object_count, unsigned int trixel_id)
 {
 	struct htm_trixel *trixel;
 

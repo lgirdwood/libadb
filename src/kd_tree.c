@@ -16,18 +16,18 @@
  *  Copyright (C) 2013 - 2014 Liam Girdwood
  */
 
-#include <ctype.h>
-#include <errno.h>
+#include <ctype.h> // IWYU pragma: keep
+#include <errno.h> // IWYU pragma: keep
 #include <math.h>
-#include <stdio.h>
+#include <stdio.h> // IWYU pragma: keep
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> // IWYU pragma: keep
 #include <unistd.h>
 
 #include "debug.h"
 #include "table.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 
 /* debug KD tree search for nearest */
 #define CHECK_KD_TREE 0
@@ -256,7 +256,7 @@ static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
 	}
 
 	/* ra end is not checked if gap is even */
-	if (!(size & 0x1) == 0 && valid_y_elem(&x_base[x_end], y_min, y_max) &&
+	if ((size & 0x1) != 0 && valid_y_elem(&x_base[x_end], y_min, y_max) &&
 		valid_z_elem(&x_base[x_end], z_min, z_max))
 		return &x_base[x_end];
 
@@ -291,7 +291,7 @@ static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
 	}
 
 	/* ra end is not checked if gap is even */
-	if (!(size & 0x1) == 0 && valid_x_elem(&y_base[y_end], x_min, x_max) &&
+	if ((size & 0x1) != 0 && valid_x_elem(&y_base[y_end], x_min, x_max) &&
 		valid_z_elem(&y_base[y_end], z_min, z_max))
 		return &y_base[y_end];
 
@@ -326,7 +326,7 @@ static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
 	}
 
 	/* ra end is not checked if gap is even */
-	if (!(size & 0x1) == 0 && valid_x_elem(&z_base[z_end], x_min, x_max) &&
+	if ((size & 0x1) != 0 && valid_x_elem(&z_base[z_end], x_min, x_max) &&
 		valid_y_elem(&z_base[z_end], y_min, y_max))
 		return &z_base[z_end];
 

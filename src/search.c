@@ -23,8 +23,9 @@
 #include "debug.h"
 #include "readme.h"
 #include "table.h"
-#include <libastrodb/object.h>
-#include <libastrodb/search.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
+#include "libastrodb/search.h"
 
 #define ADB_SRCH_MAX_PARAMS 128
 #define ADB_SRCH_PARAM_OPER 0

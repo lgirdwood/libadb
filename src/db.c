@@ -26,40 +26,42 @@
 
 #include "config.h"
 #include "debug.h"
-#include <libastrodb/db.h>
-#include <libastrodb/object.h>
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 
 static const char *dirs[] = {
-    "/I", "/II", "/III", "/IV", "/V", "/VI", "/VII", "/VIII", "/IX", "/B",
+	"/I", "/II", "/III", "/IV", "/V", "/VI", "/VII", "/VIII", "/IX", "/B",
 };
 
-static int create_lib_local_dirs(struct adb_library *lib,
-                                 const char *location) {
-  char dir[ADB_PATH_SIZE];
-  struct stat stat_info;
-  int i, ret = 0;
+static int create_lib_local_dirs(struct adb_library *lib, const char *location)
+{
+	char dir[ADB_PATH_SIZE];
+	struct stat stat_info;
+	int i, ret = 0;
 
-  /* create <path>/ */
-  snprintf(dir, ADB_PATH_SIZE, "%s", location);
-  if (stat(location, &stat_info) < 0) {
-    if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
-      astrolib_error(lib, "failed to create directory %s %d\n", dir, -errno);
-      return errno;
-    }
-  }
+	/* create <path>/ */
+	snprintf(dir, ADB_PATH_SIZE, "%s", location);
+	if (stat(location, &stat_info) < 0) {
+		if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
+			astrolib_error(lib, "failed to create directory %s %d\n", dir,
+						   -errno);
+			return errno;
+		}
+	}
 
-  /* create sub dirs */
-  for (i = 0; i < adb_size(dirs); i++) {
-    snprintf(dir, ADB_PATH_SIZE, "%s%s", location, dirs[i]);
-    if (stat(dir, &stat_info) < 0) {
-      if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
-        astrolib_error(lib, "failed to create directory %s %d\n", dir, -errno);
-        return errno;
-      }
-    }
-  }
+	/* create sub dirs */
+	for (i = 0; i < adb_size(dirs); i++) {
+		snprintf(dir, ADB_PATH_SIZE, "%s%s", location, dirs[i]);
+		if (stat(dir, &stat_info) < 0) {
+			if ((ret = mkdir(dir, S_IRWXU | S_IRWXG)) < 0) {
+				astrolib_error(lib, "failed to create directory %s %d\n", dir,
+							   -errno);
+				return errno;
+			}
+		}
+	}
 
-  return ret;
+	return ret;
 }
 
 /**
@@ -77,38 +79,39 @@ static int create_lib_local_dirs(struct adb_library *lib,
  */
 
 struct adb_library *adb_open_library(const char *host, const char *remote,
-                                     const char *local) {
-  struct adb_library *lib;
-  int err;
+									 const char *local)
+{
+	struct adb_library *lib;
+	int err;
 
-  if (local == NULL)
-    return NULL;
+	if (local == NULL)
+		return NULL;
 
-  lib = calloc(1, sizeof(struct adb_library));
-  if (lib == NULL)
-    return NULL;
+	lib = calloc(1, sizeof(struct adb_library));
+	if (lib == NULL)
+		return NULL;
 
-  err = create_lib_local_dirs(lib, local);
-  if (err < 0)
-    goto err;
+	err = create_lib_local_dirs(lib, local);
+	if (err < 0)
+		goto err;
 
-  lib->local = strdup(local);
-  if (lib->local == NULL)
-    goto err;
-  lib->host = strdup(host);
-  if (lib->host == NULL)
-    goto err;
-  lib->remote = strdup(remote);
-  if (lib->remote == NULL)
-    goto err;
-  return lib;
+	lib->local = strdup(local);
+	if (lib->local == NULL)
+		goto err;
+	lib->host = strdup(host);
+	if (lib->host == NULL)
+		goto err;
+	lib->remote = strdup(remote);
+	if (lib->remote == NULL)
+		goto err;
+	return lib;
 
 err:
-  free(lib->host);
-  free(lib->local);
-  free(lib->remote);
-  free(lib);
-  return NULL;
+	free(lib->host);
+	free(lib->local);
+	free(lib->remote);
+	free(lib);
+	return NULL;
 }
 
 /**
@@ -119,21 +122,24 @@ err:
  *
  * \param lib Library object to free
  */
-void adb_close_library(struct adb_library *lib) {
-  free(lib->remote);
-  free(lib->local);
-  free(lib->host);
-  free(lib);
+void adb_close_library(struct adb_library *lib)
+{
+	free(lib->remote);
+	free(lib->local);
+	free(lib->host);
+	free(lib);
 }
 
-void adb_set_msg_level(struct adb_db *db, enum adb_msg_level level) {
-  db->msg_level = level;
-  db->htm->msg_level = level;
+void adb_set_msg_level(struct adb_db *db, enum adb_msg_level level)
+{
+	db->msg_level = level;
+	db->htm->msg_level = level;
 }
 
-void adb_set_log_level(struct adb_db *db, unsigned int log) {
-  db->msg_flags = log;
-  db->htm->msg_flags = log;
+void adb_set_log_level(struct adb_db *db, unsigned int log)
+{
+	db->msg_flags = log;
+	db->htm->msg_flags = log;
 }
 
 /**
@@ -148,27 +154,28 @@ void adb_set_log_level(struct adb_db *db, unsigned int log) {
  * \param tables Number of tables
  * \return A pointer to the newly allocated adb_db object, or NULL on failure
  */
-struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables) {
-  struct adb_db *db;
+struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables)
+{
+	struct adb_db *db;
 
-  db = (struct adb_db *)calloc(1, sizeof(struct adb_db));
-  if (db == NULL)
-    return NULL;
-  db->lib = lib;
-  db->msg_level = ADB_MSG_INFO;
-  db->msg_flags = ADB_LOG_SEARCH | ADB_LOG_SOLVE;
+	db = (struct adb_db *)calloc(1, sizeof(struct adb_db));
+	if (db == NULL)
+		return NULL;
+	db->lib = lib;
+	db->msg_level = ADB_MSG_INFO;
+	db->msg_flags = ADB_LOG_SEARCH | ADB_LOG_SOLVE;
 
-  db->htm = htm_new(depth, tables);
-  if (db->htm == NULL) {
-    astrolib_error(lib,
-                   "failed to create DB with HTM depth of"
-                   "%d degrees and %d tables\n",
-                   depth, tables);
-    free(db);
-    return NULL;
-  }
+	db->htm = htm_new(depth, tables);
+	if (db->htm == NULL) {
+		astrolib_error(lib,
+					   "failed to create DB with HTM depth of"
+					   "%d degrees and %d tables\n",
+					   depth, tables);
+		free(db);
+		return NULL;
+	}
 
-  return db;
+	return db;
 }
 
 /**
@@ -179,10 +186,11 @@ struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables) {
  *
  * \param db Catalog database to free
  */
-void adb_db_free(struct adb_db *db) {
-  // TODO: free tables and htm
-  htm_free(db->htm);
-  free(db);
+void adb_db_free(struct adb_db *db)
+{
+	// TODO: free tables and htm
+	htm_free(db->htm);
+	free(db);
 }
 
 /**
@@ -192,4 +200,7 @@ void adb_db_free(struct adb_db *db) {
  *
  * \return A constant string representing the libastrodb version number.
  */
-const char *adb_get_version(void) { return VERSION; }
+const char *adb_get_version(void)
+{
+	return VERSION;
+}

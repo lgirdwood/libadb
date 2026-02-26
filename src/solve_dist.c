@@ -16,20 +16,15 @@
  *  Copyright (C) 2013 - 2014 Liam Girdwood
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <math.h>
-#include <ctype.h>
 #include <pthread.h>
 
+#include "debug.h"
 #include "solve.h"
 
 /* plate distance squared between primary and secondary */
 double distance_get_plate(struct adb_pobject *primary,
-	struct adb_pobject *secondary)
+						  struct adb_pobject *secondary)
 {
 	double x, y;
 
@@ -41,17 +36,15 @@ double distance_get_plate(struct adb_pobject *primary,
 
 /* distance in between two adb_source_objects */
 double distance_get_equ(const struct adb_object *o1,
-	const struct adb_object *o2)
+						const struct adb_object *o2)
 {
-	double x,y,z;
+	double x, y, z;
 
-	x = (cos(o1->dec) * sin (o2->dec))
-		- (sin(o1->dec) * cos(o2->dec) *
-		cos(o2->ra - o1->ra));
+	x = (cos(o1->dec) * sin(o2->dec)) -
+		(sin(o1->dec) * cos(o2->dec) * cos(o2->ra - o1->ra));
 	y = cos(o2->dec) * sin(o2->ra - o1->ra);
 	z = (sin(o1->dec) * sin(o2->dec)) +
-		(cos(o1->dec) * cos(o2->dec) *
-		cos(o2->ra - o1->ra));
+		(cos(o1->dec) * cos(o2->dec) * cos(o2->ra - o1->ra));
 
 	x = x * x;
 	y = y * y;
@@ -61,11 +54,11 @@ double distance_get_equ(const struct adb_object *o1,
 
 /* quickly check if object p is within FoV of object s within plate */
 static inline int distance_not_within_fov(struct adb_solve *solve,
-		const struct adb_object *p, const struct adb_object *s)
+										  const struct adb_object *p,
+										  const struct adb_object *s)
 {
 	double ra_diff = fabs(p->ra - s->ra);
-	double dec_diff = s->dec +
-			((p->dec - s->dec) / 2.0);
+	double dec_diff = s->dec + ((p->dec - s->dec) / 2.0);
 
 	/* check for large angles near 0 and 2.0 * M_PI */
 	if (ra_diff > M_PI)
@@ -79,7 +72,7 @@ static inline int distance_not_within_fov(struct adb_solve *solve,
 }
 
 int distance_solve_single_object(struct solve_runtime *runtime,
-	struct adb_solve_solution *solution)
+								 struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
 	struct target_solve_mag *range = &runtime->pot_magnitude;
@@ -91,7 +84,6 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 
 	/* check t0 candidates */
 	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
-
 		s = solution->source.objects[i];
 
 		SOBJ_CHECK(s);
@@ -100,8 +92,8 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[0], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[0].distance.pattern_min,
-			runtime->soln_target[0].distance.pattern_max, 1);
+						runtime->soln_target[0].distance.pattern_min,
+						runtime->soln_target[0].distance.pattern_max, 1);
 
 		if (distance > runtime->soln_target[0].distance.pattern_max)
 			continue;
@@ -113,8 +105,8 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[1], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[1].distance.pattern_min,
-			runtime->soln_target[1].distance.pattern_max, 2);
+						runtime->soln_target[1].distance.pattern_min,
+						runtime->soln_target[1].distance.pattern_max, 2);
 
 		if (distance > runtime->soln_target[1].distance.pattern_max)
 			continue;
@@ -126,8 +118,8 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[2], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[2].distance.pattern_min,
-			runtime->soln_target[2].distance.pattern_max, 3);
+						runtime->soln_target[2].distance.pattern_min,
+						runtime->soln_target[2].distance.pattern_max, 3);
 
 		if (distance > runtime->soln_target[2].distance.pattern_max)
 			continue;
@@ -139,8 +131,8 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[3], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[3].distance.pattern_min,
-			runtime->soln_target[3].distance.pattern_max, 4);
+						runtime->soln_target[3].distance.pattern_min,
+						runtime->soln_target[3].distance.pattern_max, 4);
 
 		if (distance > runtime->soln_target[3].distance.pattern_max)
 			continue;
@@ -153,7 +145,7 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 		SOBJ_FOUND(s);
 
 		target_add_single_match_on_distance(runtime, s, &solution->source,
-				diverge, solution->flip);
+											diverge, solution->flip);
 		count++;
 	}
 
@@ -161,7 +153,7 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 }
 
 int distance_solve_single_object_extended(struct solve_runtime *runtime,
-	struct adb_solve_solution *solution)
+										  struct adb_solve_solution *solution)
 {
 	const struct adb_object *s;
 	struct target_solve_mag *range = &runtime->pot_magnitude;
@@ -173,7 +165,6 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 
 	/* check t0 candidates */
 	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
-
 		s = solution->source.objects[i];
 
 		/* convert object size from arcmin to radians */
@@ -185,8 +176,8 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[0], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[0].distance.pattern_min,
-			runtime->soln_target[0].distance.pattern_max, 1);
+						runtime->soln_target[0].distance.pattern_min,
+						runtime->soln_target[0].distance.pattern_max, 1);
 
 		if (distance > runtime->soln_target[0].distance.pattern_max + size)
 			continue;
@@ -198,8 +189,8 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[1], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[1].distance.pattern_min,
-			runtime->soln_target[1].distance.pattern_max, 2);
+						runtime->soln_target[1].distance.pattern_min,
+						runtime->soln_target[1].distance.pattern_max, 2);
 
 		if (distance > runtime->soln_target[1].distance.pattern_max + size)
 			continue;
@@ -211,8 +202,8 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[2], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[2].distance.pattern_min,
-			runtime->soln_target[2].distance.pattern_max, 3);
+						runtime->soln_target[2].distance.pattern_min,
+						runtime->soln_target[2].distance.pattern_max, 3);
 
 		if (distance > runtime->soln_target[2].distance.pattern_max + size)
 			continue;
@@ -224,8 +215,8 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 		distance = distance_get_equ(solution->object[3], s);
 
 		SOBJ_CHECK_DIST(s, distance,
-			runtime->soln_target[3].distance.pattern_min,
-			runtime->soln_target[3].distance.pattern_max, 4);
+						runtime->soln_target[3].distance.pattern_min,
+						runtime->soln_target[3].distance.pattern_max, 4);
 
 		if (distance > runtime->soln_target[3].distance.pattern_max + size)
 			continue;
@@ -237,8 +228,8 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 
 		SOBJ_FOUND(s);
 
-		target_add_single_match_extended(runtime, s, &solution->source,
-				diverge, solution->flip);
+		target_add_single_match_extended(runtime, s, &solution->source, diverge,
+										 solution->flip);
 		count++;
 	}
 
@@ -249,7 +240,7 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
  * Solve plate object pattern based on distance ratio within plate FOV.
  */
 int distance_solve_object(struct solve_runtime *runtime,
-	const struct adb_object *primary)
+						  const struct adb_object *primary)
 {
 	const struct adb_object *s[3];
 	struct needle_object *t0, *t1, *t2;
@@ -266,12 +257,14 @@ int distance_solve_object(struct solve_runtime *runtime,
 	runtime->num_pot_distance = 0;
 
 	DOBJ_CHECK(1, primary);
-	adb_vdebug(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n", range->start_pos[0], range->end_pos[0]);
-	adb_vdebug(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n", range->start_pos[1], range->end_pos[1]);
-	adb_vdebug(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n", range->start_pos[2], range->end_pos[2]);
+	adb_vdebug(solve->db, ADB_LOG_SOLVE, "0 start %d stop %d\n",
+			   range->start_pos[0], range->end_pos[0]);
+	adb_vdebug(solve->db, ADB_LOG_SOLVE, "1 start %d stop %d\n",
+			   range->start_pos[1], range->end_pos[1]);
+	adb_vdebug(solve->db, ADB_LOG_SOLVE, "2 start %d stop %d\n",
+			   range->start_pos[2], range->end_pos[2]);
 	/* check t0 candidates */
 	for (i = range->start_pos[0]; i < range->end_pos[0]; i++) {
-
 		/* dont solve against ourself */
 		s[0] = solve->haystack.objects[i];
 		if (s[0] == primary)
@@ -295,11 +288,10 @@ int distance_solve_object(struct solve_runtime *runtime,
 		t1_max = t1->distance.pattern_max * rad_per_pixel;
 
 		DOBJ_CHECK_DIST(1, primary, s[0], distance0, 0.0, 0.0,
-				range->end_pos[0] - range->start_pos[0], i);
+						range->end_pos[0] - range->start_pos[0], i);
 
 		/* check each t1 candidates against t0 <-> primary distance ratio */
 		for (j = range->start_pos[1]; j < range->end_pos[1]; j++) {
-
 			/* dont solve against ourself */
 			s[1] = solve->haystack.objects[j];
 			if (s[0] == s[1] || s[1] == primary)
@@ -321,17 +313,15 @@ int distance_solve_object(struct solve_runtime *runtime,
 				continue;
 
 			DOBJ_CHECK_DIST(2, primary, s[1], distance1, t1_min, t1_max,
-					range->end_pos[1] - range->start_pos[1], j);
+							range->end_pos[1] - range->start_pos[1], j);
 
 			/* is this t1 candidate within t0 primary ratio */
 			if (distance1 >= t1_min && distance1 <= t1_max) {
-
 				t2_min = t2->distance.pattern_min * rad_per_pixel;
 				t2_max = t2->distance.pattern_max * rad_per_pixel;
 
 				/* check t2 candidates */
 				for (k = range->start_pos[2]; k < range->end_pos[2]; k++) {
-
 					/* dont solve against ourself */
 					s[2] = solve->haystack.objects[k];
 					if (s[0] == s[2] || s[1] == s[2] || s[2] == primary)
@@ -352,21 +342,23 @@ int distance_solve_object(struct solve_runtime *runtime,
 					if (distance2 > solve->constraint.max_fov)
 						continue;
 
-					DOBJ_CHECK_DIST(3, primary, s[2], distance2, t2_min, t2_max, 0, k);
+					DOBJ_CHECK_DIST(3, primary, s[2], distance2, t2_min, t2_max,
+									0, k);
 
 					if (distance2 >= t2_min && distance2 <= t2_max) {
-
 						double ratio1, ratio2, delta;
 
-						DOBJ_CHECK_DIST(4, primary, s[2], distance2, t2_min, t2_max, 0, 0);
+						DOBJ_CHECK_DIST(4, primary, s[2], distance2, t2_min,
+										t2_max, 0, 0);
 
 						ratio1 = distance1 / t1->distance.plate_actual;
 						ratio2 = distance2 / t2->distance.plate_actual;
 
 						delta = tri_diff(rad_per_pixel, ratio1, ratio2);
 
-						target_add_match_on_distance(runtime, primary, &solve->haystack,
-							i, j, k, delta, tri_avg(rad_per_pixel, ratio1, ratio2));
+						target_add_match_on_distance(
+							runtime, primary, &solve->haystack, i, j, k, delta,
+							tri_avg(rad_per_pixel, ratio1, ratio2));
 						count++;
 					}
 				}

@@ -19,23 +19,25 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <errno.h>
+#include <ctype.h> // IWYU pragma: keep
+#include <errno.h> // IWYU pragma: keep
 
-#include <libastrodb/db.h>
+#include "libastrodb/db-import.h"
+#include "libastrodb/db.h"
+#include "libastrodb/object.h"
 #include "readme.h"
 #include "debug.h"
 #include "private.h"
 
-#define README_LINE_SIZE		(80 + 4)
-#define FORMAT_SIZE			32
+#define README_LINE_SIZE (80 + 4)
+#define FORMAT_SIZE 32
 
 static inline void skiplines(FILE *fp, int lines)
 {
 	char line[README_LINE_SIZE], *end;
 
 	while (lines--) {
-		end = fgets(line, README_LINE_SIZE - 2, fp) ;
+		end = fgets(line, README_LINE_SIZE - 2, fp);
 		if (end == NULL)
 			break;
 	}
@@ -49,7 +51,7 @@ static int find_header(char *header, FILE *fp, char *hdr_data)
 
 	do {
 		/* read in line */
-		end = fgets(line, README_LINE_SIZE - 2, fp) ;
+		end = fgets(line, README_LINE_SIZE - 2, fp);
 		if (end == NULL)
 			break;
 
@@ -61,7 +63,7 @@ static int find_header(char *header, FILE *fp, char *hdr_data)
 		if (hdr_data) {
 			/* copy back header data field (if any) */
 			strncpy(hdr_data, line + strlen(header) + 1, 80);
-			*(hdr_data + strlen(hdr_data) - 1) = 0;	/* remove cr */
+			*(hdr_data + strlen(hdr_data) - 1) = 0; /* remove cr */
 		}
 		return 1;
 
@@ -78,32 +80,28 @@ static int get_designation(struct readme *readme, FILE *fp)
 	/* designation is always first line of ReadMe */
 	rewind(fp);
 
-	end = fgets(line, README_LINE_SIZE - 2, fp) ;
+	end = fgets(line, README_LINE_SIZE - 2, fp);
 	if (end == NULL)
 		return 0;
 
 	snprintf(readme->designation, RM_DSGN_SIZE, "%.*s", RM_DSGN_SIZE - 1, line);
 
 	/* find next space and pad zeros */
-	return  0;
+	return 0;
 }
 
 static int get_titles(struct readme *info, FILE *f)
 {
-
 	return 0;
 }
 
 static int get_keywords(struct readme *info, FILE *fp)
 {
-
 	return 0;
 }
 
-
 static int get_description(struct readme *info, FILE *fp)
 {
-
 	return 0;
 }
 
@@ -129,15 +127,15 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 
 		file_info = &readme->file[files];
 
-		end = fgets(line, README_LINE_SIZE - 2, fp) ;
+		end = fgets(line, README_LINE_SIZE - 2, fp);
 		if (end == NULL || *line == '-')
 			break;
 
 		if (*line == ' ')
 			continue;
 
-		n = sscanf(line, "%s %d %d %80c", file_info->name,
-				&file_info->length, &file_info->records, file_info->title);
+		n = sscanf(line, "%s %d %d %80c", file_info->name, &file_info->length,
+				   &file_info->records, file_info->title);
 		if (n != 4)
 			continue;
 
@@ -152,14 +150,14 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 /*
  * Format, Label and Explanation line offsets vary between files.
  */
-static int get_byte_desc_offset(struct adb_db *db,
-	struct readme *readme, int file_id,  FILE *fp)
+static int get_byte_desc_offset(struct adb_db *db, struct readme *readme,
+								int file_id, FILE *fp)
 {
-	char line[README_LINE_SIZE], * end, *offset;
+	char line[README_LINE_SIZE], *end, *offset;
 
 	bzero(line, sizeof(line));
 
-	end = fgets(line, README_LINE_SIZE - 2, fp) ;
+	end = fgets(line, README_LINE_SIZE - 2, fp);
 	if (end == NULL)
 		return -EINVAL;
 
@@ -181,12 +179,12 @@ static int get_byte_desc_offset(struct adb_db *db,
 }
 
 /* Parse a single byte by byte description */
-static int get_byte_desc(struct adb_db *db, struct readme *readme,
-	int file_id,  FILE *fp)
+static int get_byte_desc(struct adb_db *db, struct readme *readme, int file_id,
+						 FILE *fp)
 {
 	char line[README_LINE_SIZE], cont[README_LINE_SIZE], *end;
 	struct cds_byte_desc *byte_desc;
-	int desc = 0,  err;
+	int desc = 0, err;
 
 	cont[0] = ' ';
 
@@ -206,14 +204,14 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 		byte_desc = &readme->file[file_id].byte_desc[desc];
 
 		bzero(line, sizeof(line));
-		end = fgets(line, README_LINE_SIZE - 2, fp) ;
+		end = fgets(line, README_LINE_SIZE - 2, fp);
 		if (end == NULL || *line == '-')
 			break;
 
 		/* try "%d-%d" start-end format */
-		n = sscanf(line, "%d- %d %s %s %s %128c",
-				&byte_desc->start, &byte_desc->end, byte_desc->type,
-				byte_desc->units, byte_desc->label, byte_desc->explanation);
+		n = sscanf(line, "%d- %d %7s %7s %15s %127[^\n\r]", &byte_desc->start,
+				   &byte_desc->end, byte_desc->type, byte_desc->units,
+				   byte_desc->label, byte_desc->explanation);
 		if (n == 6) {
 			byte_desc->start--;
 			byte_desc->end--;
@@ -221,9 +219,9 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 		}
 
 		/* try "%d %d" start-end format */
-		n = sscanf(line, "%d %d %s %s %s %128c",
-				&byte_desc->start, &byte_desc->end, byte_desc->type,
-				byte_desc->units, byte_desc->label, byte_desc->explanation);
+		n = sscanf(line, "%d %d %7s %7s %15s %127[^\n\r]", &byte_desc->start,
+				   &byte_desc->end, byte_desc->type, byte_desc->units,
+				   byte_desc->label, byte_desc->explanation);
 		if (n == 6) {
 			byte_desc->start--;
 			byte_desc->end--;
@@ -231,9 +229,9 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 		}
 
 		/* try "%d" start-end format */
-		n = sscanf(line, "%d %s %s %s %128c",
-				&byte_desc->start, byte_desc->type,
-				byte_desc->units, byte_desc->label, byte_desc->explanation);
+		n = sscanf(line, "%d %7s %7s %15s %127[^\n\r]", &byte_desc->start,
+				   byte_desc->type, byte_desc->units, byte_desc->label,
+				   byte_desc->explanation);
 		if (n == 5) {
 			byte_desc->end = byte_desc->start--;
 			goto next;
@@ -241,14 +239,14 @@ static int get_byte_desc(struct adb_db *db, struct readme *readme,
 
 		/* continuation of explanation */
 		byte_desc = &readme->file[file_id].byte_desc[--desc];
-		sscanf(line, " %128c", cont);
+		sscanf(line, " %83c", cont);
 		strncat(byte_desc->explanation, cont,
-			RM_BYTE_EXP_SIZE - strlen(byte_desc->explanation) - 1);
+				RM_BYTE_EXP_SIZE - strlen(byte_desc->explanation) - 1);
 
 next:
 		adb_debug(db, ADB_LOG_CDS_PARSER, " %d...%d is %s of (%s) at %s : %s\n",
-			byte_desc->start, byte_desc->end, byte_desc->type,
-			byte_desc->units, byte_desc->label, byte_desc->explanation);
+				  byte_desc->start, byte_desc->end, byte_desc->type,
+				  byte_desc->units, byte_desc->label, byte_desc->explanation);
 
 		desc++;
 	} while (desc < RM_MAX_FILES);
@@ -262,7 +260,7 @@ static inline int get_file_id(struct readme *readme, char *table_name)
 {
 	int i;
 
-	for (i = 0; i< readme->num_files; i++) {
+	for (i = 0; i < readme->num_files; i++) {
 		if (strstr(table_name, readme->file[i].name))
 			return i;
 	}
@@ -271,7 +269,7 @@ static inline int get_file_id(struct readme *readme, char *table_name)
 
 /* parse all ReadMe byte-by-byte descriptions */
 static int get_byte_description(struct adb_db *db, struct readme *readme,
-	FILE *fp)
+								FILE *fp)
 {
 	struct cds_file_info *file_info;
 	char table_name[README_LINE_SIZE];
@@ -282,15 +280,13 @@ static int get_byte_description(struct adb_db *db, struct readme *readme,
 	rewind(fp);
 
 	do {
-
 		if (find_header("Byte-by-byte Description of file:", fp, table_name)) {
-
-			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n",
-				table_name);
+			adb_info(db, ADB_LOG_CDS_PARSER, " found description for %s\n",
+					 table_name);
 			file = get_file_id(readme, table_name);
 			if (file < 0) {
-				adb_info(db, ADB_LOG_CDS_PARSER," %s not required\n",
-					table_name);
+				adb_info(db, ADB_LOG_CDS_PARSER, " %s not required\n",
+						 table_name);
 				continue;
 			}
 
@@ -304,13 +300,12 @@ static int get_byte_description(struct adb_db *db, struct readme *readme,
 	rewind(fp);
 	do {
 		if (find_header("Byte-per-byte Description of file:", fp, table_name)) {
-
-			adb_info(db, ADB_LOG_CDS_PARSER," found description for %s\n",
-				table_name);
+			adb_info(db, ADB_LOG_CDS_PARSER, " found description for %s\n",
+					 table_name);
 			file = get_file_id(readme, table_name);
 			if (file < 0) {
-				adb_info(db, ADB_LOG_CDS_PARSER," %s not required\n",
-					table_name);
+				adb_info(db, ADB_LOG_CDS_PARSER, " %s not required\n",
+						 table_name);
 				continue;
 			}
 
@@ -321,7 +316,7 @@ static int get_byte_description(struct adb_db *db, struct readme *readme,
 			break;
 	} while (1);
 
-	adb_info(db, ADB_LOG_CDS_PARSER,"Parsing byte descriptions done\n");
+	adb_info(db, ADB_LOG_CDS_PARSER, "Parsing byte descriptions done\n");
 	return 0;
 }
 
@@ -338,8 +333,7 @@ struct readme *readme_parse(struct adb_db *db, char *file)
 		return NULL;
 	}
 
-	readme = (struct readme *)
-		calloc(1, sizeof(struct readme));
+	readme = (struct readme *)calloc(1, sizeof(struct readme));
 	if (readme == NULL) {
 		fclose(fp);
 		return NULL;
@@ -376,7 +370,7 @@ int table_parse_readme(struct adb_db *db, int table_id)
 	char file[ADB_PATH_SIZE];
 
 	snprintf(file, ADB_PATH_SIZE, "%s%s", table->path.local, "ReadMe");
-	adb_info(db, ADB_LOG_CDS_PARSER,"Parsing catalog ReadMe: %s\n", file);
+	adb_info(db, ADB_LOG_CDS_PARSER, "Parsing catalog ReadMe: %s\n", file);
 
 	table->import.readme = readme_parse(db, file);
 	if (table->import.readme == NULL) {

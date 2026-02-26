@@ -18,20 +18,21 @@
 
 #include <assert.h>
 #include <dirent.h>
-#include <errno.h>
+#include <errno.h> // IWYU pragma: keep
 #include <math.h>
-#include <stdio.h>
+#include <stdio.h> // IWYU pragma: keep
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> // IWYU pragma: keep
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "debug.h"
-#include "private.h"
-#include "table.h"
-#include <libastrodb/db.h>
+#include "private.h" // IWYU pragma: keep
+#include "table.h" // IWYU pragma: keep
+#include "libastrodb/db.h"
+#include "libastrodb/object.h" // IWYU pragma: keep
 
 #if 1
 #define vdebug(x...) printf(x)
@@ -166,13 +167,6 @@ void htm_free(struct htm *htm)
 
 	free(htm->dec);
 	free(htm);
-}
-
-static inline void trixel_init_xyz(struct htm_trixel *t)
-{
-	htm_vertex_update_unit(t->a);
-	htm_vertex_update_unit(t->b);
-	htm_vertex_update_unit(t->c);
 }
 
 static void vertex_init_radec(struct htm_vertex *v)
