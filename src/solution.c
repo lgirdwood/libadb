@@ -26,7 +26,16 @@
 #include "lib.h"
 #include "solve.h"
 
-/* qsort comparison func */
+/**
+ * \brief Comparison callback for sorting solutions by divergence.
+ *
+ * Used by `qsort` to order an array of candidate solver solutions based on 
+ * their computed divergence error. Lower divergence indicates a better match.
+ *
+ * \param o1 Pointer to the first solution.
+ * \param o2 Pointer to the second solution.
+ * \return 1 if o1 has higher divergence, -1 if o2 has higher divergence, 0 if equal.
+ */
 static int solution_cmp(const void *o1, const void *o2)
 {
 	const struct adb_solve_solution *p1 = o1, *p2 = o2;
@@ -39,8 +48,15 @@ static int solution_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
-/*
- * Find plate object position within solution plate objects.
+/**
+ * \brief Find the index of a plate object within a solution's plate object mapping.
+ *
+ * Scans the solution's recorded plate objects array searching for a structural
+ * match containing matching physical pixel coordinates and ADU levels.
+ *
+ * \param solution The candidate solution containing matched tuples.
+ * \param pobject The plate object needle to search for.
+ * \return The internal array index of the matched plate object, or -1 if not found.
  */
 static int get_solve_plate(struct adb_solve_solution *solution,
 						   struct adb_pobject *pobject)
@@ -57,8 +73,16 @@ static int get_solve_plate(struct adb_solve_solution *solution,
 	return -1;
 }
 
-/*
- * Calculate divergence between potential solution and plate object.
+/**
+ * \brief Calculate the divergence score mapping a potential solution to a plate object.
+ *
+ * Computes the aggregate geometric layout error between the current working
+ * solution candidates and the singular physical plate object, weighting
+ * magnitude, distance, and position angle differentials.
+ *
+ * \param runtime Target execution state context handling dynamic matches.
+ * \param solution Extracted baseline baseline defining general astrometric characteristics.
+ * \param pobject The test instrumental point being geometrically fitted.
  */
 static void calc_object_divergence(struct solve_runtime *runtime,
 								   struct adb_solve_solution *solution,
@@ -79,7 +103,20 @@ static void calc_object_divergence(struct solve_runtime *runtime,
 	}
 }
 
-/* get object or estimated object magnitude & position for plate object */
+/**
+ * \brief Associate a raw photographic plate object with a catalog source identification.
+ *
+ * Locates the optimal physical matching source star mapping against a currently 
+ * solved target baseline, building positional estimates and registering them into 
+ * the working matched reference framework.
+ *
+ * \param solve Core structural execution state limiting overall bounds constraints.
+ * \param object_id The internal local index tracing this primary structure mappings.
+ * \param solution The underlying base calibration mapping model utilized evaluating components.
+ * \param pobject Instrumental physical raw input target being evaluated mapped.
+ * \param sobject Out parameter returning constructed mapped alignment mapping pointer variables.
+ * \return Newly identified elements successfully inserted mapping state constraints indices.
+ */
 static int get_object(struct adb_solve *solve, int object_id,
 					  struct adb_solve_solution *solution,
 					  struct adb_pobject *pobject,
@@ -141,7 +178,20 @@ static int get_object(struct adb_solve *solve, int object_id,
 	return new;
 }
 
-/* get object or estimated object magnitude & position for plate object */
+/**
+ * \brief Correlate a single photographic object onto catalog data utilizing an extended loose bound.
+ *
+ * Expands physical positional heuristics bounding individual loosely aligned instrumental inputs, 
+ * accommodating noise variances identifying nearest neighbor optimal alignments matching general 
+ * layout geometry attributes mapping specific index tracking references.
+ *
+ * \param solve Parent master runtime framework managing threads configurations safely.
+ * \param object_id Numerical index referencing source physical point alignment mapping indices.
+ * \param solution Active matrix parameters identifying expected structural layouts baseline dimensions. 
+ * \param pobject Source instrumental target pointer defining coordinates matrices metrics evaluating features.
+ * \param sobject Solved destination pointer array mapped storing matched associations properties links.
+ * \return Result metric evaluating positive identified components registered correctly.
+ */
 static int get_extended_object(struct adb_solve *solve, int object_id,
 							   struct adb_solve_solution *solution,
 							   struct adb_pobject *pobject,
@@ -177,9 +227,17 @@ static int get_extended_object(struct adb_solve *solve, int object_id,
 	return count;
 }
 
-/*
- * Initialise and set search limits for solution for subsequent object
- * searching.
+/**
+ * \brief Configure search query boundaries narrowing expected object returns based on image calibration.
+ *
+ * Initializes spatial search tree heuristics constraining search bounds limiting fetched catalog
+ * nodes matching local image scale metrics, bounding radius limits limiting magnitudes and coordinates.
+ *
+ * \param solution Functional active mapping trace containing baseline celestial definitions pointers.
+ * \param fov Radius boundary representing maximum search spread limit filtering distant points.
+ * \param mag_limit Operational visual magnitude numeric ceiling.
+ * \param table_id Core catalog dataset reference numerical index locating structural blocks targets.
+ * \return Output identifier indicating successfully built filtered array spaces.
  */
 int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 								   double fov, double mag_limit, int table_id)
@@ -258,7 +316,15 @@ int adb_solution_set_search_limits(struct adb_solve_solution *solution,
 	return 0;
 }
 
-/* get plate objects or estimates of plate object position and magnitude */
+/**
+ * \brief Complete full plate extraction registering all valid matches expanding original matrices.
+ *
+ * Performs broad sweep iterating across all loaded raw instrumental values querying matched elements,
+ * inserting mapping combinations directly tracking resulting positional and magnitude metrics definitions.
+ *
+ * \param solution Dynamic working baseline target model defining expected scale properties values arrays.
+ * \return Result value accumulating final verified count of mapped positional items matching configurations safely. 
+ */
 int adb_solution_get_objects_extended(struct adb_solve_solution *solution)
 {
 	struct adb_solve *solve = solution->solve;

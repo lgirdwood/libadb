@@ -22,7 +22,16 @@
 #include "debug.h" // IWYU pragma: keep
 #include "solve.h"
 
-/* position angle in radians relative to plate north */
+/**
+ * \brief Calculate Position Angle (PA) between two objects on a photographic plate.
+ *
+ * Determines the angle (in radians) of the secondary object relative to the 
+ * primary object, utilizing cartesian pixel coordinates.
+ *
+ * \param primary Pointer to the first (center) plate object.
+ * \param secondary Pointer to the second plate object.
+ * \return The relative position angle in radians.
+ */
 double pa_get_plate(struct adb_pobject *primary, struct adb_pobject *secondary)
 {
 	double x, y;
@@ -33,7 +42,16 @@ double pa_get_plate(struct adb_pobject *primary, struct adb_pobject *secondary)
 	return atan2(y, x);
 }
 
-/* position angle in radians */
+/**
+ * \brief Calculate Position Angle (PA) between two equatorial coordinates.
+ *
+ * Computes the bearing angle from a primary celestial object to a secondary
+ * celestial object utilizing spherical trigonometry on RA/Dec coordinates.
+ *
+ * \param o1 Pointer to the primary reference celestial object.
+ * \param o2 Pointer to the secondary celestial object.
+ * \return The equatorial position angle in radians.
+ */
 double pa_get_equ(const struct adb_object *o1, const struct adb_object *o2)
 {
 	double k, ra_delta, x, y;
@@ -59,7 +77,16 @@ double pa_get_equ(const struct adb_object *o1, const struct adb_object *o2)
 	return atan2(y, x);
 }
 
-/* add matching cluster to list of potentials */
+/**
+ * \brief Add a successful position angle match to the runtime's potential list.
+ *
+ * If a matching 4-star cluster successfully passes all relative position
+ * angle checks, it gets registered into the runtime tracker for final divergence scoring.
+ *
+ * \param runtime The solver execution state.
+ * \param p The matching solution cluster structure.
+ * \param delta The cumulative error divergence of the position angles.
+ */
 static void add_pot_on_pa(struct solve_runtime *runtime,
 						  struct adb_solve_solution *p, double delta)
 {
@@ -70,6 +97,18 @@ static void add_pot_on_pa(struct solve_runtime *runtime,
 	runtime->pot_pa[runtime->num_pot_pa++] = *p;
 }
 
+/**
+ * \brief Validate if a measured Position Angle delta falls within tolerance bounds.
+ *
+ * Checks if a candidate's angular separation conforms to the expected 
+ * pattern constraints recorded from the original plate. Accounts for flipped
+ * image logic where angles mirror.
+ *
+ * \param t The needle pattern object containing the allowed angle tolerances.
+ * \param delta The actual measured position angle difference in radians.
+ * \param flip Boolean flag indicating if the image/plate appears horizontally mirrored.
+ * \return 1 if valid and within bounds, 0 if invalid.
+ */
 static inline int pa_valid(struct needle_object *t, double delta, int flip)
 {
 	if (flip) {
@@ -86,6 +125,18 @@ static inline int pa_valid(struct needle_object *t, double delta, int flip)
 	}
 }
 
+/**
+ * \brief Evaluate candidate asterisms against measured position angles.
+ *
+ * Takes previously filtered clusters (that already passed distance ratio checks)
+ * and measures the specific internal position angles between their stars. 
+ * If the angles match the plate's asterism pattern, the cluster survives.
+ *
+ * \param runtime The current solver context containing potential candidate lists.
+ * \param primary The target primary catalog object acting as the asterism center.
+ * \param idx The needle index (unused logically in this specific function form).
+ * \return The number of candidate asterisms successfully pattern matched on position angles.
+ */
 int pa_solve_object(struct solve_runtime *runtime,
 					const struct adb_object *primary, int idx)
 {
@@ -160,6 +211,17 @@ next:
 	return count;
 }
 
+/**
+ * \brief Evaluate candidate objects against measured position angles for a single target framework.
+ *
+ * Works through the set of potential candidates extending a single-object
+ * solution frame, verifying if adding the candidate preserves the internal
+ * position angle relationships required by the photographic plate measurements.
+ *
+ * \param runtime The active solver execution state containing candidates.
+ * \param solution A proposed baseline solution model determining angle norms.
+ * \return The number of successful candidate object matches verified by position angle.
+ */
 int pa_solve_single_object(struct solve_runtime *runtime,
 						   struct adb_solve_solution *solution)
 {

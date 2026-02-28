@@ -22,7 +22,17 @@
 #include "debug.h" // IWYU pragma: keep
 #include "solve.h"
 
-/* qsort() compare object magnitude callback */
+/**
+ * \brief Comparison callback for sorting objects by magnitude.
+ *
+ * Used with `qsort` to order an array of celestial objects according to
+ * their visual magnitude in ascending order (brightest to dimmest, 
+ * noting that lower magnitude values mean brighter objects).
+ *
+ * \param o1 Pointer to the first object pointer.
+ * \param o2 Pointer to the second object pointer.
+ * \return -1 if o1 is brighter, 1 if o1 is dimmer, 0 if equal.
+ */
 int mag_object_cmp(const void *o1, const void *o2)
 {
 	const struct adb_object *p1 = *(const struct adb_object **)o1,
@@ -36,8 +46,15 @@ int mag_object_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
-/*
- * Ratio of magnitude from objects A,B
+/**
+ * \brief Calculate the magnitude difference between two plate objects.
+ *
+ * Computes the relative visual magnitude difference between two objects A and B
+ * based on their measured Analog-to-Digital Units (ADU) from the photographic plate.
+ *
+ * \param a Pointer to the first plate object (often the primary).
+ * \param b Pointer to the second plate object.
+ * \return The relative magnitude difference (-2.5 * log10(b_adu / a_adu)).
  */
 double mag_get_plate_diff(struct adb_pobject *a, struct adb_pobject *b)
 {
@@ -52,9 +69,17 @@ double mag_get_plate_diff(struct adb_pobject *a, struct adb_pobject *b)
 	return -2.5 * log10(b_adu / a_adu);
 }
 
-/*
- * Calculate the average difference between plate ADU values and solution
- * objects. Use this as basis for calculating magnitudes based on plate ADU.
+/**
+ * \brief Estimate the absolute visual magnitude of a primary plate object.
+ *
+ * Uses successfully solved reference objects to calibrate the plate's
+ * background magnitude offset, then applies this average offset to determine
+ * the estimated true magnitude of the primary target object.
+ *
+ * \param solve The current active solving session context.
+ * \param solution The current proposed solution with matched reference objects.
+ * \param primary The undetermined primary plate object to estimate magnitude for.
+ * \return The estimated absolute visual magnitude.
  */
 float mag_get_plate(struct adb_solve *solve,
 					struct adb_solve_solution *solution,
@@ -82,8 +107,18 @@ float mag_get_plate(struct adb_solve *solve,
 	return mag / (float)count;
 }
 
-/*
- * Binary search the haystack for object with magnitude nearest value
+/**
+ * \brief Recursive binary search to find an object near a specific magnitude.
+ *
+ * Searches the sorted haystack of source objects for an object that has 
+ * a magnitude closely matching the requested `value`.
+ *
+ * \param adb_source_objects Array of source object pointers, sorted by magnitude.
+ * \param value The target visual magnitude to search for.
+ * \param start The starting index of the search bounds.
+ * \param end The ending index of the search bounds.
+ * \param pos The current midpoint index being evaluated.
+ * \return The index of the nearest matching object.
  */
 static int bsearch_object(const struct adb_object **adb_source_objects,
 						  double value, int start, int end, int pos)
@@ -111,8 +146,16 @@ static int bsearch_object(const struct adb_object **adb_source_objects,
 		return pos; /* magnitude equal - return position */
 }
 
-/*
- * Find first object with in haystack magnitude >= Vmag
+/**
+ * \brief Find the first object in a sorted array with magnitude >= the target.
+ *
+ * Uses binary search to quickly locate the boundary index where objects
+ * begin to have a magnitude greater than or equal to `vmag`.
+ *
+ * \param source The container holding the sorted array of source objects.
+ * \param vmag The target lower-bound visual magnitude limit.
+ * \param start_idx The starting index to constrain the search.
+ * \return The index of the first object meeting the magnitude criteria.
  */
 static int object_get_first_on_mag(struct adb_source_objects *source,
 								   double vmag, int start_idx)
@@ -149,8 +192,16 @@ static int object_get_first_on_mag(struct adb_source_objects *source,
 	return 0;
 }
 
-/*
- * Find last object with in haystack magnitude <= Vmag
+/**
+ * \brief Find the last object in a sorted array with magnitude <= the target.
+ *
+ * Uses binary search to quickly locate the boundary index where objects
+ * stop having a magnitude less than or equal to `vmag`.
+ *
+ * \param source The container holding the sorted array of source objects.
+ * \param vmag The target upper-bound visual magnitude limit.
+ * \param start_idx The starting index to constrain the search.
+ * \return The index of the last object meeting the magnitude criteria.
  */
 static int object_get_last_with_mag(struct adb_source_objects *source,
 									double vmag, int start_idx)
@@ -187,10 +238,17 @@ static int object_get_last_with_mag(struct adb_source_objects *source,
 	return source->num_objects - 1;
 }
 
-/*
- * Search the haystack db objects using the primary as the reference object and
- * then search the haystack for objects within the brightness ration for the target
- * pattern[idx] object.
+/**
+ * \brief Filter candidate matching objects based on relative pattern magnitude.
+ *
+ * Searches the catalog haystack utilizing the proposed primary object 
+ * as the anchor, and bounds the search for secondary star tuples depending 
+ * on the allowed relative brightness ratio seen on the plate.
+ *
+ * \param runtime The solver execution state containing current matching subsets.
+ * \param primary The target primary catalog object being evaluated.
+ * \param idx The index of the needle pattern object dictating the magnitude ratio.
+ * \return The number of candidate objects falling within the valid magnitude range.
  */
 int mag_solve_object(struct solve_runtime *runtime,
 					 const struct adb_object *primary, int idx)
@@ -228,7 +286,17 @@ int mag_solve_object(struct solve_runtime *runtime,
 	return pot_mag->end_pos[idx] - pot_mag->start_pos[idx];
 }
 
-/* compare pattern objects magnitude against source objects */
+/**
+ * \brief Filter solitary candidate matching objects utilizing calibrated absolute magnitude.
+ *
+ * Constrains potential candidate matches for a single unanchored plate object
+ * by comparing its calibrated absolute magnitude against catalog stars.
+ *
+ * \param runtime The solver execution state.
+ * \param solution A proposed solution model providing the reference calibration.
+ * \param pobject The plate object being evaluated for magnitude limits.
+ * \return The number of source objects passing the absolute magnitude check.
+ */
 int mag_solve_single_object(struct solve_runtime *runtime,
 							struct adb_solve_solution *solution,
 							struct adb_pobject *pobject)

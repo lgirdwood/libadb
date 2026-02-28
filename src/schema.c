@@ -24,6 +24,16 @@
 #include "table.h"
 #include "libastrodb/db.h"
 
+/**
+ * \brief Verify if a specific field symbol exists in the table.
+ *
+ * Checks both primary mapped fields and alternative tracking matrices ensuring
+ * the requested column string aligns with established catalog schema bounds.
+ *
+ * \param table Active instantiated dataset schema structure.
+ * \param field String name indexing the extracted definition constraint mapping.
+ * \return 1 if field exists, 0 otherwise.
+ */
 static int schema_is_field(struct adb_table *table, char *field)
 {
 	int i;
@@ -41,6 +51,16 @@ static int schema_is_field(struct adb_table *table, char *field)
 	return 0;
 }
 
+/**
+ * \brief Find primary mapping index evaluating schema symbols matrices.
+ *
+ * Scans primary sequential arrays extracting array relative bounds constraints offsets.
+ *
+ * \param db Catalog matrix pointer checking validation mapping logs.
+ * \param table Working dataset mapping pointer.
+ * \param field Requested identification character string symbol mapping fields.
+ * \return Discovered integer indexing identifying active arrays configurations, or -EINVAL on fail.
+ */
 int schema_get_field(struct adb_db *db, struct adb_table *table,
 					 const char *field)
 {
@@ -55,6 +75,16 @@ int schema_get_field(struct adb_db *db, struct adb_table *table,
 	return -EINVAL;
 }
 
+/**
+ * \brief Extract alternative mapping column structural lookup indexes.
+ *
+ * Query resolving secondary alias structural columns mapping underlying byte arrays blocks.
+ *
+ * \param db Catalog database log constraints reference.
+ * \param table Operational dataset table pointers instance tracking schemas.
+ * \param field Lookup identification definitions symbol.
+ * \return Index number handling secondary associations elements mapping attributes constraints (-EINVAL on fail).
+ */
 int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
 						 const char *field)
 {
@@ -69,9 +99,17 @@ int schema_get_alt_field(struct adb_db *db, struct adb_table *table,
 	return -EINVAL;
 }
 
-/*
- * Add an alternative field to the dataset. Move it's primary out
- * of the field and into the alt field.
+/**
+ * \brief Transfer a primary structural definition to a secondary alternative link map.
+ *
+ * Extracts primary structural column bindings from main iteration indexes moving elements 
+ * sequentially into custom optional attributes matrices preventing standard iterators dependencies.
+ *
+ * \param db Base layout framework handling log state mapping definitions.
+ * \param table Executing bounds arrays storing loaded values layouts safely.
+ * \param field Symbolic textual identification naming extracted data block paths.
+ * \param pri_idx Initial location identifying primary structures data offsets blocks array positions.
+ * \return Mapping boolean state verifying successful structural pointer offsets transfers.
  */
 int schema_add_alternative_field(struct adb_db *db, struct adb_table *table,
 								 const char *field, int pri_idx)
@@ -121,6 +159,14 @@ int schema_add_alternative_field(struct adb_db *db, struct adb_table *table,
 	return 0;
 }
 
+/**
+ * \brief Emit schema execution metrics layout properties debugging limits matrices safely.
+ *
+ * Prints underlying field identification mappings detailing array limits lengths and data types contexts dynamically.
+ *
+ * \param db Parent core component state map definitions limits pointers.
+ * \param table Source mapping components configuration blocks layouts.
+ */
 static void schema_dump(struct adb_db *db, struct adb_table *table)
 {
 	int i;
@@ -159,6 +205,16 @@ static void schema_dump(struct adb_db *db, struct adb_table *table)
 	}
 }
 
+/**
+ * \brief Reallocate schema reading indexing ensuring optimal consecutive sequence execution reads.
+ *
+ * Reorders underlying evaluation structure iteration loops mitigating non-sequential seek patterns safely
+ * preserving native source line execution properties sequentially.
+ *
+ * \param db Foundation matrix evaluating mappings paths definitions log contexts.
+ * \param table Executing array constraints boundaries elements blocks properties offsets pointers matrices.
+ * \return Status numeric verification verifying successful structural layout limits indices reordering layouts safely.
+ */
 int schema_order_import_index(struct adb_db *db, struct adb_table *table)
 {
 	int i, j, lowest_src, src = 0, group;
@@ -211,6 +267,16 @@ int schema_order_import_index(struct adb_db *db, struct adb_table *table)
 	return 0;
 }
 
+/**
+ * \brief Interlink layout structures arrays based against standard byte definition maps layouts safely.
+ *
+ * Automatically computes explicit mappings metrics configurations using source CDS metadata definitions indices blocks natively.
+ *
+ * \param db State root context definitions bounds logging variables metrics pointers layout securely.
+ * \param table Output framework limits target allocating matrices links structures arrays memory states appropriately mapping cleanly offsets.
+ * \param new_schema_object Raw layout definition block injecting structural attributes identifying properties keys contexts natively reliably limiting bounds properties successfully defining features boundaries safely properly cleanly limits indices.
+ * \return Native numerical status identifier tracking allocation successes limits boundaries successfully defining structure.
+ */
 static int schema_add_field_file(struct adb_db *db, struct adb_table *table,
 								 struct adb_schema_field *new_schema_object)
 {
@@ -254,6 +320,16 @@ static int schema_add_field_file(struct adb_db *db, struct adb_table *table,
 	return -EINVAL;
 }
 
+/**
+ * \brief Setup synthetic explicit matrix column layouts bypassing metadata source files structures attributes bounds dynamically arrays correctly memory states properly securely safely natively limits features.
+ *
+ * Creates mapped offset structural definitions metrics arrays directly from parameter structures indices sizes securely natively mapping.
+ *
+ * \param db System root state bounds limits handling parameters execution mappings bounds definitions blocks metrics cleanly paths reliably correctly natively pointers.
+ * \param table Active structure mapping indices dimensions parameters dynamically correctly boundaries limiting safely constraints features limits correctly pointers. 
+ * \param new_schema_object Object reference pointer mapping sizes constraints defining properties layouts cleanly features dynamically structures mapping definitions securely natively attributes cleanly safely limits memory states safely limits pointers.
+ * \return Native return configuration metrics pointer status limit safely bound structure matrices reliably safely limits cleanly.
+ */
 static int schema_add_field_nofile(struct adb_db *db, struct adb_table *table,
 								   struct adb_schema_field *new_schema_object)
 {
@@ -308,6 +384,15 @@ int schema_add_field(struct adb_db *db, struct adb_table *table,
 		return schema_add_field_nofile(db, table, new_schema_object);
 }
 
+/**
+ * \brief Serialize the compiled structural schema definition.
+ *
+ * Writes the metadata (such as field types, lengths, and byte offsets) to the persistent binary table schema layout file.
+ *
+ * \param db Pointer to the database context.
+ * \param table The table reference containing the populated schema to serialize.
+ * \return 0 on success, or a negative error code on failure.
+ */
 int schema_write(struct adb_db *db, struct adb_table *table)
 {
 	struct table_file_index *hdr = &table->file_index;

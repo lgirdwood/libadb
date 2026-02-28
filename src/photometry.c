@@ -16,21 +16,23 @@
  *  Copyright (C) 2013 - 2014 Liam Girdwood
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <math.h>
-#include <ctype.h>
-#include <pthread.h>
 
 #include "solve.h"
 
-/* compare plate object brightness against the brightness of all the reference
- * plate objects and then use the average differences to calculate magnitude */
+/**
+ * \brief Calculate the mean magnitude difference between a target and reference objects.
+ *
+ * Compares the brightness of a specific plate object against all successfully
+ * solved reference plate objects, calculating average differences to establish a 
+ * magnitude baseline.
+ *
+ * \param solution Active solved layout containing both references and target.
+ * \param target Internal index within the referenced array for the source object.
+ * \return The computed baseline mean magnitude delta.
+ */
 static float get_ref_mag_delta_mean(struct adb_solve_solution *solution,
-	int target)
+									int target)
 {
 	struct adb_reference_object *ref, *reft;
 	float mean = 0.0, plate_delta, db_delta;
@@ -69,11 +71,19 @@ static float get_ref_mag_delta_mean(struct adb_solve_solution *solution,
 }
 
 /* TODO: investigate speedup with only 4 ref objects found in soln */
-/* compare plate object brightness against the brightness of all the refernce
- * plate objects and then use the average differences to calculate magnitude
- * sigma */
+/**
+ * \brief Calculate the magnitude variance (sigma) for a target object.
+ *
+ * Compares a plate object's relative brightness against reference objects and
+ * computes the standard deviation (sigma) of its magnitude deltas against the mean.
+ *
+ * \param solution Active solved layout parameters containing matched components.
+ * \param target Numeric index defining the object within the reference stack.
+ * \param mean Pre-computed mean magnitude delta for the evaluated object.
+ * \return Standard deviation representing magnitude error constraints.
+ */
 static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
-	int target, float mean)
+									 int target, float mean)
 {
 	struct adb_reference_object *ref, *reft;
 	float plate_delta, db_delta, diff, sigma = 0.0;
@@ -115,8 +125,17 @@ static float get_ref_mag_delta_sigma(struct adb_solve_solution *solution,
 }
 
 /* TODO: investigate speedup with only 4 ref objects found in soln */
-/* calculate the magnitude of an unsolved plate object */
-static void calc_unsolved_plate_magnitude(struct adb_solve_solution *solution, int target)
+/**
+ * \brief Estimate the absolute magnitude of an unsolved plate object.
+ *
+ * Extracts mean magnitude differences against confirmed references applying average
+ * delta to approximate the visual magnitude for the remaining unmatched targets.
+ *
+ * \param solution Executing layout framework bounds containing registered references.
+ * \param target Index position of the specific unsolved plate target points.
+ */
+static void calc_unsolved_plate_magnitude(struct adb_solve_solution *solution,
+										  int target)
 {
 	struct adb_reference_object *ref;
 	int i, count = 0;
@@ -133,8 +152,8 @@ static void calc_unsolved_plate_magnitude(struct adb_solve_solution *solution, i
 
 		/* calculate mean difference in magnitude */
 		mean += ref->object->mag +
-			mag_get_plate_diff(&ref->pobject,
-			&solution->solve_object[target].pobject);
+				mag_get_plate_diff(&ref->pobject,
+								   &solution->solve_object[target].pobject);
 		count++;
 	}
 
@@ -142,6 +161,14 @@ static void calc_unsolved_plate_magnitude(struct adb_solve_solution *solution, i
 	solution->solve_object[target].mag = mean / count;
 }
 
+/**
+ * \brief Compile active magnitude baseline statistical coefficients filtering outliers.
+ *
+ * Performs repetitive clipping filtering anomalous magnitude deviations computing
+ * standard deviance means identifying valid ranges excluding clipped values outside bounds.
+ *
+ * \param solution Runtime framework handling extracted positional references metrics.
+ */
 void mag_calc_plate_coefficients(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
@@ -152,7 +179,6 @@ void mag_calc_plate_coefficients(struct adb_solve_solution *solution)
 		return;
 
 	do {
-
 		lastcount = count;
 		count = 0;
 
@@ -164,8 +190,8 @@ void mag_calc_plate_coefficients(struct adb_solve_solution *solution)
 				continue;
 
 			ref->mag_mean = get_ref_mag_delta_mean(solution, i);
-			ref->mag_sigma = get_ref_mag_delta_sigma(solution, i,
-				ref->mag_mean);
+			ref->mag_sigma =
+				get_ref_mag_delta_sigma(solution, i, ref->mag_mean);
 			mean_sigma += ref->mag_sigma;
 			count++;
 		}
@@ -184,7 +210,7 @@ void mag_calc_plate_coefficients(struct adb_solve_solution *solution)
 				continue;
 
 			t = ref->mag_sigma - mean_sigma;
-			t *=t;
+			t *= t;
 			sigma_sigma += t;
 			count++;
 		}
@@ -210,7 +236,14 @@ void mag_calc_plate_coefficients(struct adb_solve_solution *solution)
 	} while (count != lastcount && --tries);
 }
 
-/* calculate the magnitude of all unsolved plate objects */
+/**
+ * \brief Extrapolate estimated magnitudes across the entire unsolved array block.
+ *
+ * Scans all raw instrumental point arrays computing reasonable absolute visual magnitude
+ * values calibrated against the successfully locked celestial reference components metrics.
+ *
+ * \param solution Executing layout parameters identifying missing mapping boundaries constraints.
+ */
 void mag_calc_unsolved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_solve_object *solve_object;
@@ -218,19 +251,24 @@ void mag_calc_unsolved_plate(struct adb_solve_solution *solution)
 
 	/* compare each unsolved object against reference objects */
 	for (i = 0; i < solution->total_objects; i++) {
-
 		solve_object = &solution->solve_object[i];
 
 		/* skip if the object is solved */
 		if (solve_object->object)
-				continue;
+			continue;
 
 		calc_unsolved_plate_magnitude(solution, i);
 	}
 }
 
-/* calculate the magnitude, mag delta mean and mag delta sigma
- * of a solved plate object */
+/**
+ * \brief Finalize empirical magnitude tracking parameters mapping resolved structures.
+ *
+ * Formalizes magnitude, average magnitude delta, and statistical variance properties directly
+ * mapped tracking against correctly validated solved arrays configurations attributes.
+ *
+ * \param solution Baseline defining extracted values pointers.
+ */
 void mag_calc_solved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
@@ -238,7 +276,6 @@ void mag_calc_solved_plate(struct adb_solve_solution *solution)
 
 	/* compare each detected object against reference objects */
 	for (i = 0; i < solution->num_ref_objects; i++) {
-
 		ref = &solution->ref[i];
 		idx = ref->id;
 
@@ -246,14 +283,13 @@ void mag_calc_solved_plate(struct adb_solve_solution *solution)
 		if (solution->solve_object[idx].object == NULL)
 			continue;
 
-		solution->solve_object[idx].mean =
-			get_ref_mag_delta_mean(solution, i);
+		solution->solve_object[idx].mean = get_ref_mag_delta_mean(solution, i);
 
 		solution->solve_object[idx].mag =
 			solution->solve_object[idx].object->mag +
 			solution->solve_object[idx].mean;
 
-		solution->solve_object[idx].sigma =
-			get_ref_mag_delta_sigma(solution, i, solution->solve_object[idx].mean);
+		solution->solve_object[idx].sigma = get_ref_mag_delta_sigma(
+			solution, i, solution->solve_object[idx].mean);
 	}
 }

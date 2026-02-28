@@ -97,87 +97,192 @@ struct adb_search_branch {
 	int test_count; /*!< test count */
 };
 
-/* comparators (type)_(operator)_comp */
+/**
+ * \brief Internal comparator for less-than logic on integer types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data < value, 0 otherwise.
+ */
 static int int_lt_comp(void *data, void *value)
 {
 	return *(int *)data < *(int *)value;
 }
 
+/**
+ * \brief Internal comparator for greater-than logic on integer types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data > value, 0 otherwise.
+ */
 static int int_gt_comp(void *data, void *value)
 {
 	return *(int *)data > *(int *)value;
 }
 
+/**
+ * \brief Internal comparator for equality logic on integer types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data == value, 0 otherwise.
+ */
 static int int_eq_comp(void *data, void *value)
 {
 	return *(int *)data == *(int *)value;
 }
 
+/**
+ * \brief Internal comparator for strict inequality logic on integer types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data != value, 0 otherwise.
+ */
 static int int_ne_comp(void *data, void *value)
 {
 	return *(int *)data != *(int *)value;
 }
 
+/**
+ * \brief Internal comparator for less-than logic on float types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data < value, 0 otherwise.
+ */
 static int float_lt_comp(void *data, void *value)
 {
 	return *(float *)data < *(float *)value;
 }
 
+/**
+ * \brief Internal comparator for greater-than logic on float types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data > value, 0 otherwise.
+ */
 static int float_gt_comp(void *data, void *value)
 {
 	return *(float *)data > *(float *)value;
 }
 
+/**
+ * \brief Internal comparator for equality logic on float types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data == value, 0 otherwise.
+ */
 static int float_eq_comp(void *data, void *value)
 {
 	return *(float *)data == *(float *)value;
 }
 
+/**
+ * \brief Internal comparator for inequality logic on float types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data != value, 0 otherwise.
+ */
 static int float_ne_comp(void *data, void *value)
 {
 	return *(float *)data != *(float *)value;
 }
 
+/**
+ * \brief Internal comparator for less-than logic on double types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data < value, 0 otherwise.
+ */
 static int double_lt_comp(void *data, void *value)
 {
 	return *(double *)data < *(double *)value;
 }
 
+/**
+ * \brief Internal comparator for greater-than logic on double types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data > value, 0 otherwise.
+ */
 static int double_gt_comp(void *data, void *value)
 {
 	return *(double *)data > *(double *)value;
 }
 
+/**
+ * \brief Internal comparator for equality logic on double types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data == value, 0 otherwise.
+ */
 static int double_eq_comp(void *data, void *value)
 {
 	return *(double *)data == *(double *)value;
 }
 
+/**
+ * \brief Internal comparator for inequality logic on double types.
+ * \param data Pointer to the source data field.
+ * \param value Pointer to the target value to compare against.
+ * \return 1 if data != value, 0 otherwise.
+ */
 static int double_ne_comp(void *data, void *value)
 {
 	return *(double *)data != *(double *)value;
 }
 
+/**
+ * \brief Internal comparator for alphabetical less-than (precedes) logic on strings.
+ * \param data Pointer to the source data field string.
+ * \param value Pointer to the target value string to compare against.
+ * \return 1 if data precedes value, 0 otherwise.
+ */
 static int string_lt_comp(void *data, void *value)
 {
 	return (strcmp(data, value) > 0);
 }
 
+/**
+ * \brief Internal comparator for alphabetical greater-than (follows) logic on strings.
+ * \param data Pointer to the source data field string.
+ * \param value Pointer to the target value string to compare against.
+ * \return 1 if data follows value, 0 otherwise.
+ */
 static int string_gt_comp(void *data, void *value)
 {
 	return (strcmp(data, value) < 0);
 }
 
+/**
+ * \brief Internal comparator for strict string equality.
+ * \param data Pointer to the source data field string.
+ * \param value Pointer to the target value string to compare against.
+ * \return 1 if identically equal, 0 otherwise.
+ */
 static int string_eq_comp(void *data, void *value)
 {
 	return !strcmp(data, value);
 }
 
+/**
+ * \brief Internal comparator for strict string inequality.
+ * \param data Pointer to the source data field string.
+ * \param value Pointer to the target value string to compare against.
+ * \return 1 if strings are different, 0 if identical.
+ */
 static int string_ne_comp(void *data, void *value)
 {
 	return strcmp(data, value);
 }
 
+/**
+ * \brief Internal comparator for basic wildcard prefix string matching.
+ *
+ * Implements a simple wildcard `*` filter, verifying if the data string 
+ * begins with the literal prefix defined before the `*` symbol in the value.
+ *
+ * \param data Pointer to the source data string evaluated.
+ * \param value Pointer to the wildcard value string (e.g. "prefix*").
+ * \return 1 if successfully matched the prefix, 0 otherwise.
+ */
 // TODO: implement regcomp
 static int string_eq_wildcard_comp(void *data, void *value)
 {
@@ -192,7 +297,17 @@ static int string_eq_wildcard_comp(void *data, void *value)
 	return !strncmp(data, value, i);
 }
 
-/*  test list operators, operate on list of struct adb_search_branch's */
+/**
+ * \brief Execute an AND condition compiling multiple test components.
+ *
+ * Iterates descending down the branch's list of registered evaluation leaves, verifying 
+ * each one individually against the physical object until a failure breaks the chain recursively.
+ *
+ * \param object Structural pointer addressing the physical object evaluating logic chains.
+ * \param branch Originating parent search execution tree node block.
+ * \param num The current index array tracking list evaluations down to zero.
+ * \return True (1) if all nodes match passing the logical AND gate, else False (0).
+ */
 static int test_AND_comp(const struct adb_object *object,
 						 struct adb_search_branch *branch, int num)
 {
@@ -207,6 +322,17 @@ static int test_AND_comp(const struct adb_object *object,
 	return test->compare(ptr + test->offset, test->value);
 }
 
+/**
+ * \brief Execute an OR condition validating across multiple test components.
+ *
+ * Iterates down the associated test leaves, immediately returning a passing boolean 
+ * representing success on the first positive comparative correlation discovered recursively.
+ *
+ * \param object Valid pointer addressing individual data rows.
+ * \param branch Structural defining associative OR tree hierarchy parameters block.
+ * \param num Tracking array bounds identifying specific test evaluations.
+ * \return True (1) recognizing a positive path passing the logic OR gate, else False (0).
+ */
 static int test_OR_comp(const struct adb_object *object,
 						struct adb_search_branch *branch, int num)
 {
@@ -221,7 +347,16 @@ static int test_OR_comp(const struct adb_object *object,
 	return test->compare(ptr + test->offset, test->value);
 }
 
-/*  test list operators, operate on list of struct adb_search_branch's */
+/**
+ * \brief Execute a cascading AND logic condition over subordinate operators lists.
+ *
+ * Passes recursion dynamically deeper handling branched associative logic execution trees integrating lists.
+ *
+ * \param object Record structure validating nested conditions dynamically.
+ * \param branch Current originating layout branch matrix configuring AND bounds.
+ * \param num Remaining operator node count inside operational nested list matrix tracking execution lengths.
+ * \return Logic success identifier defining true mapping validity matrices logic.
+ */
 static int test_AND_oper(const struct adb_object *object,
 						 struct adb_search_branch *branch, int num)
 {
@@ -235,6 +370,14 @@ static int test_AND_oper(const struct adb_object *object,
 	return test->operator(object, test, test->test_count);
 }
 
+/**
+ * \brief Execute a cascading OR logic condition over child operators dynamically terminating appropriately.
+ *
+ * \param object Target validation item checking nested dependencies recursively tracking states.
+ * \param branch Origin nested list executing logic configurations handling OR definitions dynamically.
+ * \param num Target length variable decrementing mapping validation paths execution branches correctly.
+ * \return State definition Boolean acknowledging logic gate resolution status paths. 
+ */
 static int test_OR_oper(const struct adb_object *object,
 						struct adb_search_branch *branch, int num)
 {
@@ -247,6 +390,16 @@ static int test_OR_oper(const struct adb_object *object,
 	return test->operator(object, test, test->test_count);
 }
 
+/**
+ * \brief Parse combination constants determining an appropriate functional logic check mapping.
+ *
+ * Resolves static internal comparator checking endpoints (e.g `float_lt_comp`) utilizing paired definition types
+ * binding target datatypes and logic boundary condition variables natively validating execution rules safely.
+ *
+ * \param comp Numeric enumeration representing comparison operators (e.g. `ADB_COMP_LT`). 
+ * \param ctype Enum identifying physical schema datatype field blocks.
+ * \return Selected validation callback binding functions, returning NULL identifying unknown unsupported bounds safely.
+ */
 static comparator_t get_comparator(enum adb_comparator comp, adb_ctype ctype)
 {
 	switch (ctype) {
@@ -597,6 +750,13 @@ int adb_search_add_custom_comparator(struct adb_search *search,
 	return -EINVAL;
 }
 
+/**
+ * \brief Single point encapsulating execution branch checks tracking object evaluations safely.
+ *
+ * \param branch Evaluator tree structure map targeting execution parameters context configurations.
+ * \param object Catalog input tracking specific target layout row structures physically extracted.
+ * \return Positive boolean mapping verified object valid configurations matching tree parameters layout.
+ */
 static inline int check_object(struct adb_search_branch *branch,
 							   const struct adb_object *object)
 {

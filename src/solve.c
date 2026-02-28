@@ -27,7 +27,16 @@
 #include "lib.h"
 #include "solve.h"
 
-/* qsort comparison func */
+/**
+ * \brief Sorts solver solutions sequentially determining the best match.
+ *
+ * Determines hierarchy of 4-star match tuples via `qsort` measuring explicit 
+ * variance "divergence" error values. Lower error implies tighter structural match.
+ *
+ * \param o1 Primary candidate solution cluster.
+ * \param o2 Competitor candidate solution cluster.
+ * \return 1 if o1 has higher error, -1 if o2 has higher error, 0 if even.
+ */
 static int solution_cmp(const void *o1, const void *o2)
 {
 	const struct adb_solve_solution *p1 = o1, *p2 = o2;
@@ -40,9 +49,17 @@ static int solution_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
-/*
- * Calculate magnitude delta difference between potential solution objects
- * and plate objects.
+/**
+ * \brief Measure combined magnitude residual variance on a candidate tuple.
+ *
+ * Calculates discrepancy error between the relative instrumental brightness
+ * ratio modeled from the plate targets, against the fixed catalog absolute
+ * magnitudes observed in the proposed counterpart objects.
+ *
+ * \param runtime Core runtime execution solver space.
+ * \param pot Target index tracking the specific potential asterism being measured.
+ * \param idx The internal star correlation pairing needle index.
+ * \return Magnitude offset differential variance.
  */
 static double calc_magnitude_deltas(struct solve_runtime *runtime, int pot,
 									int idx)
@@ -59,9 +76,14 @@ static double calc_magnitude_deltas(struct solve_runtime *runtime, int pot,
 	return plate_diff - db_diff;
 }
 
-/*
- * Calculate divergence between potential solution cluster and
- * plate cluster.
+/**
+ * \brief Calculate collective variance combining magnitude, distances, and PA arrays.
+ *
+ * Derives a weighted aggregate standard-error "divergence" score assessing 
+ * the mathematical fitness of candidate asterism associations across 
+ * magnitude, geometry lengths, and interior geometry rotation characteristics.
+ *
+ * \param runtime Core runtime state housing the candidate matches.
  */
 static void calc_cluster_divergence(struct solve_runtime *runtime)
 {
@@ -81,8 +103,15 @@ static void calc_cluster_divergence(struct solve_runtime *runtime)
 	}
 }
 
-/*
- * Is new solution s1 a duplicate of an existing solution ?
+/**
+ * \brief Verify if a candidate configuration mirrors an existing recorded solution.
+ *
+ * Iterates across current finalized solutions checking explicit celestial
+ * component structures addressing the identical 4 stars.
+ *
+ * \param solve Core solver environment.
+ * \param s1 The new solution layout proposing 4 catalog objects.
+ * \return 1 if identical to prior knowledge, 0 for unique new record.
  */
 static int is_solution_dupe(struct adb_solve *solve,
 							struct adb_solve_solution *s1)
@@ -100,9 +129,13 @@ static int is_solution_dupe(struct adb_solve *solve,
 	return 0;
 }
 
-/*
- * Copy new solution to solver array of solutions.
- * We lock access to the array to support multiple solver threads.
+/**
+ * \brief Lock and duplicate functional valid runtime candidates to public arrays.
+ *
+ * Operates a mutex-controlled commit step for threaded concurrent search spaces,
+ * registering any candidates overcoming thresholds safely into parent state buffers.
+ *
+ * \param runtime Executed runtime structure mapping valid position angles buffers.
  */
 static void copy_solution(struct solve_runtime *runtime)
 {
@@ -154,10 +187,17 @@ static void copy_solution(struct solve_runtime *runtime)
 	pthread_mutex_unlock(&solve->mutex);
 }
 
-/*
- * Solve plate cluster for this primary object.
+/**
+ * \brief Orchestrate an anchor evaluation sequence against the catalog target.
  *
- * Try and match this object to the primary
+ * Sweeps progressively escalating filtration constraints isolating an specific anchor
+ * entity acting as a tuple primary core. Validates against magnitude range bounds,
+ * verifies secondary geometries by separation distances, validates asterisms against
+ * exact position angles layouts, scoring surviving outputs via discrepancy coefficients.
+ *
+ * \param solve Orchestrating astrometrist context.
+ * \param primary Specific catalog item tested as the anchor center node.
+ * \return Overall system solutions accumulated so far during the validation execution.
  */
 static int try_object_as_primary(struct adb_solve *solve,
 								 const struct adb_object *primary)
@@ -196,8 +236,12 @@ static int try_object_as_primary(struct adb_solve *solve,
 	return solve->num_solutions;
 }
 
-/*
- * Solve the plate cluster star pattern and find all matches.
+/**
+ * \brief Iteratively scan ALL subset entities checking matches generating solutions parallel bounds.
+ *
+ * \param solve Primary execution constraints state framework context.
+ * \param set Core physical source space defining raw object mappings structures.
+ * \return Number of matching candidate geometries located during exploration matrix.
  */
 static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 										   struct adb_object_set *set)
@@ -224,8 +268,15 @@ static int solve_plate_cluster_for_set_all(struct adb_solve *solve,
 	return count;
 }
 
-/*
- * Solve the plate cluster star pattern and find first match.
+/**
+ * \brief Fast path search returning control block after identifying initial success tuple.
+ *
+ * Operates an accelerated exploration matrix isolating target correlations, actively
+ * interrupting concurrent parallel streams once positive correlation verification locks.
+ *
+ * \param solve General solver bounds limit contexts.
+ * \param set Active target database segment map.
+ * \return Valid count equal to 1 reflecting rapid success or 0 failing check thresholds.
  */
 static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 											 struct adb_object_set *set)
@@ -255,8 +306,15 @@ static int solve_plate_cluster_for_set_first(struct adb_solve *solve,
 	return count;
 }
 
-/*
- * Add a plate object to the solver.
+/**
+ * \brief Queue a user-supplied instrumental object point onto the solver alignment stack.
+ *
+ * Injects a physical cartesian feature detected within original raw exposure images, 
+ * utilizing associated radiometric ADU profiles tracking expected coordinates relationships.
+ *
+ * \param solve Active session receiving new point structure definitions.
+ * \param pobject Fully populated instrumental component pointer.
+ * \return Standard status success 0 or descriptive error code on failures.
  */
 int adb_solve_add_plate_object(struct adb_solve *solve,
 							   struct adb_pobject *pobject)
@@ -281,8 +339,17 @@ int adb_solve_add_plate_object(struct adb_solve *solve,
 	return 0;
 }
 
-/*
- * Fine tune the solver constraints to minimise solve time.
+/**
+ * \brief Modify active tolerance limits shaping generalized search spaces and cutoffs.
+ *
+ * Tunes heuristic rules checking constraints (FOV spreads, target magnitude minimums,
+ * bounding coordinate spaces) altering total work performed.
+ *
+ * \param solve Orchestrating layout context map tracking options.
+ * \param type Identifier tracing specific variable setting targets.
+ * \param min Baseline limiting ceiling value bounding rule block limits.
+ * \param max Top limiting cutoff threshold applied filtering arrays. 
+ * \return Typical exit conditions standard identifier 0 upon acceptable parameters.
  */
 int adb_solve_constraint(struct adb_solve *solve, enum adb_constraint type,
 						 double min, double max)
@@ -400,24 +467,54 @@ int adb_solve(struct adb_solve *solve, struct adb_object_set *set,
 	return solve->num_solutions;
 }
 
+/**
+ * \brief Bind upper thresholds constraining magnitude matching correlations.
+ *
+ * \param solve Operational memory configuration node mapping properties.
+ * \param delta_mag Raw relative boundary limitation standard.
+ * \return Success flag constant.
+ */
 int adb_solve_set_magnitude_delta(struct adb_solve *solve, double delta_mag)
 {
 	solve->tolerance.mag = delta_mag;
 	return 0;
 }
 
+/**
+ * \brief Bind upper thresholds constraining pixel radial distance matching correlations.
+ *
+ * \param solve Operational memory configuration node mapping properties.
+ * \param delta_pixels Raw relative boundary limitation standard.
+ * \return Success flag constant.
+ */
 int adb_solve_set_distance_delta(struct adb_solve *solve, double delta_pixels)
 {
 	solve->tolerance.dist = delta_pixels;
 	return 0;
 }
 
+/**
+ * \brief Bind upper thresholds constraining positional mapping angle matching correlations.
+ *
+ * \param solve Operational memory configuration node mapping properties.
+ * \param delta_rad Raw relative boundary limitation standard in radians.
+ * \return Success flag constant.
+ */
 int adb_solve_set_pa_delta(struct adb_solve *solve, double delta_rad)
 {
 	solve->tolerance.pa = delta_rad;
 	return 0;
 }
 
+/**
+ * \brief Calibrate central dimensions outlining standard background field environments.
+ *
+ * \param solve Master contextual node handling structural records.
+ * \param width Span mapping array dimensional X layouts.
+ * \param height Span mapping array dimensional Y layouts.
+ * \param ra Preliminary general equatorial alignment axis indicator.
+ * \param dec Preliminary general spatial declination geometry marker.
+ */
 void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 									int height, double ra, double dec)
 {
@@ -427,6 +524,13 @@ void adb_solve_image_set_properties(struct adb_solve *solve, int width,
 	solve->plate.dec = dec;
 }
 
+/**
+ * \brief Recover generated astrometric matrix output data points matching conditions.
+ *
+ * \param solve Parent session capturing final executed state array layouts.
+ * \param index Ordered element tracing specific output data structures requested.
+ * \return Solution construct pointers holding physical layout values.
+ */
 struct adb_solve_solution *adb_solve_get_solution(struct adb_solve *solve,
 												  unsigned int index)
 {
@@ -436,8 +540,12 @@ struct adb_solve_solution *adb_solve_get_solution(struct adb_solve *solve,
 	return &solve->solution[index];
 }
 
-/*
- * Get number of plate objects used by solver.
+/**
+ * \brief Trace instrumental points effectively processed establishing layout structures.
+ *
+ * \param solve Running configuration map bounds.
+ * \param solution Extracted matched tuple result layout points.
+ * \return Total items checked across active matrix parameters establishing baseline targets.
  */
 int adb_solve_get_pobject_count(struct adb_solve *solve,
 								struct adb_solve_solution *solution)
@@ -445,24 +553,35 @@ int adb_solve_get_pobject_count(struct adb_solve *solve,
 	return solution->num_pobjects;
 }
 
-/*
- * Stop the solver. Must wait on next loop iteration.
+/**
+ * \brief Pause or abort heavy loop iteration evaluations gracefully terminating queries.
+ *
+ * \param solve Executional scope identifying threaded background matrices locking limits.
  */
 void adb_solve_stop(struct adb_solve *solve)
 {
 	solve->exit = 1;
 }
 
-/*
- * Get the solver progress between 0.0 and 1.0. 1 being complete.
+/**
+ * \brief Return dynamic completion ratio tracking current matrix exploration boundaries.
+ * 
+ * Computes fraction representing depth mapped over cumulative valid haystack target arrays.
+ *
+ * \param solve Internal execution limits structures determining thread ranges.
+ * \return Numeric percentage fractional representations mapping 0.0 baseline across 1.0 success completions.
  */
 float adb_solve_get_progress(struct adb_solve *solve)
 {
 	return (float)solve->haystack.num_objects / solve->progress;
 }
 
-/*
- * Create a new solver context for table id using database db.
+/**
+ * \brief Configure initial execution context mapping dynamic properties defining a processing instance.
+ *
+ * \param db Baseline central parent database structure referencing core indices and schemas.
+ * \param table_id Core catalog ID tracing internal lookup references.
+ * \return Allocated dynamically populated operational workspace structures ready for object configurations.
  */
 struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 {
@@ -507,8 +626,10 @@ struct adb_solve *adb_solve_new(struct adb_db *db, int table_id)
 	return solve;
 }
 
-/*
- * Free all resources in solver context.
+/**
+ * \brief Dismantle operational execution states recovering memory matrices correctly isolating subcomponents.
+ *
+ * \param solve Fully populated parent tree environment structure defining thread conditions safely mapped out.
  */
 void adb_solve_free(struct adb_solve *solve)
 {

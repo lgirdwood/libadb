@@ -22,7 +22,16 @@
 #include "debug.h"
 #include "solve.h"
 
-/* plate distance squared between primary and secondary */
+/**
+ * \brief Calculate the distance between two objects on a photographic plate.
+ *
+ * Uses the Pythagorean theorem to determine the Cartesian distance in pixels
+ * (or plate coordinates) between a primary and a secondary plate object.
+ *
+ * \param primary Pointer to the first plate object.
+ * \param secondary Pointer to the second plate object.
+ * \return The Cartesian distance between the two objects.
+ */
 double distance_get_plate(struct adb_pobject *primary,
 						  struct adb_pobject *secondary)
 {
@@ -34,7 +43,16 @@ double distance_get_plate(struct adb_pobject *primary,
 	return sqrt((x * x) + (y * y));
 }
 
-/* distance in between two adb_source_objects */
+/**
+ * \brief Calculate the great-circle distance between two equatorial coordinates.
+ *
+ * Computes the angular separation in radians between two celestial objects
+ * given their Right Ascension (RA) and Declination (dec).
+ *
+ * \param o1 Pointer to the first celestial object.
+ * \param o2 Pointer to the second celestial object.
+ * \return The angular separation between the objects in radians.
+ */
 double distance_get_equ(const struct adb_object *o1,
 						const struct adb_object *o2)
 {
@@ -52,7 +70,18 @@ double distance_get_equ(const struct adb_object *o1,
 	return atan2(sqrt(x + y), z);
 }
 
-/* quickly check if object p is within FoV of object s within plate */
+/**
+ * \brief Check if a secondary object falls outside the Field of View (FoV) of a primary object.
+ *
+ * Provides a highly optimized, fast, and loose check to rule out matching
+ * candidates that are definitely beyond the maximum allowed telescope
+ * Field of View radius from the primary object before doing full rigorous math.
+ *
+ * \param solve The current active solving session context constraint settings.
+ * \param p Pointer to the primary reference (center) object.
+ * \param s Pointer to the secondary target object.
+ * \return 1 if the object is strictly outside the maximum FoV, 0 if it may be inside.
+ */
 static inline int distance_not_within_fov(struct adb_solve *solve,
 										  const struct adb_object *p,
 										  const struct adb_object *s)
@@ -71,6 +100,17 @@ static inline int distance_not_within_fov(struct adb_solve *solve,
 	return 0;
 }
 
+/**
+ * \brief Attempt to solve a 4-star pattern match utilizing distance ratios targeting a single object.
+ *
+ * Evaluates candidate database "source" stars checking if their distances
+ * to the proposed solution central object match the distances seen on the 
+ * photographic plate. Records the divergence.
+ *
+ * \param runtime The active solver execution state containing candidate sets.
+ * \param solution A proposed solution model tracking current matched objects.
+ * \return The number of matched candidate objects verified for the target.
+ */
 int distance_solve_single_object(struct solve_runtime *runtime,
 								 struct adb_solve_solution *solution)
 {
@@ -152,6 +192,17 @@ int distance_solve_single_object(struct solve_runtime *runtime,
 	return count;
 }
 
+/**
+ * \brief Extended single object distance solver accounting for dynamic object sizes.
+ *
+ * A variation of `distance_solve_single_object` where the acceptance 
+ * radius (distance constraints) is expanded depending on the physical or
+ * angular size property assigned to the source object itself.
+ *
+ * \param runtime The active solver execution state.
+ * \param solution A proposed solution model.
+ * \return The number of successfully verified candidate source objects.
+ */
 int distance_solve_single_object_extended(struct solve_runtime *runtime,
 										  struct adb_solve_solution *solution)
 {
@@ -236,8 +287,18 @@ int distance_solve_single_object_extended(struct solve_runtime *runtime,
 	return count;
 }
 
-/*
- * Solve plate object pattern based on distance ratio within plate FOV.
+/**
+ * \brief Core astrometric solver routine utilizing asterism distance ratios.
+ *
+ * Performs a deep nested search through candidate source objects in the 
+ * "haystack" catalog. For an unknown "primary" plate object, it builds
+ * tuples of three neighboring stars and checks if the relative angular distances
+ * between them match the pixel distance ratios measured off the image plate.
+ * If a matching 4-star pattern is found, a potential solution is recorded.
+ *
+ * \param runtime The solver context state controlling current match iterations.
+ * \param primary The target primary catalog object being evaluated as the center of the asterism.
+ * \return The number of candidate asterisms successfully pattern matched.
  */
 int distance_solve_object(struct solve_runtime *runtime,
 						  const struct adb_object *primary)

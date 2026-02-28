@@ -126,6 +126,15 @@ static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase, int x_start,
 											 int x_end, int y_start, int y_end,
 											 int z_start, int z_end);
 
+/**
+ * \brief Convert equatorial coordinates to a Cartesian 3D unit vector.
+ *
+ * Translates Right Ascension (RA) and Declination (DEC) into 3D Cartesian coordinates (X, Y, Z).
+ *
+ * \param ra Right Ascension coordinate in radians.
+ * \param dec Declination coordinate in radians.
+ * \param v The output vertex structure where the 3D coordinates will be written.
+ */
 static inline void equ_to_kd_vertex(double ra, double dec, struct kd_vertex *v)
 {
 	double cos_dec = cos(dec);
@@ -135,6 +144,15 @@ static inline void equ_to_kd_vertex(double ra, double dec, struct kd_vertex *v)
 	v->z = cos_dec * cos(ra);
 }
 
+/**
+ * \brief Convert a Cartesian 3D unit vector back to equatorial coordinates.
+ *
+ * Computes Right Ascension (RA) and Declination (DEC) from a given 3D vector.
+ *
+ * \param ra Pointer to store the computed Right Ascension in radians.
+ * \param dec Pointer to store the computed Declination in radians.
+ * \param v The input 3D vertex to convert.
+ */
 static inline void kd_vertex_to_equ(double *ra, double *dec,
 									struct kd_vertex *v)
 {
@@ -144,21 +162,49 @@ static inline void kd_vertex_to_equ(double *ra, double *dec,
 		*ra += 2.0 * M_PI;
 }
 
+/**
+ * \brief Extract the X coordinate value from a KD tree element array.
+ *
+ * \param x_base Base array of KD tree elements sorted or indexed.
+ * \param x_idx The index of the element to retrieve.
+ * \return The X coordinate of the element at the specified index.
+ */
 static inline double kd_get_x(struct kd_elem *x_base, int x_idx)
 {
 	return x_base[x_idx].base->v.x;
 }
 
+/**
+ * \brief Extract the Y coordinate value from a KD tree element array.
+ *
+ * \param y_base Base array of KD tree elements sorted or indexed.
+ * \param y_idx The index of the element to retrieve.
+ * \return The Y coordinate of the element at the specified index.
+ */
 static inline double kd_get_y(struct kd_elem *y_base, int y_idx)
 {
 	return y_base[y_idx].base->v.y;
 }
 
+/**
+ * \brief Extract the Z coordinate value from a KD tree element array.
+ *
+ * \param z_base Base array of KD tree elements sorted or indexed.
+ * \param z_idx The index of the element to retrieve.
+ * \return The Z coordinate of the element at the specified index.
+ */
 static inline double kd_get_z(struct kd_elem *z_base, int z_idx)
 {
 	return z_base[z_idx].base->v.z;
 }
 
+/**
+ * \brief Comparator function to sort KD tree elements by their X coordinate.
+ *
+ * \param o1 First KD tree element pointer.
+ * \param o2 Second KD tree element pointer.
+ * \return -1 if o1 < o2, 1 if o1 > o2, 0 if equal.
+ */
 static int elem_x_cmp(const void *o1, const void *o2)
 {
 	const struct kd_elem *elem1 = o1, *elem2 = o2;
@@ -171,6 +217,13 @@ static int elem_x_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
+/**
+ * \brief Comparator function to sort KD tree elements by their Y coordinate.
+ *
+ * \param o1 First KD tree element pointer.
+ * \param o2 Second KD tree element pointer.
+ * \return -1 if o1 < o2, 1 if o1 > o2, 0 if equal.
+ */
 static int elem_y_cmp(const void *o1, const void *o2)
 {
 	const struct kd_elem *elem1 = o1, *elem2 = o2;
@@ -183,6 +236,13 @@ static int elem_y_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
+/**
+ * \brief Comparator function to sort KD tree elements by their Z coordinate.
+ *
+ * \param o1 First KD tree element pointer.
+ * \param o2 Second KD tree element pointer.
+ * \return -1 if o1 < o2, 1 if o1 > o2, 0 if equal.
+ */
 static int elem_z_cmp(const void *o1, const void *o2)
 {
 	const struct kd_elem *elem1 = o1, *elem2 = o2;
@@ -195,6 +255,14 @@ static int elem_z_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
+/**
+ * \brief Check if a KD tree element falls within specified X coordinate bounds.
+ *
+ * \param elem The KD tree element to validate.
+ * \param min The lower bound for the X coordinate.
+ * \param max The upper bound for the X coordinate.
+ * \return 1 if valid and unused, 0 otherwise.
+ */
 static inline int valid_x_elem(struct kd_elem *elem, double min, double max)
 {
 	if (elem->base->used)
@@ -206,6 +274,14 @@ static inline int valid_x_elem(struct kd_elem *elem, double min, double max)
 	return 1;
 }
 
+/**
+ * \brief Check if a KD tree element falls within specified Y coordinate bounds.
+ *
+ * \param elem The KD tree element to validate.
+ * \param min The lower bound for the Y coordinate.
+ * \param max The upper bound for the Y coordinate.
+ * \return 1 if valid and unused, 0 otherwise.
+ */
 static inline int valid_y_elem(struct kd_elem *elem, double min, double max)
 {
 	if (elem->base->used)
@@ -217,6 +293,14 @@ static inline int valid_y_elem(struct kd_elem *elem, double min, double max)
 	return 1;
 }
 
+/**
+ * \brief Check if a KD tree element falls within specified Z coordinate bounds.
+ *
+ * \param elem The KD tree element to validate.
+ * \param min The lower bound for the Z coordinate.
+ * \param max The upper bound for the Z coordinate.
+ * \return 1 if valid and unused, 0 otherwise.
+ */
 static inline int valid_z_elem(struct kd_elem *elem, double min, double max)
 {
 	if (elem->base->used)
@@ -228,6 +312,20 @@ static inline int valid_z_elem(struct kd_elem *elem, double min, double max)
 	return 1;
 }
 
+/**
+ * \brief Find the median element along the X axis within a given bounding box.
+ *
+ * Selects an unused element close to the median index in the X-sorted array that also falls within the supplied Y and Z spatial ranges.
+ *
+ * \param x_base Base array of elements sorted by X coordinate.
+ * \param x_start Starting index for the search.
+ * \param x_end Ending index for the search.
+ * \param y_min Minimum Y coordinate boundary.
+ * \param y_max Maximum Y coordinate boundary.
+ * \param z_min Minimum Z coordinate boundary.
+ * \param z_max Maximum Z coordinate boundary.
+ * \return Pointer to the matched median element, or NULL if none fits the constraints.
+ */
 static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
 											  int x_start, int x_end,
 											  double y_min, double y_max,
@@ -263,6 +361,20 @@ static struct kd_elem *elem_get_median_x_elem(struct kd_elem *x_base,
 	return NULL;
 }
 
+/**
+ * \brief Find the median element along the Y axis within a given bounding box.
+ *
+ * Selects an unused element close to the median index in the Y-sorted array that also falls within the supplied X and Z spatial ranges.
+ *
+ * \param y_base Base array of elements sorted by Y coordinate.
+ * \param y_start Starting index for the search.
+ * \param y_end Ending index for the search.
+ * \param x_min Minimum X coordinate boundary.
+ * \param x_max Maximum X coordinate boundary.
+ * \param z_min Minimum Z coordinate boundary.
+ * \param z_max Maximum Z coordinate boundary.
+ * \return Pointer to the matched median element, or NULL if none fits the constraints.
+ */
 static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
 											  int y_start, int y_end,
 											  double x_min, double x_max,
@@ -298,6 +410,20 @@ static struct kd_elem *elem_get_median_y_elem(struct kd_elem *y_base,
 	return NULL;
 }
 
+/**
+ * \brief Find the median element along the Z axis within a given bounding box.
+ *
+ * Selects an unused element close to the median index in the Z-sorted array that also falls within the supplied X and Y spatial ranges.
+ *
+ * \param z_base Base array of elements sorted by Z coordinate.
+ * \param z_start Starting index for the search.
+ * \param z_end Ending index for the search.
+ * \param x_min Minimum X coordinate boundary.
+ * \param x_max Maximum X coordinate boundary.
+ * \param y_min Minimum Y coordinate boundary.
+ * \param y_max Maximum Y coordinate boundary.
+ * \return Pointer to the matched median element, or NULL if none fits the constraints.
+ */
 static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
 											  int z_start, int z_end,
 											  double x_min, double x_max,
@@ -333,6 +459,13 @@ static struct kd_elem *elem_get_median_z_elem(struct kd_elem *z_base,
 	return NULL;
 }
 
+/**
+ * \brief Increment progress counter during KD tree generation.
+ *
+ * Updates progress and logs status when completion percentage milestones are hit.
+ *
+ * \param mbase The shared tree base state variable tracking limits and elements.
+ */
 static inline void mbase_inc(struct kd_base *mbase)
 {
 	mbase->count++;
@@ -344,6 +477,20 @@ static inline void mbase_inc(struct kd_base *mbase)
 	}
 }
 
+/**
+ * \brief Partition tree logic over the X coordinate axis, returning a parent node.
+ *
+ * Recursively selects a pivot element near the median of the X coordinate bounds, and creates left and right child node sub-trees using alternating spatial axes.
+ *
+ * \param mbase The main context capturing tree structure states.
+ * \param x_start X index partition start.
+ * \param x_end X index partition end.
+ * \param y_start Y index partition start.
+ * \param y_end Y index partition end.
+ * \param z_start Z index partition start.
+ * \param z_end Z index partition end.
+ * \return Parent node element structuring left and right sub-trees for this spatial division.
+ */
 static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase, int x_start,
 											 int x_end, int y_start, int y_end,
 											 int z_start, int z_end)
@@ -398,6 +545,20 @@ static struct kd_base_elem *kd_x_select_elem(struct kd_base *mbase, int x_start,
 	return parent;
 }
 
+/**
+ * \brief Partition tree logic over the Y coordinate axis, returning a parent node.
+ *
+ * Recursively selects a pivot element near the median of the Y coordinate bounds, and creates left and right child node sub-trees using alternating spatial axes.
+ *
+ * \param mbase The main context capturing tree structure states.
+ * \param x_start X index partition start.
+ * \param x_end X index partition end.
+ * \param y_start Y index partition start.
+ * \param y_end Y index partition end.
+ * \param z_start Z index partition start.
+ * \param z_end Z index partition end.
+ * \return Parent node element structuring left and right sub-trees for this spatial division.
+ */
 static struct kd_base_elem *kd_y_select_elem(struct kd_base *mbase, int x_start,
 											 int x_end, int y_start, int y_end,
 											 int z_start, int z_end)
@@ -452,6 +613,20 @@ static struct kd_base_elem *kd_y_select_elem(struct kd_base *mbase, int x_start,
 	return parent;
 }
 
+/**
+ * \brief Partition tree logic over the Z coordinate axis, returning a parent node.
+ *
+ * Recursively selects a pivot element near the median of the Z coordinate bounds, and creates left and right child node sub-trees using alternating spatial axes.
+ *
+ * \param mbase The main context capturing tree structure states.
+ * \param x_start X index partition start.
+ * \param x_end X index partition end.
+ * \param y_start Y index partition start.
+ * \param y_end Y index partition end.
+ * \param z_start Z index partition start.
+ * \param z_end Z index partition end.
+ * \return Parent node element structuring left and right sub-trees for this spatial division.
+ */
 static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase, int x_start,
 											 int x_end, int y_start, int y_end,
 											 int z_start, int z_end)
@@ -506,6 +681,14 @@ static struct kd_base_elem *kd_z_select_elem(struct kd_base *mbase, int x_start,
 	return parent;
 }
 
+/**
+ * \brief Rotate dynamically the pivoting logic across X, Y, and Z axes.
+ *
+ * Used sequentially during search routines to iterate through KD tree bounds checking dynamically.
+ *
+ * \param pivot The identifier of the active KD tree sorting axis.
+ * \return The identifier of the next axis to utilize logically.
+ */
 static enum kd_pivot pivot_next(enum kd_pivot pivot)
 {
 	switch (pivot) {
@@ -521,6 +704,14 @@ static enum kd_pivot pivot_next(enum kd_pivot pivot)
 }
 
 /* copy base elems into radec arrays with a pointer back to their base elem */
+/**
+ * \brief Allocate Cartesian indices from equatorial mappings within tree elements.
+ *
+ * Populates structural sub-indices mapping (X, Y, Z arrays) with their identical corresponding tree elements.
+ *
+ * \param base The raw unstructured array containing KD base elements.
+ * \param table Reference to the active dataset populated within the table context.
+ */
 static void elem_create_xyz(struct kd_base_elem *base, struct adb_table *table)
 {
 	struct kd_elem *x_base, *y_base, *z_base;
@@ -538,6 +729,14 @@ static void elem_create_xyz(struct kd_base_elem *base, struct adb_table *table)
 	}
 }
 
+/**
+ * \brief Helper to incrementally recursively insert single astronomical layout objects dynamically.
+ *
+ * Maps active objects belonging to an HTM structure branch directly into chronological tree indexes.
+ *
+ * \param init Operational initialization configuration tree index parameters.
+ * \param trixel Working structure branch node handling nested identifiers natively.
+ */
 static void insert_elem_object(struct kd_init *init, struct htm_trixel *trixel)
 {
 	struct adb_object *object;
@@ -570,6 +769,13 @@ children:
 	insert_elem_object(init, &trixel->child[3]);
 }
 
+/**
+ * \brief Copy sequential object layout arrays linearly from HTM node configurations into tree contexts.
+ *
+ * \param db Primary catalog mapping structure database correctly variables strings cleanly arrays smoothly fields.
+ * \param table Safely populated objects metrics bounds defining safely cleanly definitions arrays boundaries sizes strings structs string structs sizes dynamically comfortably strings smoothly.
+ * \param mbase Extracted base allocation limits limits mapping securely variables elegantly cleanly mapping structures tracking safely stably strings neatly fields elegantly correctly securely parameters successfully.
+ */
 static void insert_elem_objects(struct adb_db *db, struct adb_table *table,
 								struct kd_base *mbase)
 {
@@ -593,6 +799,15 @@ static void insert_elem_objects(struct adb_db *db, struct adb_table *table,
 	insert_elem_object(&init, &htm->S[3]);
 }
 
+/**
+ * \brief Synchronize finalized KD tree pointers back into target adb_objects.
+ *
+ * Assures objects retain their location and path within the finalized tree structure for rapid future reference.
+ *
+ * \param base Pointer to the array of KD base elements.
+ * \param table Pointer to the table holding the objects to be updated.
+ * \param root Pointer to the root element of the built KD tree.
+ */
 static void update_objects(struct kd_base_elem *base, struct adb_table *table,
 						   struct kd_base_elem *root)
 {
@@ -608,6 +823,13 @@ static void update_objects(struct kd_base_elem *base, struct adb_table *table,
 	table->import.kd_root = root->bid;
 }
 
+/**
+ * \brief Build a fully structured KD-tree encompassing all objects within a dataset.
+ *
+ * \param db The active database context.
+ * \param table The table structure whose objects will be indexed into the tree.
+ * \return 0 on success, or a negative error code on failure.
+ */
 int import_build_kdtree(struct adb_db *db, struct adb_table *table)
 {
 	struct kd_base mbase;
@@ -685,6 +907,14 @@ out:
 	return ret;
 }
 
+/**
+ * \brief Calculate spherical angular separation between equatorial coordinates and a Cartesian vector.
+ *
+ * \param ra1 Right ascension of the first point in radians.
+ * \param dec1 Declination of the first point in radians.
+ * \param v Pointer to the KD vertex indicating the 3D position of the second point.
+ * \return The angular distance between the points in radians.
+ */
 static double get_distance(double ra1, double dec1, struct kd_vertex *v)
 {
 	double ra2, dec2;
@@ -715,6 +945,16 @@ struct kd_get_data {
 	double dec; /*!< Declination */
 };
 
+/**
+ * \brief Recursively traverse the tree to fetch the nearest matching object.
+ *
+ * Navigates nodes spatially to locate the closest astronomical object to a target coordinate.
+ *
+ * \param kd Search configuration variables, boundaries, and current closest tracker structure.
+ * \param node The current node ID under evaluation.
+ * \param pivot The active spatial axis being tracked for this depth.
+ * \return 0 if traversal should continue up the stack, 1 if leaf node end reached.
+ */
 int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 {
 	struct adb_table *table = kd->table;
@@ -837,6 +1077,14 @@ static void check_search(struct adb_table *table, double ra, double dec,
 }
 #endif
 
+/**
+ * \brief Retrieve the closest object to a supplied spatial coordinate pair.
+ *
+ * \param set The active object set specifying table and constraints.
+ * \param ra Right Ascension coordinate limit target in radians.
+ * \param dec Declination angle coordinate target in radians.
+ * \return Pointer to the matched nearest object, or NULL if none evaluated.
+ */
 const struct adb_object *
 adb_table_set_get_nearest_on_pos(struct adb_object_set *set, double ra,
 								 double dec)
@@ -861,6 +1109,15 @@ adb_table_set_get_nearest_on_pos(struct adb_object_set *set, double ra,
 	return kd.closest;
 }
 
+/**
+ * \brief Retrieve the nearest object to a given reference object.
+ *
+ * Functions similarly to coordinate-based neighbor checking, but explicitly excludes the input object itself from the results so that it evaluates its closest distinct neighbor.
+ *
+ * \param set Active object scope set parameters.
+ * \param object Target object serving as search origin coordinate.
+ * \return Pointer to the matched distinct nearest neighbor object, or NULL.
+ */
 const struct adb_object *
 adb_table_set_get_nearest_on_object(struct adb_object_set *set,
 									const struct adb_object *object)

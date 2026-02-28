@@ -26,6 +26,16 @@
 #include "debug.h"
 #include "solve.h"
 
+/**
+ * \brief Comparison callback for sorting plate objects by ADU brightness.
+ *
+ * Used with `qsort` to order an array of photographic plate objects according to
+ * their measured Analog-to-Digital Units (ADU) in descending order (brightest first).
+ *
+ * \param o1 Pointer to the first plate object.
+ * \param o2 Pointer to the second plate object.
+ * \return 1 if o1 is dimmer, -1 if o1 is brighter, 0 if equal.
+ */
 static int plate_object_cmp(const void *o1, const void *o2)
 {
 	const struct adb_pobject *p1 = o1, *p2 = o2;
@@ -38,7 +48,18 @@ static int plate_object_cmp(const void *o1, const void *o2)
 		return 0;
 }
 
-/* add a reference object to the solution */
+/**
+ * \brief Register a matched catalog reference object to an asterism solution.
+ *
+ * Anchors a successful catalog source star to its corresponding measured 
+ * plate object within a given solver solution record. Eliminates duplicates.
+ *
+ * \param soln The target solution structure to populate.
+ * \param id The index ID slot for this reference object.
+ * \param object The confirmed catalog source object.
+ * \param pobject The measured photographic plate object.
+ * \return 1 if successfully added, 0 if it was already registered.
+ */
 int target_add_ref_object(struct adb_solve_solution *soln, int id,
 						  const struct adb_object *object,
 						  struct adb_pobject *pobject)
@@ -70,7 +91,17 @@ int target_add_ref_object(struct adb_solve_solution *soln, int id,
 	return 1;
 }
 
-/* calculate object pattern variables to match against source objects */
+/**
+ * \brief Compute pattern characteristics for a secondary plate object relative to a primary.
+ *
+ * Populates a needle pattern object's relative baseline distance, magnitude difference, 
+ * and position angle tolerances using the photographic plate measurements.
+ *
+ * \param solve The active solving session context.
+ * \param target The secondary target needle index (0, 1, 2) in the asterism cluster.
+ * \param primary Pointer to the center primary plate object.
+ * \param secondary Pointer to the specific secondary plate object being evaluated.
+ */
 static void create_pattern_object(struct adb_solve *solve, int target,
 								  struct adb_pobject *primary,
 								  struct adb_pobject *secondary)
@@ -93,7 +124,15 @@ static void create_pattern_object(struct adb_solve *solve, int target,
 	t->pa.plate_actual = pa_get_plate(primary, secondary);
 }
 
-/* create a pattern of plate targets and sort by magnitude */
+/**
+ * \brief Generate a 4-star relative comparison pattern from plate targets.
+ *
+ * Sorts the available plate targets by brightness, defines a primary anchor object,
+ * and configures the angular geometries and magnitude constraints of three surrounding
+ * secondary objects. Used to create the search needle for asterism matching.
+ *
+ * \param solve The active solving session context carrying plate targets.
+ */
 void target_create_pattern(struct adb_solve *solve)
 {
 	struct needle_object *t0, *t1, *t2;
@@ -160,7 +199,19 @@ void target_create_pattern(struct adb_solve *solve)
 	t2->pa_flip.pattern_max = 2.0 * M_PI - t2->pa.pattern_max;
 }
 
-/* calculate object pattern variables to match against source objects */
+/**
+ * \brief Extract comparison characteristics for solving a single generalized plate target.
+ *
+ * Builds tolerance profiles bounding angular distance, magnitude offsets, 
+ * and position fields calibrated to expected radial pixel conversions.
+ *
+ * \param solve The active solver configuration setting limits.
+ * \param target Secondary target index.
+ * \param primary The plate anchor object.
+ * \param secondary The specific secondary companion object.
+ * \param runtime The execution state object.
+ * \param solution Active solution model defining angular radial rates.
+ */
 static void create_single_object(struct adb_solve *solve, int target,
 								 struct adb_pobject *primary,
 								 struct adb_pobject *secondary,
@@ -189,7 +240,14 @@ static void create_single_object(struct adb_solve *solve, int target,
 	t->pa.plate_actual = pa_get_plate(primary, secondary);
 }
 
-/* create a pattern of plate targets and sort by magnitude */
+/**
+ * \brief Create a broad single-object framework profile and initialize its tolerances.
+ *
+ * \param solve The active solver constraints definitions.
+ * \param pobject The anchor primary plate object.
+ * \param solution Current baseline solution context.
+ * \param runtime Target execution space mapping search needles.
+ */
 void target_create_single(struct adb_solve *solve, struct adb_pobject *pobject,
 						  struct adb_solve_solution *solution,
 						  struct solve_runtime *runtime)
@@ -268,7 +326,21 @@ void target_create_single(struct adb_solve *solve, struct adb_pobject *pobject,
 	t3->pa_flip.pattern_max = 2.0 * M_PI - t3->pa.pattern_max;
 }
 
-/* add matching objects i,j,k to list of potentials on distance */
+/**
+ * \brief Register a potential 4-star candidate combination passing initial distance checks.
+ *
+ * Adds a catalog cluster `(primary, i, j, k)` to the distance matches array, tracking
+ * divergence so it can proceed to stricter position angle validations.
+ *
+ * \param runtime Execution state collecting potential matches.
+ * \param primary The proposed candidate anchor object.
+ * \param source The haystack containing the remaining secondary nodes.
+ * \param i Index of secondary star 1.
+ * \param j Index of secondary star 2.
+ * \param k Index of secondary star 3.
+ * \param delta Measured variance error from target geometry.
+ * \param rad_per_pix Effective angular scale derivation for this match.
+ */
 void target_add_match_on_distance(struct solve_runtime *runtime,
 								  const struct adb_object *primary,
 								  struct adb_source_objects *source, int i,
@@ -296,7 +368,15 @@ void target_add_match_on_distance(struct solve_runtime *runtime,
 	runtime->num_pot_distance++;
 }
 
-/* add single object to list of potentials on distance */
+/**
+ * \brief Record a potential candidate passing a single-object relative distance check.
+ *
+ * \param runtime Execution state tracking candidates.
+ * \param primary The solitary target object being vetted.
+ * \param source Available source catalog catalog.
+ * \param delta Cumulative discrepancy metric.
+ * \param flip Binary identifier tracing mirror alignment.
+ */
 void target_add_single_match_on_distance(struct solve_runtime *runtime,
 										 const struct adb_object *primary,
 										 struct adb_source_objects *source,
@@ -314,7 +394,15 @@ void target_add_single_match_on_distance(struct solve_runtime *runtime,
 	runtime->num_pot_distance++;
 }
 
-/* add single object to list of potentials on distance */
+/**
+ * \brief Log a single-object candidate hit utilizing an extended boundary frame.
+ *
+ * \param runtime Execution state tracking candidates.
+ * \param primary The unanchored target candidate.
+ * \param source Haystack array holding related neighbors.
+ * \param delta Assessed geometrical error.
+ * \param flip Layout geometry mirroring identifier.
+ */
 void target_add_single_match_extended(struct solve_runtime *runtime,
 									  const struct adb_object *primary,
 									  struct adb_source_objects *source,
@@ -332,7 +420,18 @@ void target_add_single_match_extended(struct solve_runtime *runtime,
 	runtime->num_pot_distance++;
 }
 
-/* get a set of source objects to check the pattern against */
+/**
+ * \brief Pre-process and order raw catalog data for optimal searching.
+ *
+ * Sorts through hierarchical index sets generating a flat linearly array of
+ * sorted sky catalog pointer objects constrained by solver magnitude ceilings,
+ * dropping broken or invalid imported structures.
+ *
+ * \param solve Internal solver bounds configuring cutoffs (e.g. brightness thresholds).
+ * \param set Target block sector of hierarchical data nodes.
+ * \param source Structural container taking ownership of the generated flat arrays.
+ * \return Total valid contiguous objects pushed into the search array.
+ */
 int target_prepare_source_objects(struct adb_solve *solve,
 								  struct adb_object_set *set,
 								  struct adb_source_objects *source)

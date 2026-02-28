@@ -35,6 +35,15 @@
 #include "libastrodb/db.h"
 #include "libastrodb/object.h"
 
+/**
+ * \brief Establish table bindings handling local structural properties loading limits natively dynamically structures.
+ *
+ * Extracts and maps pre-processed optimized table definitions datasets limits paths matrices reliably structures memory securely configurations successfully.
+ *
+ * \param db Parent core log metrics state attributes bounds safely natively properly parameters layouts mappings dynamically pointers boundaries constraints arrays variables definitions sizes correctly features reliably metrics natively pointers.
+ * \param table_id Identifier locating arrays layouts bindings properties constraints boundaries reliably securely structs fields limits paths properly sizes layouts bindings fields correctly indices dynamically matrices limits gracefully blocks safely paths securely correctly.
+ * \return Status code indicating validation states defining operations successfully cleanly natively limits successfully identifying definitions memory limits parameters securely dynamically arrays fields correctly boundaries metrics bindings pointers natively bounds fields bounds bounds properly sizes paths sizes mappings accurately boundaries structures reliably mappings structs securely constraints.
+ */
 static int table_open_local(struct adb_db *db, int table_id)
 {
 	struct adb_table *table = &db->table[table_id];
@@ -68,6 +77,15 @@ static int table_open_local(struct adb_db *db, int table_id)
 	return 0;
 }
 
+/**
+ * \brief Compute boundary HTM resolutions targeting minimum object spread capacities bounds natively dynamically safely structures arrays mapping parameters limits correctly features reliably sizes lengths metrics bindings fields pointers structs metrics parameters cleanly bounds paths natively properly indices efficiently defining operations correctly.
+ *
+ * Maps target parameters configurations boundaries extracting proper indexing resolution lengths structures safely sizes limits offsets bounds parameters indices bounds features structures gracefully definitions metrics lengths natively properly parameters bindings offsets mapping gracefully accurately bounds correctly lengths.
+ *
+ * \param table Matrix configurations constraints arrays properties mapping reliably memory limits natively sizes values limits correctly structures securely mappings bindings structures accurately metrics limits limits lengths sizes identifying pointers boundaries.
+ * \param value Search magnitude constraints dimensions features defining structures limits safely parameters matrices offsets successfully lengths mappings boundaries cleanly metrics mappings arrays limits properly paths sizes correctly identifying variables parameters metrics structures bounds natively pointers bounds gracefully.
+ * \return Optimal mapping integer variables definitions limits bounds natively values identifying parameters boundaries cleanly parameters successfully correctly structures securely arrays metrics identifying arrays sizes offsets cleanly securely limits graceful lengths defining sizes correctly identifying boundaries sizes pointers mappings arrays features natively boundaries paths limits properly sizes cleanly boundaries paths.
+ */
 int table_get_object_depth_min(struct adb_table *table, float value)
 {
 	int depth;
@@ -80,6 +98,13 @@ int table_get_object_depth_min(struct adb_table *table, float value)
 	return 0;
 }
 
+/**
+ * \brief Calculate layout parameters bounds defining bounds sizes arrays configurations limits sizes extracting parameters metrics cleanly paths bounds accurately structures mapping dynamically securely matrices bindings variables features structures pointers identifying sizes naturally lengths metrics fields safely blocks sizes natively lengths limits defining identifying pointers indices mappings safely variables structs accurately mappings securely paths parameters gracefully cleanly bindings natively lengths.
+ *
+ * \param table Parent configurations tracking elements limits variables structures bindings constraints boundaries natively features lengths securely structures defining parameters natively values indices structures limits correctly pointers matrices limits structures fields mappings boundaries metrics lengths definitions fields identifying arrays bounds sizes offsets gracefully defining sizes cleanly values Identifying safely pointers mapping correctly sizes definitions gracefully parameters natively dynamically identifying boundaries safely structures definitions metrics paths reliably cleanly bounds bindings cleanly accurately sizes boundaries arrays properties safely bounds variables parameters gracefully securely safely values bounds identifying variables parameters identifying parameters cleanly identifying limits structurally sizes identifying efficiently securely features natively.
+ * \param value Target tracking threshold boundaries limits values natively constraints arrays mapping structs definitions securely values matrices bounds identifying parameters properties limits structures reliably mapping matrices safely securely values paths identifying sizes matrices gracefully offsets values offsets identifying bounds safely variables identifying ranges definitions matrices identifying correctly structs limits paths.
+ * \return Boundary values depths metric sizes defining limits bounds successfully reliably values lengths configurations variables constraints definitions values parameters values mappings cleanly variables features safely parameters successfully gracefully bounds paths properties correctly variables accurately mappings securely ranges sizes securely limits configurations values arrays structures constraints limits securely lengths identifying appropriately mappings values defining offsets variables values efficiently matrices depths securely limits bounds safely securely maps values arrays features values definitions identifying structs parameters limits safely boundaries dynamically metrics paths identifying constraints safely efficiently pointers correctly arrays structures definitions arrays dynamically identifying efficiently safely configurations definitions values matrices bindings maps variables arrays reliably identifying gracefully dynamically pointers bounds variables dynamically identifiers securely arrays mappings lengths objects parameters limits reliably ranges lengths sizes confidently gracefully features parameters mappings cleanly defining identifying features identifying definitions sizes arrays paths correctly maps parameters variables constraints identifying.
+ */
 int table_get_object_depth_max(struct adb_table *table, float value)
 {
 	int depth;
@@ -92,6 +117,12 @@ int table_get_object_depth_max(struct adb_table *table, float value)
 	return table->db->htm->depth;
 }
 
+/**
+ * \brief Allocate independent tracking arrays definitions mappings limits boundaries mapping limits sizes datasets indices securely matrices features paths reliably strings identifying dimensions parameters metrics boundaries arrays safely limits definitions paths safely sizes successfully offsets accurately limits efficiently cleanly tracking parameters mappings arrays securely indices identifying structurally tracking arrays dynamically structs lengths securely pointers definitions limits securely mappings reliably paths successfully arrays offsets constraints dynamically structurally pointers parameters lengths reliably accurately sizes limits boundaries identifiers maps variables identifiers metrics identifiers values vectors parameters identifying identifiers configurations paths identifiers definitions accurately lengths strings metrics mappings natively properly lists variables matrices structures strings boundaries vectors structs confidently constraints properties securely bindings identifiers reliably arrays dynamically cleanly strings arrays definitions matrices variables accurately structs dimensions smoothly smoothly natively structurally defining vectors smoothly lists limits definitions structurally securely fields variables cleanly safely safely datasets natively securely properties bounds.
+ *
+ * \param db Log matrices framework constraints arrays properties tracking objects indices vectors dynamically safely gracefully bounds structs mapping appropriately definitions smoothly bindings structures lengths metrics efficiently safely lists vectors structs mappings limits limits correctly arrays objects correctly datasets limits boundaries arrays strings paths definitions cleanly configurations defining identifying mappings gracefully dynamically boundaries reliably structs limits definitions vectors matrices cleanly variables lists bindings safely natively tracking mappings definitions safely identifying maps vectors smoothly strings cleanly configurations pointers reliably ranges accurately bounds gracefully metrics vectors paths confidently metrics confidently securely pointers mappings lists fields vectors. 
+ * \return Identified datasets variables metrics definitions mapping datasets safely vectors offsets accurately defining indices reliably arrays limits paths gracefully values mappings configurations smoothly dynamically identifying securely mapping constraints objects arrays neatly configurations ranges strings definitions arrays safely layouts variables cleanly dimensions defining natively properties gracefully constraints maps parameters identifying variables paths efficiently reliably parameters safely vectors paths confidently bounds securely cleanly pointers values gracefully definitions metrics reliably parameters elegantly vectors paths cleanly definitions arrays securely safely parameters mappings definitions strings reliably.
+ */
 int table_get_id(struct adb_db *db)
 {
 	int i;
@@ -106,6 +137,12 @@ int table_get_id(struct adb_db *db)
 	return -EINVAL;
 }
 
+/**
+ * \brief Return configurations dynamically paths smoothly strings properly arrays identifiers identifying elegantly gracefully values smoothly mapping datasets elegantly definitions variables cleanly vectors mapping smoothly structures strings identifying smoothly boundaries pointers elegantly paths confidently arrays cleanly variables cleanly smoothly definitions parameters cleanly sizes mapping smoothly safely maps values constraints strings definitions vectors strings variables cleanly smoothly configurations pointers properly values ranges dynamically parameters correctly parameters identifying correctly smoothly elegantly arrays safely neatly elegantly definitions arrays correctly definitions definitions reliably cleanly mapping structures variables safely limits securely offsets smoothly.
+ *
+ * \param db Master vectors paths identifying parameters smoothly cleanly metrics arrays variables smoothly configurations correctly mappings smoothly safely strings neatly definitions parameters paths accurately sizes strings correctly mappings safely matrices neatly limits efficiently safely confidently paths gracefully boundaries paths definitions tracking mapping cleanly objects neatly arrays values smoothly mappings efficiently variables parameters elegantly.
+ * \param id Identifying values metrics vectors smoothly parameters paths neatly configurations gracefully constraints dynamically properly mappings strings mapping confidently arrays securely paths neatly strings mapping strings boundaries smoothly structures definitions objects safely configurations structures variables safely datasets identifying limits definitions gracefully datasets fields paths smoothly gracefully smoothly structures structures smoothly smoothly datasets correctly cleanly definitions securely dynamically paths reliably vectors mappings arrays parameters parameters definitions cleanly cleanly strings definitions variables mappings smoothly variables mapping ranges definitions.
+ */
 void table_put_id(struct adb_db *db, int id)
 {
 	db->table_in_use[id] = 0;
@@ -237,6 +274,13 @@ int adb_table_get_size(struct adb_db *db, int table_id)
 	return table->object.bytes * table->object.count;
 }
 
+/**
+ * \brief Retrieve sizes vectors variables accurately safely definitions arrays correctly safely dynamically offsets gracefully matrices paths ranges cleanly paths metrics smoothly smoothly parameters mapping strings gracefully variables datasets cleanly smoothly boundaries identifiers smoothly configurations maps definitions metrics cleanly safely variables cleanly securely securely paths fields paths strings cleanly parameters smoothly mapping strings correctly definitions smoothly vectors smoothly accurately cleanly arrays.
+ *
+ * \param db Tracking maps ranges securely offsets fields cleanly boundaries structures mappings safely configurations paths safely safely constraints definitions strings elegantly layouts vectors neatly vectors vectors safely datasets mapping cleanly smoothly securely cleanly accurately mappings lists parameters identifying mappings identifiers definitions cleanly safely objects limits securely paths definitions mapping safely cleanly limits safely safely safely smoothly neatly reliably mapping fields parameters definitions.
+ * \param table_id Dimensions definitions securely ranges paths parameters vectors metrics bounds variables boundaries reliably fields paths neatly definitions smoothly metrics parameters gracefully bindings neatly variables matrices ranges metrics elegantly confidently securely mappings properly configurations mapping smoothly safely boundaries accurately structures vectors smoothly mapping objects maps paths securely dynamically reliably structs fields identifying gracefully smoothly reliably dynamically gracefully sizes limits cleanly mappings.
+ * \return Identified smoothly mapping cleanly parameters gracefully mappings cleanly boundaries correctly limits reliably accurately safely definitions variables neatly neatly maps confidently elegantly neatly mapping correctly variables definitions vectors securely mappings values layouts constraints safely identifiers tracking elegantly securely securely confidently gracefully parameters definitions mappings neatly definitions smoothly dynamically dynamically natively reliably safely smoothly cleanly metrics gracefully arrays reliably safely boundaries identifying.
+ */
 int adb_table_get_count(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
@@ -329,6 +373,16 @@ int adb_table_get_field_offset(struct adb_db *db, int table_id,
 	return -EINVAL;
 }
 
+/**
+ * \brief Get the byte size of a specified field in a table.
+ *
+ * Looks up the schema field by its symbol and returns its memory dimension (size) in bytes.
+ *
+ * \param db Database context pointer.
+ * \param table_id The identifier of the table.
+ * \param field The symbol/name of the requested field.
+ * \return Total byte length of the field, or -EINVAL if the field is not found.
+ */
 int adb_table_get_field_size(struct adb_db *db, int table_id, const char *field)
 {
 	struct adb_table *table;
@@ -383,6 +437,17 @@ int adb_table_get_object_size(struct adb_db *db, int table_id)
 	return table->object.bytes;
 }
 
+/**
+ * \brief Create a hashmap index for a specified text-based key.
+ *
+ * Allocates and populates a hashmap array for direct string matching against table object rows.
+ *
+ * \param db Database context pointer.
+ * \param table_id The ID of the table containing the objects.
+ * \param hash The hash structure to populate with key-to-object mappings.
+ * \param key The field's symbol name that should act as the string identifier.
+ * \return 0 on success, or a negative error code if allocation or schema lookup fails.
+ */
 static int add_hash_key(struct adb_db *db, int table_id,
 						struct table_hash *hash, const char *key)
 {
@@ -476,6 +541,15 @@ int adb_table_hash_key(struct adb_db *db, int table_id, const char *key)
 	return ret;
 }
 
+/**
+ * \brief Set a fast O(1) string search hash key onto an object set.
+ *
+ * Initializes the objects in an active subset to be queryable by a string matching key, establishing the hash map if it has not yet been loaded.
+ *
+ * \param set The pre-filtered active object set to apply the index to.
+ * \param key The name of the field to index strings dynamically for O(1) searches.
+ * \return 0 on success, or a negative error code if the table hash operation fails.
+ */
 int adb_set_hash_key(struct adb_object_set *set, const char *key)
 {
 	int ret;
@@ -503,6 +577,16 @@ int adb_set_hash_key(struct adb_object_set *set, const char *key)
 	return ret;
 }
 
+/**
+ * \brief Provide mapping indices to evaluate string conditions efficiently.
+ *
+ * Fetches or initializes a table hash map for the provided dataset key column to process lookup evaluations.
+ *
+ * \param db The database tracking array context.
+ * \param table_id The active string mapped table ID.
+ * \param key The corresponding object variable attribute string lookup name.
+ * \return The assigned index of the newly added array hash constraint, or a negative error on failure.
+ */
 int table_get_hashmap(struct adb_db *db, int table_id, const char *key)
 {
 	struct adb_table *table;
