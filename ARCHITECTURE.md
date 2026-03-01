@@ -274,11 +274,38 @@ flowchart TD
 
 * **Coordinate Inputs:**
     Solving requires an array of unidentified target points extracted from an image (`adb_pobject`), containing raw planar (pixel X/Y) coordinates and relative brightness metrics. Simultaneously, the solver requires a baseline expectation of the stars in that area, retrieved from the `adb_db` via the search mechanisms outlined above (producing an `adb_object_set`).
-* **Astrometric Matching (`astrometry.c`):**
-    The core of the solver relies on distance-independent geometric hashing.
-    1. The algorithm generates sets of polygons (triangles or quads) from the brightest stars in both the raw image array and the catalog array.
-    2. The geometric properties of these sets (e.g., the ratios of the lengths of the sides of the triangles) are calculated. Since these ratios remain constant regardless of the image scale or rotation, they form a unique spatial "fingerprint."
-    3. The system compares the image fingerprints against the catalog fingerprints to find consensus.
+* **Astrometric Matching (`solve.c` and `astrometry.c`):**
+    The core of the solver relies on distance-independent geometric hashing. This process is broken down into identifying candidate subsets, extracting ratio-based fingerprints, and calculating divergence error:
+
+```mermaid
+flowchart TD
+    subgraph `solve.c` - Asterism Selection
+    Anchor[Select Anchor Star from Image] --> FormTuple[Form 4-Star Tuples with nearby Image Stars]
+    DBAnchor[Select Reference Star from DB] --> FormDBTuple[Form 4-Star Tuples with nearby DB Stars]
+    end
+    
+    subgraph `astrometry.c` - Geometric Fingerprinting
+    FormTuple --> CalcRatio[Calculate Invariant Distance/Angle Ratios]
+    FormDBTuple --> CalcDBRatio[Calculate Invariant Distance/Angle Ratios]
+    end
+    
+    subgraph `solve.c` - Pattern Consensus
+    CalcRatio --> MatchRatio{Compare Ratios<br/>within Tolerance}
+    CalcDBRatio --> MatchRatio
+    
+    MatchRatio -- Potential Match --> Divergence[Calculate Cluster Divergence Error]
+    Divergence --> Threshold{Divergence < Limit?}
+    end
+    
+    Threshold -- Yes --> Valid[Lock Solution Mapping]
+    Threshold -- No --> Reject[Discard Tuple]
+```
+
+1. **Tuple Generation (`solve.c`):** The algorithm sweeps through the brightest unassigned stars, selecting them as "anchors" (`try_object_as_primary`). Around these anchors, it groups neighboring stars into 4-star tuples (quads).
+2. **Geometric Fingerprinting (`astrometry.c`):** The subsystem computes the geometric properties of these tuples—specifically, the internal distance ratios between the four stars. Because these ratios depend only on relative geometry, they remain constant (invariant) regardless of the camera's rotation angle or zoom scale, acting as spatial fingerprints.
+3. **Hash Matching (`solve.c`):** The solver iteratively compares the invariant ratio fingerprints of the raw image tuples against those generated from the expected catalog.
+4. **Divergence Assessment (`solve.c`):** When a fingerprint broadly aligns, `calc_cluster_divergence` calculates a strict, weighted standard error combining spatial offsets, magnitude deltas, and angle differences. If the divergence falls below acceptable tolerance thresholds, the match forms a verified mathematical correlation.
+
 * **Transformation Generation:**
     Upon finding a statistically valid pattern lock, matrix mathematics calculates the actual positional translation. This creates a transformation mapping from 2D planar (pixel X/Y) space into absolute equatorial (Right Ascension and Declination) coordinate curves. This automatically accounts for camera focus scaling, rotation angles, and potentially lens distortion.
 * **Photometric Calibration (`photometry.c`):**

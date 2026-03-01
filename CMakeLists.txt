@@ -121,3 +121,23 @@ set(CPACK_PACKAGE_CONTACT "Liam Girdwood")
 set(CPACK_GENERATOR "DEB;RPM")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liam Girdwood")
 include(CPack)
+
+# Python bindings installation
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+    add_custom_target(pip-install
+        COMMAND ${Python3_EXECUTABLE} -m pip install --break-system-packages -e ${CMAKE_CURRENT_SOURCE_DIR}/python
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Installing Python astrodb wrapper via pip"
+        VERBATIM
+    )
+    
+    # We can also add a Python test target
+    add_custom_target(pytest
+        COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python" ${Python3_EXECUTABLE} -m unittest discover -v -s ${CMAKE_CURRENT_SOURCE_DIR}/python/tests
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Running Python tests for astrodb wrapper"
+        DEPENDS astrodb
+        VERBATIM
+    )
+endif()

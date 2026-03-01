@@ -101,3 +101,26 @@ CPackSourceConfig.cmake
 !tests/V/109/
 !tests/V/109/*.schema
 !tests/V/109/*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Pytest
+.pytest_cache/
