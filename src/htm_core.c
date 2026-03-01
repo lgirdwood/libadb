@@ -57,6 +57,17 @@ static const double htm_resolution[] = {
 	M_PI_2 / 256.0, M_PI_2 / 512.0, M_PI_2 / 1024.0, M_PI_2 / 2048.0,
 };
 
+/**
+ * \brief Recursively traverse the HTM tree to retrieve a trixel by ID.
+ *
+ * Traverses down the child hierarchy by decoding the position bits from the ID.
+ *
+ * \param htm The main HTM structure.
+ * \param id The target trixel ID being searched for.
+ * \param t The current parent trixel pointer at the active depth.
+ * \param depth The current recursion depth.
+ * \return Pointer to the matched trixel, or the deepest found node if target depth exceeds bounds.
+ */
 static struct htm_trixel *trixel_get_from_id_(struct htm *htm, unsigned int id,
 											  struct htm_trixel *t, int depth)
 {
@@ -73,6 +84,16 @@ static struct htm_trixel *trixel_get_from_id_(struct htm *htm, unsigned int id,
 	return trixel_get_from_id_(htm, id, &t->child[pos], depth);
 }
 
+/**
+ * \brief Retrieve an HTM trixel node using its unique ID representation.
+ *
+ * Determines the quadrant and hemisphere from the ID and invokes the recursive
+ * search routine starting from the base level 0 trixels.
+ *
+ * \param htm The initialized HTM spatial index context.
+ * \param id The bitwise encoded ID of the trixel to look up.
+ * \return Pointer to the struct htm_trixel object mapping to the ID, or NULL if invalid.
+ */
 struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id)
 {
 	int quad = htm_trixel_quadrant(id);
@@ -83,6 +104,15 @@ struct htm_trixel *htm_get_trixel(struct htm *htm, unsigned int id)
 		return trixel_get_from_id_(htm, id, &htm->S[quad], 0);
 }
 
+/**
+ * \brief Initialize the Declination strips for the root vertices grid.
+ *
+ * Allocates lateral bounding sets of vertices wrapping horizontally around the sphere
+ * varying density smoothly by latitude to minimize vertex count distortion at poles.
+ *
+ * \param htm Target spatial engine pointer.
+ * \return 0 on success, -ENOMEM on failure allocating vertex memory arrays.
+ */
 static int dec_strip_init(struct htm *htm)
 {
 	struct dec_strip *dec_strip;
@@ -125,7 +155,11 @@ static int dec_strip_init(struct htm *htm)
 	return 0;
 }
 
-/* free trixel and it's children */
+/**
+ * \brief Recursively free a trixel and all its descendant children.
+ *
+ * \param t The root trixel to begin freeing from.
+ */
 static void free_trixel(struct htm_trixel *t)
 {
 	struct htm_trixel *child = t->child;
@@ -139,6 +173,13 @@ static void free_trixel(struct htm_trixel *t)
 	free(child);
 }
 
+/**
+ * \brief Free an entire HTM spatial indexing structure allocation.
+ *
+ * Traverses and frees all DEC strips, vertex mappings, and root trixel hemispheres.
+ *
+ * \param htm The instantiated HTM engine to free.
+ */
 void htm_free(struct htm *htm)
 {
 	struct dec_strip *dec_strip = htm->dec;
@@ -169,6 +210,13 @@ void htm_free(struct htm *htm)
 	free(htm);
 }
 
+/**
+ * \brief Calculate and initialize the Right Ascension and Declination of a vertex.
+ *
+ * Converts a 3D Cartesian spherical coordinate (XYZ) to standard RA/Dec representation.
+ *
+ * \param v The vertex to update.
+ */
 static void vertex_init_radec(struct htm_vertex *v)
 {
 	double cos_dec, x, y, z;
@@ -205,7 +253,19 @@ static void vertex_init_radec(struct htm_vertex *v)
 		v->ra = 0.0;
 }
 
-/* lookup vertex based on position from dec domain */
+/**
+ * \brief Fetch or create a specific vertex in the HTM grid.
+ *
+ * Looks up a vertex position on the spherical DEC strips. If the vertex does not
+ * already exist, it calculates and stores its properties natively.
+ *
+ * \param htm Target spatial engine pointer.
+ * \param level Current target split level matching depth allocation.
+ * \param x Cartesian X position on sphere.
+ * \param y Cartesian Y position on sphere.
+ * \param z Cartesian Z position on sphere.
+ * \return Pointer to the existing or allocated internal htm_vertex instance.
+ */
 struct htm_vertex *vertex_get(struct htm *htm, int level, double x, double y,
 							  double z)
 {
@@ -251,6 +311,15 @@ struct htm_vertex *vertex_get(struct htm *htm, int level, double x, double y,
 	return v;
 }
 
+/**
+ * \brief Calculate the spatial midpoint between two vertices.
+ *
+ * \param a Pointer to the first boundary vertex.
+ * \param b Pointer to the second boundary vertex.
+ * \param x Pointer to store the output intermediate X coordinate.
+ * \param y Pointer to store the output intermediate Y coordinate.
+ * \param z Pointer to store the output intermediate Z coordinate.
+ */
 static inline void vertex_get_midpoint(struct htm_vertex *a,
 									   struct htm_vertex *b, double *x,
 									   double *y, double *z)
@@ -260,7 +329,19 @@ static inline void vertex_get_midpoint(struct htm_vertex *a,
 	*z = ((a->z + b->z) / 2.0);
 }
 
-/* calculate child verticies for up trixels */
+/**
+ * \brief Calculate and instantiate the three boundary midpoint vertices of a parent trixel.
+ *
+ * This splits the parent trixel into 4 smaller sub-trixels by identifying the intermediate
+ * midpoint coordinates along the parent's edges.
+ *
+ * \param htm Parent spatial engine.
+ * \param parent The parent trixel being split.
+ * \param a Pointer to return the generated bottom-edge midpoint vertex.
+ * \param b Pointer to return the generated right-edge midpoint vertex.
+ * \param c Pointer to return the generated left-edge midpoint vertex.
+ * \param level The current split iteration depth.
+ */
 static inline void trixel_init_child_verticies(struct htm *htm,
 											   struct htm_trixel *parent,
 											   struct htm_vertex **a,
@@ -282,6 +363,17 @@ static inline void trixel_init_child_verticies(struct htm *htm,
 	*c = vertex_get(htm, level, x, y, z);
 }
 
+/**
+ * \brief Bind a trixel to a grid vertex at position A (Vertex 1).
+ *
+ * Links the dynamically generated trixel to the vertex's spatial region groupings
+ * so the vertex tracks all trixels utilizing it.
+ *
+ * \param htm Parent spatial engine.
+ * \param t The trixel being bound.
+ * \param v The vertex serving as corner A.
+ * \param level Depth iteration level.
+ */
 static inline void vertex_assoc_trixel_a(struct htm *htm, struct htm_trixel *t,
 										 struct htm_vertex *v, int level)
 {
@@ -301,6 +393,16 @@ static inline void vertex_assoc_trixel_a(struct htm *htm, struct htm_trixel *t,
 	adb_htm_error(htm, "  x %f y %f z %f\n", v->x, v->y, v->z);
 }
 
+/**
+ * \brief Bind a trixel to a grid vertex at position B (Vertex 2).
+ *
+ * Links the dynamically generated trixel to the vertex's spatial region groupings.
+ *
+ * \param htm Parent spatial engine.
+ * \param t The trixel being bound.
+ * \param v The vertex serving as corner B.
+ * \param level Depth iteration level.
+ */
 static inline void vertex_assoc_trixel_b(struct htm *htm, struct htm_trixel *t,
 										 struct htm_vertex *v, int level)
 {
@@ -320,6 +422,16 @@ static inline void vertex_assoc_trixel_b(struct htm *htm, struct htm_trixel *t,
 	adb_htm_error(htm, "  x %f y %f z %f\n", v->x, v->y, v->z);
 }
 
+/**
+ * \brief Bind a trixel to a grid vertex at position C (Vertex 3).
+ *
+ * Links the dynamically generated trixel to the vertex's spatial region groupings.
+ *
+ * \param htm Parent spatial engine.
+ * \param t The trixel being bound.
+ * \param v The vertex serving as corner C.
+ * \param level Depth iteration level.
+ */
 static inline void vertex_assoc_trixel_c(struct htm *htm, struct htm_trixel *t,
 										 struct htm_vertex *v, int level)
 {
@@ -339,7 +451,16 @@ static inline void vertex_assoc_trixel_c(struct htm *htm, struct htm_trixel *t,
 	adb_htm_error(htm, "  x %f y %f z %f\n", v->x, v->y, v->z);
 }
 
-/* t0 is middle */
+/**
+ * \brief Orient and associate the middle child trixel (t0) within an UP-pointing parent.
+ *
+ * \param htm Parent spatial engine.
+ * \param t0 The child trixel being constructed.
+ * \param a Midpoint vertex A (bottom-edge).
+ * \param b Midpoint vertex B (right-edge).
+ * \param c Midpoint vertex C (left-edge).
+ * \param level Current depth level.
+ */
 static inline void trixel_0_parent_up(struct htm *htm, struct htm_trixel *t0,
 									  struct htm_vertex *a,
 									  struct htm_vertex *b,
@@ -355,7 +476,17 @@ static inline void trixel_0_parent_up(struct htm *htm, struct htm_trixel *t0,
 	vertex_assoc_trixel_c(htm, t0, c, level);
 }
 
-/* t1 is top */
+/**
+ * \brief Orient and associate the top child trixel (t1) within an UP-pointing parent.
+ *
+ * \param htm Parent spatial engine.
+ * \param parent Parent trixel.
+ * \param t1 The child trixel being constructed.
+ * \param a Midpoint vertex A.
+ * \param b Midpoint vertex B.
+ * \param c Midpoint vertex C.
+ * \param level Current depth level.
+ */
 static inline void
 trixel_1_parent_up(struct htm *htm, struct htm_trixel *parent,
 				   struct htm_trixel *t1, struct htm_vertex *a,
@@ -371,7 +502,9 @@ trixel_1_parent_up(struct htm *htm, struct htm_trixel *parent,
 	vertex_assoc_trixel_c(htm, t1, c, level);
 }
 
-/* t2 is bottom left */
+/**
+ * \brief Orient and associate the bottom-left child trixel (t2) within an UP-pointing parent.
+ */
 static inline void
 trixel_2_parent_up(struct htm *htm, struct htm_trixel *parent,
 				   struct htm_trixel *t2, struct htm_vertex *a,
@@ -387,7 +520,9 @@ trixel_2_parent_up(struct htm *htm, struct htm_trixel *parent,
 	vertex_assoc_trixel_c(htm, t2, a, level);
 }
 
-/* t3 is bottom right */
+/**
+ * \brief Orient and associate the bottom-right child trixel (t3) within an UP-pointing parent.
+ */
 static inline void
 trixel_3_parent_up(struct htm *htm, struct htm_trixel *parent,
 				   struct htm_trixel *t3, struct htm_vertex *a,
@@ -403,6 +538,9 @@ trixel_3_parent_up(struct htm *htm, struct htm_trixel *parent,
 	vertex_assoc_trixel_c(htm, t3, parent->c, level);
 }
 
+/**
+ * \brief Orient and associate the middle child trixel (t0) within a DOWN-pointing parent.
+ */
 static inline void trixel_0_parent_down(struct htm *htm, struct htm_trixel *t0,
 										struct htm_vertex *a,
 										struct htm_vertex *b,
@@ -418,6 +556,9 @@ static inline void trixel_0_parent_down(struct htm *htm, struct htm_trixel *t0,
 	vertex_assoc_trixel_c(htm, t0, c, level);
 }
 
+/**
+ * \brief Orient and associate the bottom child trixel (t1) within a DOWN-pointing parent.
+ */
 static inline void
 trixel_1_parent_down(struct htm *htm, struct htm_trixel *parent,
 					 struct htm_trixel *t1, struct htm_vertex *a,
@@ -433,6 +574,9 @@ trixel_1_parent_down(struct htm *htm, struct htm_trixel *parent,
 	vertex_assoc_trixel_c(htm, t1, c, level);
 }
 
+/**
+ * \brief Orient and associate the top-left child trixel (t2) within a DOWN-pointing parent.
+ */
 static inline void
 trixel_2_parent_down(struct htm *htm, struct htm_trixel *parent,
 					 struct htm_trixel *t2, struct htm_vertex *a,
@@ -448,6 +592,9 @@ trixel_2_parent_down(struct htm *htm, struct htm_trixel *parent,
 	vertex_assoc_trixel_c(htm, t2, a, level);
 }
 
+/**
+ * \brief Orient and associate the top-right child trixel (t3) within a DOWN-pointing parent.
+ */
 static inline void
 trixel_3_parent_down(struct htm *htm, struct htm_trixel *parent,
 					 struct htm_trixel *t3, struct htm_vertex *a,
@@ -463,7 +610,18 @@ trixel_3_parent_down(struct htm *htm, struct htm_trixel *parent,
 	vertex_assoc_trixel_c(htm, t3, parent->c, level);
 }
 
-/* create up trixel children */
+/**
+ * \brief Recursively generate and split an UP-oriented parent trixel into 4 children.
+ *
+ * Checks current depth limits, optionally splitting the provided parent into smaller
+ * child triangles assigning accurate spatial coordinates and grid indices.
+ *
+ * \param htm Parent spatial engine.
+ * \param parent The parent trixel to undergo recursive subdivision.
+ * \param depth Target recursive depth limit.
+ * \param level Current depth execution state.
+ * \param hemisphere Source hemisphere quadrant.
+ */
 static void trixel_create_up(struct htm *htm, struct htm_trixel *parent,
 							 int depth, int level, int hemisphere)
 {
@@ -525,7 +683,18 @@ static void trixel_create_up(struct htm *htm, struct htm_trixel *parent,
 	trixel_create_up(htm, &child[3], depth, level, hemisphere);
 }
 
-/* create down trixel children */
+/**
+ * \brief Recursively generate and split a DOWN-oriented parent trixel into 4 children.
+ *
+ * Checks current depth limits, optionally splitting the provided parent into smaller
+ * child triangles assigning accurate spatial coordinates and grid indices.
+ *
+ * \param htm Parent spatial engine.
+ * \param parent The parent trixel to undergo recursive subdivision.
+ * \param depth Target recursive depth limit.
+ * \param level Current depth execution state.
+ * \param hemisphere Source hemisphere quadrant.
+ */
 static void trixel_create_down(struct htm *htm, struct htm_trixel *parent,
 							   int depth, int level, int hemisphere)
 {
@@ -602,7 +771,17 @@ static struct polyhedron poly[] = {
 	{ 0.0, 0.0, -1.0 }, { -1.0, 0.0, 0.0 }, { 0.0, -1.0, 0.0 },
 };
 
-/* create and init new HTM */
+/**
+ * \brief Initialize and instantiate a complete Hierarchical Triangular Mesh grid engine.
+ *
+ * Calculates array configurations to map an HTM layout to a specified recursion depth,
+ * forming the spherical 8 basal top-level structural components before invoking recursive 
+ * fractal-based face splitting logic to build bounding node trees.
+ *
+ * \param depth The targeted subdivisional limits guiding grid granularity.
+ * \param tables Unused legacy compatibility argument.
+ * \return Allocates and returns an internally initialized structure tracking HTM trees.
+ */
 struct htm *htm_new(int depth, int tables)
 {
 	struct htm *htm;
@@ -738,6 +917,14 @@ struct htm *htm_new(int depth, int tables)
 	return htm;
 }
 
+/**
+ * \brief Lookup algorithm defining requisite subdivision depths to match a target grid resolution.
+ *
+ * Matches minimum acceptable resolutions traversing internal granularity bounds.
+ *
+ * \param resolution Target acceptable bounding block size.
+ * \return Guaranteed integer spatial recursion count covering that resolution threshold.
+ */
 int htm_get_depth_from_resolution(double resolution)
 {
 	int depth;

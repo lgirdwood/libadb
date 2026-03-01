@@ -41,6 +41,16 @@ struct trixel_hdr {
 	u_int32_t num_objects; /*!< number of objects */
 } __attribute__((packed));
 
+/**
+ * \brief Stream astronomical object block data for a specific trixel into memory.
+ *
+ * \param db Active database connection context.
+ * \param table Reference table to insert read objects into.
+ * \param objects Pointer to the current block offset within the master allocation buffer.
+ * \param f The file stream being read from.
+ * \param hdr The matching struct trixel_hdr previously read representing this block.
+ * \return Total number of loaded objects on success, or -EINVAL on read mismatch.
+ */
 static int read_trixel(struct adb_db *db, struct adb_table *table,
 					   struct adb_object *objects, FILE *f,
 					   struct trixel_hdr *hdr)
@@ -58,6 +68,15 @@ static int read_trixel(struct adb_db *db, struct adb_table *table,
 	return hdr->num_objects;
 }
 
+/**
+ * \brief Sequentially stream all trixel headers and their attached object frames from disk.
+ *
+ * \param db Active database connection context.
+ * \param table Catalog table owning the data mapping logic.
+ * \param objects Output buffer block large enough to contain all rows.
+ * \param f An opened database file pointer set to the data start offset.
+ * \return The total integer count of processed individual objects inserted.
+ */
 static int read_trixels(struct adb_db *db, struct adb_table *table,
 						void *objects, FILE *f)
 {
@@ -96,6 +115,18 @@ static int read_trixels(struct adb_db *db, struct adb_table *table,
 	return count;
 }
 
+/**
+ * \brief Recursively stream a populated HTM trixel and child trees to a database file.
+ *
+ * Skips empty trixels traversing downward until it locates populated nodes, writing
+ * custom struct trixel_hdr blocks followed by tightly packed astronomical objects mappings.
+ *
+ * \param db Active database connection logging context.
+ * \param table Parent dataset to pull structural mappings limits from.
+ * \param trixel The active HTM leaf/node to process.
+ * \param file The output file pointer.
+ * \return Returns the number of successfully written objects (bubbles up recursively).
+ */
 static int write_trixel(struct adb_db *db, struct adb_table *table,
 						struct htm_trixel *trixel, FILE *file)
 {
@@ -180,6 +211,16 @@ children:
 	return count;
 }
 
+/**
+ * \brief Initialize and orchestrate the population of a database table from its `.db` data file.
+ *
+ * Allocates primary contiguous memory and opens disk I/O, redirecting stream processing
+ * to `read_trixels` sequentially.
+ *
+ * \param db Active framework connection instances.
+ * \param table Targeting subset catalog identifier parameters.
+ * \return Loaded objects total or standard system negative error code.
+ */
 int table_read_trixels(struct adb_db *db, struct adb_table *table)
 {
 	struct adb_object *objects;
@@ -225,6 +266,16 @@ int table_read_trixels(struct adb_db *db, struct adb_table *table)
 	return count;
 }
 
+/**
+ * \brief Export an in-memory database catalog into the custom serialized binary file format.
+ *
+ * Overwrites the table datasets local `.db` file dynamically invoking `write_trixel` for
+ * all 8 master hemispheres.
+ *
+ * \param db Parent state and HTM spatial indexes references.
+ * \param table Reference table tracking schema configuration data.
+ * \return Number of inserted block lines or standard error.
+ */
 int table_write_trixels(struct adb_db *db, struct adb_table *table)
 {
 	struct htm *htm = db->htm;

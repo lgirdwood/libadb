@@ -16,21 +16,23 @@
  *  Copyright (C) 2008 - 2014 Liam Girdwood
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <math.h>
-#include <ctype.h>
 
 #include "libastrodb/db.h"
 #include "libastrodb/object.h"
 #include "table.h"
 #include "debug.h"
 
-/* import object into trixel in magnitude order -
- * lowest (brightest) -> highest (faintest)
+/**
+ * \brief Fast path insertion of an object into a trixel linked list block.
+ *
+ * Designed to bypass sorting constraints during initial read parsing.
+ *
+ * \param htm Engine target context.
+ * \param table Reference structure dictionary limits array layout definition.
+ * \param trixel Reference destination bucket.
+ * \param new_object The object object loaded in memory mapped block frame to point.
+ * \param object_count Substantive object tally count parameter array indexing sequence size.
  */
 static inline void htm_insert_object_ascending(struct htm *htm,
 											   struct adb_table *table,
@@ -70,7 +72,18 @@ static inline void htm_insert_object_descending(struct htm *htm,
 }
 #endif
 
-/* used by file reader */
+/**
+ * \brief Internal insertion method mapping binary objects loaded from disk trixels.
+ *
+ * Translates external disk trixel headers into linked list internal trixel bucket limits arrays.
+ *
+ * \param htm Engine tracking system bounds layouts contexts.
+ * \param table Relational boundaries tracking dictionary objects instances maps definition schema layout index parameter dimensions blocks headers limits boundaries.
+ * \param object Pointer chunk array load limits offsets blocks parameter array payload payload structures.
+ * \param object_count Header extracted parameter defining object frame chunk sizing blocks boundaries.
+ * \param trixel_id Validated parent target block key layout mapping ID array search limits definition limits.
+ * \return 1 on successful insert logic loop iteration blocks completion, or -EINVAL on block ID dimension validation mapping logic indexing search layouts offset array frame extraction faults array mapping failures limits contexts search offsets schema layout index parameter bounds array schemas mapping index arrays extraction definition bound failures index boundaries.
+ */
 int htm_table_insert_object(struct htm *htm, struct adb_table *table,
 							struct adb_object *object,
 							unsigned int object_count, unsigned int trixel_id)

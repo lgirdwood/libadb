@@ -39,6 +39,18 @@ struct kd_elem {
 	struct adb_object *object; /*!< object */
 };
 
+/**
+ * \brief Insert a new database object into a trixel sorting by ascending magnitude.
+ *
+ * Traverses the existing linked list of objects bound to the trixel
+ * and inserts the new object such that the brightest objects remain at the HEAD
+ * and faintest at the TAIL.
+ *
+ * \param db Parent database engine targeting logging levels.
+ * \param trixel The spatial bounding block to insert into.
+ * \param new_object The object being imported.
+ * \param table Catalog table configuration.
+ */
 void htm_import_object_ascending(struct adb_db *db, struct htm_trixel *trixel,
 								 struct adb_object *new_object,
 								 struct adb_table *table)
@@ -92,6 +104,18 @@ out:
 			   trixel->position, trixel->data[table_id].num_objects);
 }
 
+/**
+ * \brief Insert a new database object into a trixel sorting by descending magnitude.
+ *
+ * Traverses the existing linked list of objects bound to the trixel
+ * and inserts the new object such that the faintest/largest magnitude objects
+ * remain at the HEAD and brightest at the TAIL.
+ *
+ * \param db Parent database engine targeting logging levels.
+ * \param trixel The spatial bounding block to insert into.
+ * \param new_object The object being imported.
+ * \param table Catalog table configuration.
+ */
 void htm_import_object_descending(struct adb_db *db, struct htm_trixel *trixel,
 								  struct adb_object *new_object,
 								  struct adb_table *table)

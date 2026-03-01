@@ -27,13 +27,25 @@
 #include "libastrodb/db.h"
 #include "libastrodb/object.h"
 
-/* vertex multiplication */
+/**
+ * \brief Compute the dot product (scalar multiplication) of two 3D spatial vertices.
+ *
+ * \param a First vertex coordinate.
+ * \param b Second vertex coordinate.
+ * \return Resulting floating point scalar value.
+ */
 static inline double vertex_mult(struct htm_vertex *a, struct htm_vertex *b)
 {
 	return (a->x * b->x) + (a->y * b->y) + (a->z * b->z);
 }
 
-/* vertex cross product */
+/**
+ * \brief Compute the cross product of two 3D vectors.
+ *
+ * \param a Target vertex A.
+ * \param b Target vertex B.
+ * \param prod Output vertex storing the orthogonal vector result.
+ */
 static inline void vertex_cross(struct htm_vertex *a, struct htm_vertex *b,
 								struct htm_vertex *prod)
 {
@@ -42,7 +54,16 @@ static inline void vertex_cross(struct htm_vertex *a, struct htm_vertex *b,
 	prod->z = a->x * b->y - b->x * a->y;
 }
 
-/* check vertex point is inside UP trixel */
+/**
+ * \brief Check if a spatial point is contained inside an UP-oriented trixel.
+ *
+ * Employs edge cross products multiplied against the target point to determine
+ * bounded inclusion within the parent shape boundaries.
+ *
+ * \param t The UP trixel defining the boundary region.
+ * \param point The target point to test for containment.
+ * \return 1 if point is inside, 0 otherwise.
+ */
 static int vertex_is_inside_up(struct htm_trixel *t, struct htm_vertex *point)
 {
 	struct htm_vertex prod;
@@ -76,7 +97,15 @@ static int vertex_is_inside_up(struct htm_trixel *t, struct htm_vertex *point)
 	return 1;
 }
 
-/* check vertex point is inside DOWN trixel */
+/**
+ * \brief Check if a spatial point is contained inside a DOWN-oriented trixel.
+ *
+ * Evaluates inclusion logic using an anti-clockwise edge sequence traversal.
+ *
+ * \param t The DOWN trixel defining the boundary region.
+ * \param point The target test point.
+ * \return 1 if point is inside, 0 otherwise.
+ */
 static int vertex_is_inside_down(struct htm_trixel *t, struct htm_vertex *point)
 {
 	struct htm_vertex prod;
@@ -110,7 +139,18 @@ static int vertex_is_inside_down(struct htm_trixel *t, struct htm_vertex *point)
 	return 1;
 }
 
-/* recursively check each child trixel if it contains point */
+/**
+ * \brief Recursively check each child trixel to find which one contains the target point.
+ *
+ * Traverses down to the specified depth, determining point inclusion at each level.
+ *
+ * \param htm Parent spatial engine.
+ * \param t The current parent trixel evaluating its bounds.
+ * \param point Target coordinate to locate.
+ * \param depth Maximum recursion depth limit.
+ * \param level Current target iteration level.
+ * \return Pointer to the matched bounding trixel, or NULL if outside bounds.
+ */
 static struct htm_trixel *trixel_is_container(struct htm *htm,
 											  struct htm_trixel *t,
 											  struct htm_vertex *point,
@@ -157,7 +197,17 @@ static struct htm_trixel *trixel_is_container(struct htm *htm,
 	return t; /* return the parent, it's better than nothing */
 }
 
-/* search the HTM down to depth for points parent trixel */
+/**
+ * \brief Search the HTM down to depth for a point's bounding parent trixel.
+ *
+ * Initiates a top-level search over all 8 spherical root sectors to locate
+ * the finest bounding partition containing the specified coordinate.
+ *
+ * \param htm Spatial indexing instance.
+ * \param point Target RA/Dec vertex matching position.
+ * \param depth Target recursive block dimension limit to stop at.
+ * \return The bounding leaf trixel at depth, or NULL.
+ */
 struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 									   struct htm_vertex *point, int depth)
 {
@@ -197,7 +247,15 @@ struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 	return NULL;
 }
 
-/* get all trixels associated with this vertex and copy to passed in list */
+/**
+ * \brief Copy all trixels associated with a specific vertex into an array.
+ *
+ * \param htm Spatial engine.
+ * \param v Bounding point vertex mapping trixels.
+ * \param trixel_buf Output buffer to collect resulting pointers.
+ * \param buf_size Sizing limit of output buffer.
+ * \return Total stored valid elements added, or required deficit size if buffer is too small.
+ */
 int vertex_get_all_trixels(struct htm *htm, struct htm_vertex *v,
 						   struct htm_trixel **trixel_buf, int buf_size)
 {
@@ -219,7 +277,14 @@ int vertex_get_all_trixels(struct htm *htm, struct htm_vertex *v,
 	return num - empty;
 }
 
-/* is trixel in buffer ? */
+/**
+ * \brief Query if a specified trixel already exists inside a buffer array.
+ *
+ * \param t The trixel sought block reference.
+ * \param trixel_buf Lookuptarget array.
+ * \param pos Total indexed boundary limits.
+ * \return 1 if found, 0 otherwise.
+ */
 static inline int trixel_in_buffer(struct htm_trixel *t,
 								   struct htm_trixel **trixel_buf, int pos)
 {
@@ -232,7 +297,21 @@ static inline int trixel_in_buffer(struct htm_trixel *t,
 	return 0;
 }
 
-/* get trixels associated with this vertex at discrete depth */
+/**
+ * \brief Fetch all trixels sharing a specific vertex at a targeted depth.
+ *
+ * Scans a vertex's bound trixel list fetching depth-matching neighbors, optionally filtering
+ * out a caller origin trixel to strictly find neighboring entities.
+ *
+ * \param htm Engine instance.
+ * \param v The shared connection vertex.
+ * \param origin The originating trixel looking for its neighbors (ignored).
+ * \param trixel_buf Output buffer to collect valid neighbor pointers.
+ * \param buf_size Sizing limit of the output buffer.
+ * \param depth Target spatial depth level.
+ * \param pos Current append index within the output buffer.
+ * \return The integer count of newly added valid neighboring trixels.
+ */
 int vertex_get_trixels_depth(struct htm *htm, struct htm_vertex *v,
 							 struct htm_trixel *origin,
 							 struct htm_trixel **trixel_buf, int buf_size,
@@ -270,8 +349,15 @@ int vertex_get_trixels_depth(struct htm *htm, struct htm_vertex *v,
 	return num - empty;
 }
 
-/* get trixel neighbour trixels,
- * i.e. trixels that share verticies with this trixel */
+/**
+ * \brief Retrieve all immediate neighboring trixels sharing any vertices with a target block.
+ *
+ * \param htm Spatial engine.
+ * \param t The center trixel to discover neighbors for.
+ * \param depth The specified depth tier to search within.
+ * \param set Target bounded collection managing output buffers.
+ * \return Total collected neighboring elements.
+ */
 static int trixel_get_neighbours(struct htm *htm, struct htm_trixel *t,
 								 int depth, struct adb_object_set *set)
 {
@@ -294,6 +380,19 @@ static int trixel_get_neighbours(struct htm *htm, struct htm_trixel *t,
 	return neighbours;
 }
 
+/**
+ * \brief Register the parent of a given trixel into a unique collection buffer.
+ *
+ * Extracts a trixel's top-level parent and ensures it's uniquely inserted
+ * into the buffer tracking array exactly once.
+ *
+ * \param htm Spatial engine.
+ * \param trixel_buf Pointer to the bounding collection buffer.
+ * \param offset Index identifying the child block whose parent is being stored.
+ * \param buffer_start Search window start for duplicate checking.
+ * \param buffer_end Search window limit for duplicate checking.
+ * \return 1 if successfully added, 0 on failure or pre-existing duplicate.
+ */
 static int trixel_add_parent(struct htm *htm, struct htm_trixel **trixel_buf,
 							 int offset, int buffer_start, int buffer_end)
 {
@@ -322,6 +421,21 @@ static int trixel_add_parent(struct htm *htm, struct htm_trixel **trixel_buf,
 	return 0;
 }
 
+/**
+ * \brief Recursively extract all cascading parent structures originating from an initial trixel list.
+ *
+ * Reverses upward through the hierarchy grabbing parents until reaching a defined minimum
+ * depth ceiling. Used for constructing wide, high-level structural bounds above detailed areas.
+ *
+ * \param htm Spatial engine.
+ * \param set Managed subset state bounds object.
+ * \param buf_size Limits parameter blocking overflows.
+ * \param current_depth Deepest originating starting depth constraint limit.
+ * \param buffer_start Origin slice for checking.
+ * \param buffer_end Trailing tail slice point.
+ * \param parents Accumulated valid parent sum tracking.
+ * \return Final running count of all unified mapped parents.
+ */
 static int trixel_get_parents(struct htm *htm, struct adb_object_set *set,
 							  int buf_size, int current_depth, int buffer_start,
 							  int buffer_end, int parents)
@@ -350,6 +464,17 @@ static int trixel_get_parents(struct htm *htm, struct adb_object_set *set,
 							  buffer_end + new, parents + new);
 }
 
+/**
+ * \brief Recursively navigate downward returning all subdivided children from a parent context.
+ *
+ * \param htm Spatial engine.
+ * \param set Container accumulating discovered block boundaries.
+ * \param parent Origin point root node.
+ * \param buf_size Limits variable blocking overflows.
+ * \param current_depth Recursion state monitoring maximum constraints.
+ * \param buf_pos Active write positioning marker.
+ * \return Position cursor marker indicating buffer write boundary.
+ */
 static int trixel_get_children(struct htm *htm, struct adb_object_set *set,
 							   struct htm_trixel *parent, int buf_size,
 							   int current_depth, int buf_pos)
@@ -392,6 +517,20 @@ static int trixel_get_children(struct htm *htm, struct adb_object_set *set,
 	return buf_pos;
 }
 
+/**
+ * \brief Create a spatial bounding perimeter using FOV degrees and center coordinates.
+ *
+ * Defines the spatial dimensions of an initialized `adb_object_set` subset container.
+ *
+ * \param htm Spatial engine.
+ * \param set Target clipping area configuration manager.
+ * \param ra Center celestial Right Ascension marking the field middle.
+ * \param dec Center celestial Declination marking the field middle.
+ * \param fov Diameter Field Of View bounds.
+ * \param min_depth Hard limit minimal recursive block depth tier mapping limit.
+ * \param max_depth Hard limit maximal recursive block depth tier mapping limit.
+ * \return 0 on successful validation, or -EINVAL on out-of-bounds inputs.
+ */
 int htm_clip(struct htm *htm, struct adb_object_set *set, double ra, double dec,
 			 double fov, double min_depth, double max_depth)
 {
@@ -440,6 +579,16 @@ int htm_clip(struct htm *htm, struct adb_object_set *set, double ra, double dec,
 	return 0;
 }
 
+/**
+ * \brief Extract bounding trixels contained inside an initialized object set subset FOV constraint.
+ *
+ * Traverses spatial bounds radiating outwards from the center subset position
+ * returning arrays mapping valid contained areas.
+ *
+ * \param htm Engine configuration reference.
+ * \param set Target boundaries structure requesting the map.
+ * \return Total aggregated element counts placed successfully into the subset.
+ */
 int htm_get_trixels(struct htm *htm, struct adb_object_set *set)
 {
 	int trixels, parents, neighbours, i;
@@ -490,6 +639,15 @@ int htm_get_trixels(struct htm *htm, struct adb_object_set *set)
 	return trixels;
 }
 
+/**
+ * \brief Compile heads referencing objects constrained inside a subset.
+ *
+ * Analyzes previously clipped trixels within an `adb_object_set` to build consolidated
+ * lists of objects populating those constrained blocks.
+ *
+ * \param set Bounded configuration instance.
+ * \return Valid count of objects bound by the constraints.
+ */
 int htm_get_clipped_objects(struct adb_object_set *set)
 {
 	struct htm *htm = set->db->htm;
@@ -678,6 +836,13 @@ int adb_set_get_count(struct adb_object_set *set)
 	return set->count;
 }
 
+/**
+ * \brief Retrieve a key-matching index offset mapping to the hash definition arrays.
+ *
+ * \param set The subset collection being queried.
+ * \param key Desired property mapping symbolic string.
+ * \return Discovered mapped integer layout identifier, or -EINVAL on miss.
+ */
 static int set_get_hashmap(struct adb_object_set *set, const char *key)
 {
 	int i;
@@ -690,6 +855,18 @@ static int set_get_hashmap(struct adb_object_set *set, const char *key)
 	return -EINVAL;
 }
 
+/**
+ * \brief Look up a data entry by identifying value traversing rapid hash tables.
+ *
+ * \param hash Core structural framework storing precompiled hash table metadata.
+ * \param id Identifying input argument (as string, integer, etc).
+ * \param map Target active array definitions layout ID.
+ * \param offset Object field value index jump offset position.
+ * \param ctype Target object underlying value layout datatype format.
+ * \param count Total limit iterating objects.
+ * \param object Output address receiving the generated database query element.
+ * \return 1 on successful retrieval hit, 0 on missing record, and -EINVAL on bad type.
+ */
 static int hash_get_object(struct table_hash *hash, const void *id, int map,
 						   int offset, adb_ctype ctype, int count,
 						   const struct adb_object **object)
@@ -755,6 +932,15 @@ static int hash_get_object(struct table_hash *hash, const void *id, int map,
 	return -EINVAL;
 }
 
+/**
+ * \brief Look up a specific object within a filtered bounding subset by value field key.
+ *
+ * \param set The subset area limiting valid candidates.
+ * \param id Matcher evaluating value payload bounds.
+ * \param field Target property dimension string.
+ * \param object Final output node pointer to map hit to.
+ * \return Discovery state status code or negative error bound failure.
+ */
 int adb_set_get_object(struct adb_object_set *set, const void *id,
 					   const char *field, const struct adb_object **object)
 {
@@ -781,6 +967,16 @@ int adb_set_get_object(struct adb_object_set *set, const void *id,
 						   object);
 }
 
+/**
+ * \brief Globally look up a specific object within an entire table by value field key.
+ *
+ * \param db Initialized active catalog connection.
+ * \param table_id Target structural layout offset to query against.
+ * \param id Matcher identifying parameter evaluating target payload layout bounds.
+ * \param field String parameter naming definition bounds.
+ * \param object Final output pointer linking generated hit reference data memory.
+ * \return Discovery state status code or negative error bound failure.
+ */
 int adb_table_get_object(struct adb_db *db, int table_id, const void *id,
 						 const char *field, const struct adb_object **object)
 {
@@ -806,6 +1002,14 @@ int adb_table_get_object(struct adb_db *db, int table_id, const void *id,
 						   table->object.count, object);
 }
 
+/**
+ * \brief Trigger generation caching of internal fast indexing tables over the bounding bounds.
+ *
+ * Iterates through available hashes reconstructing and inserting keys matching the newly clipped area.
+ *
+ * \param set Bound active working container subset bounds array.
+ * \return Zero on operational completion or negative initialization block failure sequence bound.
+ */
 int adb_table_set_hash_objects(struct adb_object_set *set)
 {
 	struct adb_table *table = set->table;
