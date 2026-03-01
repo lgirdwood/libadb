@@ -21,7 +21,6 @@
 #include <errno.h>
 #include <string.h>
 #include <ftplib.h>
-#include <errno.h>
 #include <ctype.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -36,6 +35,15 @@
 #define GZ_CHUNK 16384
 #define CHUNK_SIZE (1024 * 32)
 
+/**
+ * @brief Inflates a gzip compressed file into a new destination file.
+ *
+ * @param db Database instance for logging.
+ * @param path The base path where the files are located (e.g., local table path).
+ * @param src_file The name of the source gzip file.
+ * @param dest_file The target name for the uncompressed file.
+ * @return 0 on success, negative error code on failure.
+ */
 static int inflate_file(struct adb_db *db, const char *path,
 						const char *src_file, const char *dest_file)
 {
@@ -81,7 +89,16 @@ static int inflate_file(struct adb_db *db, const char *path,
 	return 0;
 }
 
-/* FTP single file */
+/**
+ * @brief Retrieves a single file from a remote FTP server.
+ *
+ * This function connects to the CDS FTP server anonymously and downloads
+ * the specified file from the remote path to the local table path.
+ *
+ * @param table The database table containing local and remote path configurations.
+ * @param file The name of the file to download.
+ * @return 1 on success, negative error code or 0 on failure.
+ */
 static int ftp_get_file(struct adb_table *table, const char *file)
 {
 	struct adb_db *db = table->db;
@@ -123,7 +140,16 @@ out:
 	return ret;
 }
 
-/* FTP multiple files based on pattern */
+/**
+ * @brief Retrieves multiple files matching a pattern from a remote FTP server.
+ *
+ * This function accesses the remote directory on the CDS FTP server, reads its
+ * contents, and downloads all files that match the provided substring pattern.
+ *
+ * @param table The database table containing local and remote path configurations.
+ * @param pattern The substring pattern to match file names against.
+ * @return The number of successfully downloaded files, or a negative error code on failure.
+ */
 static int ftp_get_files(struct adb_table *table, const char *pattern)
 {
 	struct adb_db *db = table->db;
@@ -222,6 +248,17 @@ out:
 	return ret;
 }
 
+/**
+ * @brief Appends the contents of a single local file to an open output file stream.
+ *
+ * Reads the input file in chunks and writes it to the output file stream `ofd`.
+ *
+ * @param table The database table containing the local path configuration.
+ * @param dent Directory entry representing the input file to concatenate.
+ * @param ofile The path of the output file being written to (for logging errors).
+ * @param ofd The open file stream of the output file.
+ * @return 0 on success, negative error code on failure.
+ */
 static int concat_file(struct adb_table *table, struct dirent *dent,
 					   const char *ofile, FILE *ofd)
 {
@@ -279,7 +316,17 @@ out:
 	return res;
 }
 
-/* concat split CDS data files into signgle file */
+/**
+ * @brief Concatenates split CDS data files into a single uncompressed data file.
+ *
+ * Scans the local directory for files matching the table's base file name,
+ * skipping compressed, schema, database, or temporary files. It concatenates
+ * all matching files into a temporary file and then renames it to the target name.
+ *
+ * @param table The database table containing the local path and base file name.
+ * @param ext The extension of the target concatenated file.
+ * @return 0 on success, negative error code on failure.
+ */
 static int table_concat_files(struct adb_table *table, const char *ext)
 {
 	struct adb_db *db = table->db;
@@ -352,6 +399,16 @@ static int table_concat_files(struct adb_table *table, const char *ext)
 	return ret;
 }
 
+/**
+ * @brief Attempts to download a complete dataset from CDS via FTP.
+ *
+ * Uses the table's path settings to download the base file with the given extension.
+ *
+ * @param db Database instance for logging.
+ * @param table The table containing paths to use for the download.
+ * @param ext The file extension to append to the base file name.
+ * @return 0 on success, -ENOENT if the file cannot be downloaded.
+ */
 int cds_get_dataset(struct adb_db *db, struct adb_table *table, const char *ext)
 {
 	int ret;
@@ -370,6 +427,17 @@ int cds_get_dataset(struct adb_db *db, struct adb_table *table, const char *ext)
 		return 0;
 }
 
+/**
+ * @brief Attempts to download split dataset files from CDS via FTP.
+ *
+ * Uses the base file name and extension as a pattern to match multiple files
+ * on the remote server and download them all.
+ *
+ * @param db Database instance for logging.
+ * @param table The table containing paths to use for the download.
+ * @param ext The file extension pattern to look for.
+ * @return 0 on success, -ENOENT if no files can be found or downloaded.
+ */
 int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
 						  const char *ext)
 {
@@ -388,7 +456,18 @@ int cds_get_split_dataset(struct adb_db *db, struct adb_table *table,
 		return 0;
 }
 
-/* search the local directory for table CDS (ASCII) data files with extension */
+/**
+ * @brief Prepares local CDS data files for parsing.
+ *
+ * Scans the local directory for CDS data files matching the given extension.
+ * It will automatically inflate any gzipped files it finds. If multiple split
+ * files are found, it uses table_concat_files to merge them into a single file.
+ *
+ * @param db Database instance for logging.
+ * @param table The table configuration indicating the local working directory.
+ * @param ext The file extension to search for (e.g., .dat, .txt). If NULL, any file matching the table base name is counted.
+ * @return The number of found and prepared data files, or a negative error code on failure.
+ */
 int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 					  const char *ext)
 {
@@ -461,6 +540,16 @@ int cds_prepare_files(struct adb_db *db, struct adb_table *table,
 	return found;
 }
 
+/**
+ * @brief Locates or downloads the ReadMe file for the given table.
+ *
+ * First checks if a local "ReadMe" file exists for the table. If not, it attempts
+ * to download it from the remote FTP server.
+ *
+ * @param db The database instance.
+ * @param table_id The ID of the table to retrieve the ReadMe for.
+ * @return 0 on success (either found locally or successfully downloaded), negative error code on failure.
+ */
 int cds_get_readme(struct adb_db *db, int table_id)
 {
 	struct adb_table *table = &db->table[table_id];

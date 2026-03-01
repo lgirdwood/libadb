@@ -37,17 +37,17 @@
 #include "libastrodb/object.h"
 
 /**
- * \brief Calculate a hash value for a string.
- * \ingroup hash
+ * @brief Calculate a hash value for a string.
+ * @ingroup hash
  *
  * Computes an integer hash value based on the characters in the string `data`
  * up to length `len`, modulo the given `mod` value. Spaces (' ') and hyphens
  * ('-') are explicitly ignored during the hashing process.
  *
- * \param data The string to hash
- * \param len Length of the string
- * \param mod Modulo to apply to the final hash value
- * \return The calculated integer hash value in the range [0, mod-1]
+ * @param data The string to hash
+ * @param len Length of the string
+ * @param mod Modulo to apply to the final hash value
+ * @return The calculated integer hash value in the range [0, mod-1]
  */
 int hash_string(const char *data, int len, int mod)
 {
@@ -69,21 +69,29 @@ int hash_string(const char *data, int len, int mod)
 }
 
 /**
- * \brief Calculate a hash value for an integer.
- * \ingroup hash
+ * @brief Calculate a hash value for an integer.
+ * @ingroup hash
  *
  * Computes an integer hash value based on the integer `val`,
  * modulo the given `mod` value. Returns the absolute value of the modulus.
  *
- * \param val The integer value to hash
- * \param mod Modulo to apply to the final hash value
- * \return The calculated integer hash value in the range [0, mod-1]
+ * @param val The integer value to hash
+ * @param mod Modulo to apply to the final hash value
+ * @return The calculated integer hash value in the range [0, mod-1]
  */
 int hash_int(int val, int mod)
 {
 	return abs(val % mod);
 }
 
+/**
+ * @brief Free memory allocated for table hash maps.
+ *
+ * Iterates through all configured hash maps associated with the specified table and
+ * releases the dynamically allocated internal index arrays previously used mapping references.
+ *
+ * @param table The tracking database layout object table containing allocated mapping arrays.
+ */
 void hash_free_maps(struct adb_table *table)
 {
 	int i, j;
@@ -166,6 +174,17 @@ static void table_hash_int(struct adb_table *table, int map)
 	}
 }
 
+/**
+ * @brief Build a comprehensive hash map index layer mapping all table targets.
+ *
+ * Initializes spatial map tracking index constraints over targeted fields and values sequentially.
+ * Allocates fresh pointer lookup boundaries spanning full active imported table sizes. Evaluates
+ * string maps or numerical mapping constraints parsing appropriate types correctly.
+ *
+ * @param table Operational catalog layout referencing raw struct blocks targets.
+ * @param map Map target layout parameter index ID identifying internal map index bindings.
+ * @return Returns termination logic status descriptors (zero identifying completion).
+ */
 int hash_build_table(struct adb_table *table, int map)
 {
 	struct hash_object **hash_object;
@@ -253,6 +272,16 @@ static void set_hash_int(struct adb_object_set *set, int map)
 	}
 }
 
+/**
+ * @brief Compile and instantiate a generic hash mapped object filter selection query results grouping.
+ *
+ * Performs runtime dynamic evaluations indexing memory object pointers matching specified parameters criteria
+ * rapidly organizing search result intersections against loaded active table records attributes fields indices.
+ *
+ * @param set Active grouping result index object containing references target mapped arrays constraints.
+ * @param map Targeting map dimension layout parameter tracking boundary ID metrics layer references.
+ * @return 0 on success, or negative evaluation bound limits missing structures logic errors.
+ */
 int hash_build_set(struct adb_object_set *set, int map)
 {
 	struct hash_object **hash_object;

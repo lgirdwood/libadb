@@ -26,6 +26,23 @@
 
 #include "solve.h"
 
+/**
+ * @brief Converts equatorial coordinates back to plate pixel coordinates.
+ *
+ * Uses two reference objects (o1, o2 and their corresponding plate coords p1, p2)
+ * to calculate the transformation scale and rotation, and then applies this
+ * transformation to find the plate position (x_, y_) for a target equatorial position.
+ *
+ * @param solution The active solve solution (unused in this function).
+ * @param o1 The first reference object in equatorial coordinates.
+ * @param o2 The second reference object in equatorial coordinates.
+ * @param p1 The first reference object in plate coordinates.
+ * @param p2 The second reference object in plate coordinates.
+ * @param ra Target Right Ascension to convert.
+ * @param dec Target Declination to convert.
+ * @param x_ Output pointer for calculated plate X coordinate.
+ * @param y_ Output pointer for calculated plate Y coordinate.
+ */
 static void equ_to_plate(struct adb_solve_solution *solution,
 						 const struct adb_object *o1,
 						 const struct adb_object *o2, struct adb_pobject *p1,
@@ -63,9 +80,21 @@ static void equ_to_plate(struct adb_solve_solution *solution,
 	*y_ = p1->y - sin(target_pa) * target_dist;
 }
 
-/* convert plate coordinates to EQU coordinates by comparing plate object
- * with solved object plate coordinates. This method could probably be improved
- * by someone more familiar with the problem.
+/**
+ * @brief Converts plate pixel coordinates to equatorial coordinates.
+ *
+ * Uses two solved reference objects to calculate plate scale and rotation,
+ * and then computes the RA/DEC corresponding to a target plate position
+ * by interpolating from the references.
+ *
+ * @param solution The active solve solution (unused in this function).
+ * @param o1 The first reference object in equatorial coordinates.
+ * @param o2 The second reference object in equatorial coordinates.
+ * @param p1 The first reference object in plate coordinates.
+ * @param p2 The second reference object in plate coordinates.
+ * @param ptarget The target plate object to convert.
+ * @param ra_ Output pointer for calculated Right Ascension.
+ * @param dec_ Output pointer for calculated Declination.
  */
 static void plate_to_equ(struct adb_solve_solution *solution,
 						 const struct adb_object *o1,
@@ -127,8 +156,16 @@ static void plate_to_equ(struct adb_solve_solution *solution,
 	*dec_ = dec;
 }
 
-/* compare plate object brightness against the brightness of all the reference
- * plate objects and then use the average differences to calculate magnitude */
+/**
+ * @brief Calculates the mean positional difference ratio per reference target.
+ *
+ * Scans all reference objects to compute the average ratio of equatorial distance
+ * to plate distance (radians per pixel), relative to the specified target.
+ *
+ * @param solution The active solve solution holding reference objects.
+ * @param target The index of the reference object being evaluated.
+ * @return The mean radians per pixel ratio for the target.
+ */
 static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
 									  int target)
 {
@@ -169,6 +206,17 @@ static double get_ref_posn_delta_mean(struct adb_solve_solution *solution,
 	return mean / (double)count;
 }
 
+/**
+ * @brief Calculates the positional variance (sigma) for a reference target.
+ *
+ * Computes the standard deviation of the plate/equ_dist ratios for all
+ * reference objects relative to the provided target object, against the mean.
+ *
+ * @param solution The active solve solution holding reference objects.
+ * @param target The index of the reference object being evaluated.
+ * @param mean The previously calculated mean distance ratio.
+ * @return The standard deviation representing positional variance.
+ */
 static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
 									   int target, double mean)
 {
@@ -213,8 +261,17 @@ static double get_ref_posn_delta_sigma(struct adb_solve_solution *solution,
 	return sqrtf(sigma);
 }
 
-/* calculate the average difference between plate position values and solution
- * objects. Use this as basis for calculating RA,DEC based on plate x,y.
+/**
+ * @brief Averages equatorial-to-plate coordinate transformations.
+ *
+ * Calculates plate X,Y coordinates for a given RA/DEC by independently computing
+ * the transformation using every pair of reference objects and averaging the result.
+ *
+ * @param solution The active solve solution holding reference objects.
+ * @param ra Target Right Ascension to convert.
+ * @param dec Target Declination to convert.
+ * @param x_ Output pointer for averaged plate X coordinate.
+ * @param y_ Output pointer for averaged plate Y coordinate.
  */
 void posn_equ_to_plate(struct adb_solve_solution *solution, double ra,
 					   double dec, double *x_, double *y_)
@@ -257,6 +314,18 @@ void posn_equ_to_plate(struct adb_solve_solution *solution, double ra,
 	}
 }
 
+/**
+ * @brief Quickly averages equatorial-to-plate coordinate transformations.
+ *
+ * Similar to `posn_equ_to_plate`, but limits the transformation iterations to
+ * only the most confident reference objects (up to `MIN_PLATE_OBJECTS`).
+ *
+ * @param solution The active solve solution.
+ * @param ra Target Right Ascension to convert.
+ * @param dec Target Declination to convert.
+ * @param x_ Output pointer for plate X coordinate.
+ * @param y_ Output pointer for plate Y coordinate.
+ */
 void posn_equ_to_plate_fast(struct adb_solve_solution *solution, double ra,
 							double dec, double *x_, double *y_)
 {
@@ -300,8 +369,16 @@ void posn_equ_to_plate_fast(struct adb_solve_solution *solution, double ra,
 	}
 }
 
-/* calculate the average difference between plate position values and solution
- * objects. Use this as basis for calculating RA,DEC based on plate x,y.
+/**
+ * @brief Averages plate-to-equatorial coordinate transformations.
+ *
+ * Calculates RA/DEC corresponding to a plate position by independently computing
+ * the transformation using every pair of reference objects and averaging the result.
+ *
+ * @param solution The active solve solution holding reference objects.
+ * @param primary The target plate object coordinates.
+ * @param ra_ Output pointer for averaged Right Ascension.
+ * @param dec_ Output pointer for averaged Declination.
  */
 void posn_plate_to_equ(struct adb_solve_solution *solution,
 					   struct adb_pobject *primary, double *ra_, double *dec_)
@@ -353,6 +430,17 @@ void posn_plate_to_equ(struct adb_solve_solution *solution,
 	}
 }
 
+/**
+ * @brief Quickly averages plate-to-equatorial coordinate transformations.
+ *
+ * Faster version of `posn_plate_to_equ` that only tests up to `MIN_PLATE_OBJECTS`
+ * combinations of reference objects to derive transformation geometry.
+ *
+ * @param solution The active solve solution holding reference objects.
+ * @param primary The target plate object coordinates.
+ * @param ra_ Output pointer for calculated Right Ascension.
+ * @param dec_ Output pointer for calculated Declination.
+ */
 void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 							struct adb_pobject *primary, double *ra_,
 							double *dec_)
@@ -406,6 +494,15 @@ void posn_plate_to_equ_fast(struct adb_solve_solution *solution,
 	}
 }
 
+/**
+ * @brief Clips out reference objects with anomalous positional divergence.
+ *
+ * Iteratively computes the standard deviation of positional ratios for all
+ * reference objects and flags out any elements that deviate beyond 1-sigma.
+ * This statistically stabilizes the celestial coordinate transformations.
+ *
+ * @param solution The active solve solution holding reference objects.
+ */
 void posn_clip_plate_coefficients(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
@@ -478,7 +575,14 @@ void posn_clip_plate_coefficients(struct adb_solve_solution *solution)
 	} while (count != lastcount && --tries);
 }
 
-/* calculate the position of solved plate objects */
+/**
+ * @brief Computes RA/DEC coordinates for all successfully matched plate objects.
+ *
+ * Applies the `posn_plate_to_equ` coordinate transformation to each
+ * solved reference object mapping plate space to sky space.
+ *
+ * @param solution Executing layout framework bounds containing references.
+ */
 void posn_calc_solved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_reference_object *ref;
@@ -499,7 +603,15 @@ void posn_calc_solved_plate(struct adb_solve_solution *solution)
 	}
 }
 
-/* calculate the position of unsolved plate objects */
+/**
+ * @brief Computes RA/DEC coordinates for all completely unrecognized plate objects.
+ *
+ * Extrapolates world celestial coordinates for extracted pixel point targets
+ * lacking any explicit catalog counterpart map links, using matched catalog features
+ * to anchor coordinate mappings.
+ *
+ * @param solution Executing layout framework bounds containing references.
+ */
 void posn_calc_unsolved_plate(struct adb_solve_solution *solution)
 {
 	struct adb_solve_object *solve_object;

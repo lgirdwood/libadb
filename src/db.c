@@ -33,6 +33,17 @@ static const char *dirs[] = {
 	"/I", "/II", "/III", "/IV", "/V", "/VI", "/VII", "/VIII", "/IX", "/B",
 };
 
+/**
+ * @brief Creates local subdirectories required for the library repository.
+ *
+ * Checks if the local base directory exists, creating it if not. Then iterates
+ * through the standard CDS sub-catalog directories (/I, /B, etc.) and creates
+ * any that are missing to establish the local repository structure.
+ *
+ * @param lib The active library object (used for logging errors).
+ * @param location The base local file path of the repository.
+ * @return 0 on success, or a positive errno value on failure.
+ */
 static int create_lib_local_dirs(struct adb_library *lib, const char *location)
 {
 	char dir[ADB_PATH_SIZE];
@@ -65,16 +76,16 @@ static int create_lib_local_dirs(struct adb_library *lib, const char *location)
 }
 
 /**
- * \brief Open and initialize a CDS library local repository.
+ * @brief Open and initialize a CDS library local repository.
  *
  * Initializes a CDS library structure and ensures the local directory hierarchy
  * (I through IX, B) is created at the specified local path.
  * This typically only needs to be called once per program execution.
  *
- * \param host Host URL or name
- * \param remote Remote repository location/URL
- * \param local Local library repository location on disk
- * \return A pointer to the newly allocated adb_library object, or NULL on
+ * @param host Host URL or name
+ * @param remote Remote repository location/URL
+ * @param local Local library repository location on disk
+ * @return A pointer to the newly allocated adb_library object, or NULL on
  * failure
  */
 
@@ -115,12 +126,12 @@ err:
 }
 
 /**
- * \brief Close a library and release its resources.
+ * @brief Close a library and release its resources.
  *
  * Frees all memory associated with the library path configurations and the
  * library structure itself.
  *
- * \param lib Library object to free
+ * @param lib Library object to free
  */
 void adb_close_library(struct adb_library *lib)
 {
@@ -130,12 +141,30 @@ void adb_close_library(struct adb_library *lib)
 	free(lib);
 }
 
+/**
+ * @brief Sets the global message logging level for the database.
+ *
+ * Updates both the main database object and its underlying HTM index context
+ * with the new message verbosity level.
+ *
+ * @param db The active catalog database instance.
+ * @param level The desired message level enum (e.g., ADB_MSG_INFO).
+ */
 void adb_set_msg_level(struct adb_db *db, enum adb_msg_level level)
 {
 	db->msg_level = level;
 	db->htm->msg_level = level;
 }
 
+/**
+ * @brief Configures specific log verbosity feature flags.
+ *
+ * Sets the bitmask indicating which subsystems should log messages to the console
+ * or specified output.
+ *
+ * @param db The active catalog database instance.
+ * @param log Bitmask of features to log (e.g. ADB_LOG_SEARCH | ADB_LOG_SOLVE).
+ */
 void adb_set_log_level(struct adb_db *db, unsigned int log)
 {
 	db->msg_flags = log;
@@ -143,16 +172,16 @@ void adb_set_log_level(struct adb_db *db, unsigned int log)
 }
 
 /**
- * \brief Create a new database catalog instance.
+ * @brief Create a new database catalog instance.
  *
  * Allocates a new database structure associated with the specified library.
  * It also initializes the underlying HTM (Hierarchical Triangular Mesh) index
  * structure with the specified depth and table capacity.
  *
- * \param lib Library repository to bind the database to
- * \param depth HTM resolution depth
- * \param tables Number of tables
- * \return A pointer to the newly allocated adb_db object, or NULL on failure
+ * @param lib Library repository to bind the database to
+ * @param depth HTM resolution depth
+ * @param tables Number of tables
+ * @return A pointer to the newly allocated adb_db object, or NULL on failure
  */
 struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables)
 {
@@ -179,12 +208,12 @@ struct adb_db *adb_create_db(struct adb_library *lib, int depth, int tables)
 }
 
 /**
- * \brief Free an active catalog database.
+ * @brief Free an active catalog database.
  *
  * Frees all resources allocated by the catalog database, including its
  * underlying HTM structures.
  *
- * \param db Catalog database to free
+ * @param db Catalog database to free
  */
 void adb_db_free(struct adb_db *db)
 {
@@ -194,11 +223,11 @@ void adb_db_free(struct adb_db *db)
 }
 
 /**
- * \brief Retrieve the library version string.
+ * @brief Retrieve the library version string.
  *
  * Returns the compile-time version tag of libastrodb.
  *
- * \return A constant string representing the libastrodb version number.
+ * @return A constant string representing the libastrodb version number.
  */
 const char *adb_get_version(void)
 {
