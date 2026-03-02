@@ -50,7 +50,7 @@ struct kd_elem;
  */
 
 /*! \struct kd
- * \brief kd test
+ * \brief KD tree node
  * \ingroup kdtree
  */
 struct kd {

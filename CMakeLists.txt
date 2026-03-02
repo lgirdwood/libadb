@@ -96,7 +96,7 @@ add_subdirectory(tests)
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
     add_custom_target(doxygen
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxyfile
+        COMMAND ${CMAKE_COMMAND} -E env DOXYGEN_OUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/doc ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxyfile
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM)
