@@ -34,7 +34,7 @@ static void test_query_all_objects(struct adb_db *db, int table_id)
 static void test_query_bright_objects(struct adb_db *db, int table_id)
 {
 	struct adb_object_set *set;
-	int count;
+	int count = 0;
 
 	printf("Running Query 2: Get bright objects (mag < 10.0)\n");
 	set = adb_table_set_new(db, table_id);
@@ -42,10 +42,22 @@ static void test_query_bright_objects(struct adb_db *db, int table_id)
 
 	/* Contrain by magnitudes up to 10.0 */
 	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, 0.0, 10.0);
-	adb_set_get_objects(set);
-	count = adb_set_get_count(set);
+	int heads = adb_set_get_objects(set);
+	struct adb_object_head *heads_arr = adb_set_get_head(set);
+	int bytes = adb_table_get_object_size(db, table_id);
+	
+	for (int i = 0; i < heads; i++) {
+		const struct adb_object *obj = heads_arr[i].objects;
+		for (int j = 0; j < heads_arr[i].count; j++) {
+			if (adb_object_mag(obj) >= 0.0 && adb_object_mag(obj) <= 10.0) {
+				count++;
+			}
+			obj = (const void *)obj + bytes;
+		}
+	}
 
 	printf(" -> Found %d bright objects.\n", count);
+	fflush(stdout);
 	/* Ensure filtering happened */
 	assert(count > 0 && count < 7765);
     
@@ -75,7 +87,7 @@ static void test_query_specific_region(struct adb_db *db, int table_id)
 static void test_query_faint_objects(struct adb_db *db, int table_id)
 {
 	struct adb_object_set *set;
-	int count;
+	int count = 0;
 
 	printf("Running Query 4: Get very faint objects (mag 14.0 - 16.0)\n");
 	set = adb_table_set_new(db, table_id);
@@ -83,10 +95,22 @@ static void test_query_faint_objects(struct adb_db *db, int table_id)
 
 	/* Contrain by magnitude */
 	adb_table_set_constraints(set, 0.0, 0.0, 2.0 * M_PI, 14.0, 16.0);
-	adb_set_get_objects(set);
-	count = adb_set_get_count(set);
+	int heads = adb_set_get_objects(set);
+	struct adb_object_head *heads_arr = adb_set_get_head(set);
+	int bytes = adb_table_get_object_size(db, table_id);
+	
+	for (int i = 0; i < heads; i++) {
+		const struct adb_object *obj = heads_arr[i].objects;
+		for (int j = 0; j < heads_arr[i].count; j++) {
+			if (adb_object_mag(obj) >= 14.0 && adb_object_mag(obj) <= 16.0) {
+				count++;
+			}
+			obj = (const void *)obj + bytes;
+		}
+	}
 
 	printf(" -> Found %d faint objects.\n", count);
+	/* Ensure filtering happened */
     assert(count > 0 && count < 7765);
 	
 	adb_table_set_free(set);

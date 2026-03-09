@@ -997,8 +997,10 @@ int get_nearest(struct kd_get_data *kd, int node, enum kd_pivot pivot)
 	end = get_nearest(kd, node, pivot_next(pivot));
 	if (end && kd->closest == NULL) {
 		/* at leaf, so unwind and this will be initial closest */
-		kd->closest = current;
-		kd->distance = get_distance(kd->ra, kd->dec, &current_vertex);
+		if (current != kd->exclude) {
+			kd->closest = current;
+			kd->distance = get_distance(kd->ra, kd->dec, &current_vertex);
+		}
 		return 0;
 	}
 

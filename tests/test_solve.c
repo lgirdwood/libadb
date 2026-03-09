@@ -27,8 +27,8 @@ static void test_solve_plate_distance(void)
 	p2.y = 14.0;
 
 	double d = distance_get_plate(&p1, &p2);
-	/* distance squared: (13-10)^2 + (14-10)^2 = 9 + 16 = 25 */
-	assert(fabs(d - 25.0) < 1e-5);
+	/* distance: sqrt((13-10)^2 + (14-10)^2) = sqrt(9 + 16) = 5.0 */
+	assert(fabs(d - 5.0) < 1e-5);
 	(void)d;
 	printf("    -> PASS\n");
 }

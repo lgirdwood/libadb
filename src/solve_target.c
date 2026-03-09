@@ -26,27 +26,6 @@
 #include "debug.h"
 #include "solve.h"
 
-/**
- * \brief Comparison callback for sorting plate objects by ADU brightness.
- *
- * Used with `qsort` to order an array of photographic plate objects according to
- * their measured Analog-to-Digital Units (ADU) in descending order (brightest first).
- *
- * \param o1 Pointer to the first plate object.
- * \param o2 Pointer to the second plate object.
- * \return 1 if o1 is dimmer, -1 if o1 is brighter, 0 if equal.
- */
-static int plate_object_cmp(const void *o1, const void *o2)
-{
-	const struct adb_pobject *p1 = o1, *p2 = o2;
-
-	if (p1->adu < p2->adu)
-		return 1;
-	else if (p1->adu > p2->adu)
-		return -1;
-	else
-		return 0;
-}
 
 /**
  * \brief Register a matched catalog reference object to an asterism solution.
@@ -137,10 +116,34 @@ void target_create_pattern(struct adb_solve *solve)
 {
 	struct needle_object *t0, *t1, *t2;
 	int i, j;
+	int margin_x = solve->plate.width / 10;
+	int margin_y = solve->plate.height / 10;
 
-	/* sort plate object on brightness */
-	qsort(solve->plate.object, solve->plate.num_objects,
-		  sizeof(struct adb_pobject), plate_object_cmp);
+	/* sort plate object on edge proximity and brightness */
+	for (i = 1; i < solve->plate.num_objects; i++) {
+		struct adb_pobject key = solve->plate.object[i];
+		int key_is_edge = (key.x < margin_x || key.x > solve->plate.width - margin_x ||
+						   key.y < margin_y || key.y > solve->plate.height - margin_y) ? 1 : 0;
+		j = i - 1;
+
+		while (j >= 0) {
+			int cmp_is_edge = (solve->plate.object[j].x < margin_x || solve->plate.object[j].x > solve->plate.width - margin_x ||
+							   solve->plate.object[j].y < margin_y || solve->plate.object[j].y > solve->plate.height - margin_y) ? 1 : 0;
+
+			int move_key_left = 0;
+			if (!key_is_edge && cmp_is_edge)
+				move_key_left = 1;
+			else if (key_is_edge == cmp_is_edge && key.adu > solve->plate.object[j].adu)
+				move_key_left = 1;
+
+			if (!move_key_left)
+				break;
+
+			solve->plate.object[j + 1] = solve->plate.object[j];
+			j--;
+		}
+		solve->plate.object[j + 1] = key;
+	}
 
 	/* create target pattern */
 	for (i = solve->plate.window_start + 1, j = 0; i < solve->plate.window_end;
