@@ -16,4 +16,6 @@ setup(
         "Operating System :: POSIX :: Linux",
     ],
     python_requires=">=3.6",
+    install_requires=[],
+    zip_safe=False,
 )
