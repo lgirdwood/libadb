@@ -1,6 +1,55 @@
-# AI Agent Guidelines
+# Agent Instructions for libastrodb
 
-When interacting with this repository, agents must adhere to the following rules:
+## Building and Testing
 
-1. **Unit Tests**: All unit tests must pass after each change. 
-2. **Coding Standards**: Coding standards in `clang-format` must be used.
+### C Code
+
+libastrodb uses CMake for building the C library.
+
+**Building:**
+
+```bash
+# The build directory must always be outside the source directory
+cmake -S . -B ../build -DCMAKE_BUILD_TYPE=Release
+cmake --build ../build --config Release
+```
+
+**Testing:**
+Tests are executed using CTest.
+
+```bash
+cd ../build
+ctest -C Release
+```
+
+### Python Code
+
+Python unit tests test the python bindings using the locally built library.
+
+**Testing:**
+Tests are executed via the `pytest` CMake target which sets up the environment and runs unittest:
+
+```bash
+cmake --build ../build --target pytest
+```
+
+## Commit Message Guidelines
+
+When making commits, ensure you strictly follow these rules:
+
+- **Line Length**: The overall commit message must be at most 80 characters per line.
+- **Subject**: The subject line must follow the format `feature: description`.
+- **Body**: The commit message body must properly describe the change and why it was made.
+- **Sign-off**: Every commit must include a sign-off line using the developer's name and email configured in git (e.g., retrieve via `git config user.name` and `git config user.email`).
+
+### Example Commit Message
+
+```text
+core: fix memory leak in calculation layer
+
+This change resolves an issue where memory allocated for the temporary
+trajectory nodes was never freed. It ensures that the cleanup function
+is always called before exiting the scope.
+
+Signed-off-by: Developer Name <developer@example.com>
+```
