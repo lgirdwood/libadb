@@ -33,6 +33,16 @@ Tests are executed via the `pytest` CMake target which sets up the environment a
 cmake --build ../build --target pytest
 ```
 
+### Markdown Files
+
+When modifying markdown (`.md`) files in the repository, you MUST ensure that they comply with the `markdownlint` standards.
+
+**Linting and Auto-formatting:**
+
+```bash
+npx markdownlint-cli "**/*.md" --fix
+```
+
 ## Task Completion Guidelines
 
 Before completing any task, an agent MUST:
