@@ -55,9 +55,9 @@ target_include_directories(astrodb PUBLIC
 
 # Install rules
 install(TARGETS astrodb
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib COMPONENT library
+    ARCHIVE DESTINATION lib COMPONENT library
+    RUNTIME DESTINATION bin COMPONENT library
 )
 
 install(FILES
@@ -68,4 +68,5 @@ install(FILES
     libastrodb/db-import.h
     libastrodb/object.h
     DESTINATION include/libastrodb
+    COMPONENT library
 )

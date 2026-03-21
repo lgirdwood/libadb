@@ -120,6 +120,15 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AstroDB library for astrometry and photom
 set(CPACK_PACKAGE_CONTACT "Liam Girdwood")
 set(CPACK_GENERATOR "DEB;RPM")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liam Girdwood")
+
+# Component definitions
+set(CPACK_DEB_COMPONENT_INSTALL ON)
+set(CPACK_RPM_COMPONENT_INSTALL ON)
+set(CPACK_COMPONENTS_ALL library python)
+set(CPACK_COMPONENT_PYTHON_DEPENDS library)
+set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS ON)
+set(CPACK_RPM_PYTHON_PACKAGE_REQUIRES "libastrodb-library")
+
 include(CPack)
 
 # Python bindings installation
@@ -140,4 +149,13 @@ if(Python3_Interpreter_FOUND)
         DEPENDS astrodb
         VERBATIM
     )
+
+    # Install the python wrapper as a component
+    install(CODE "
+        set(DESTDIR_ARG \"\")
+        if(DEFINED ENV{DESTDIR})
+            set(DESTDIR_ARG \"--root=\$ENV{DESTDIR}/\")
+        endif()
+        execute_process(COMMAND ${Python3_EXECUTABLE} setup.py install \${DESTDIR_ARG} --prefix=${CMAKE_INSTALL_PREFIX} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python)
+    " COMPONENT python)
 endif()
