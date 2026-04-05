@@ -6,8 +6,34 @@ import threading
 import gi
 
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, Gio, GObject, GLib
+from gi.repository import Gtk, Gio, GObject, GLib, Pango
 from astrodb import Library, Database, Table, ObjectSet, Search, AstroDBError, ADB_COMP_LT, ADB_COMP_GT, ADB_OP_AND, ADB_OP_OR
+
+class CatalogItem(GObject.Object):
+    __gtype_name__ = 'CatalogItem'
+    
+    display_name = GObject.Property(type=str)
+    cat_class = GObject.Property(type=str)
+    cat_id = GObject.Property(type=str)
+    table_name = GObject.Property(type=str)
+    is_folder = GObject.Property(type=bool, default=False)
+    path = GObject.Property(type=str)
+    is_loaded = GObject.Property(type=bool, default=False)
+    children = GObject.Property(type=Gio.ListStore)
+
+    def __init__(self, display_name, cat_class, cat_id, table_name, is_folder, path, is_loaded):
+        super().__init__()
+        self.display_name = display_name
+        self.cat_class = cat_class
+        self.cat_id = cat_id
+        self.table_name = table_name
+        self.is_folder = is_folder
+        self.path = path
+        self.is_loaded = is_loaded
+        if is_folder:
+            self.children = Gio.ListStore(item_type=CatalogItem)
+        else:
+            self.children = None
 
 class AstroObjectItem(GObject.Object):
     __gtype_name__ = 'AstroObjectItem'
@@ -53,34 +79,16 @@ class AstroDBWindow(Gtk.ApplicationWindow):
         self.host_entry = Gtk.Entry()
         self.host_entry.set_text("cdsarc.u-strasbg.fr")
         self.host_entry.set_placeholder_text("Host")
-        conn_box.append(self.host_entry)
 
         self.remote_entry = Gtk.Entry()
         self.remote_entry.set_text("/pub/cats")
         self.remote_entry.set_placeholder_text("Remote Path")
-        conn_box.append(self.remote_entry)
 
         self.local_entry = Gtk.Entry()
         self.local_entry.set_placeholder_text("Local Path")
         self.local_entry.set_hexpand(True)
-        conn_box.append(self.local_entry)
 
-        dir_btn = Gtk.Button(label="Select Dir")
-        dir_btn.connect("clicked", self.on_select_dir)
-        conn_box.append(dir_btn)
-
-        self.connect_btn = Gtk.Button(label="Connect")
-        self.connect_btn.connect("clicked", self.on_connect)
-        conn_box.append(self.connect_btn)
-
-        main_box.append(conn_box)
-
-        self.status_label = Gtk.Label(label="Not connected")
-        self.status_label.set_halign(Gtk.Align.START)
-        main_box.append(self.status_label)
-
-        main_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-
+        # Connection status icon moved to titlebar
         # Bottom Area
         bottom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         bottom_box.set_vexpand(True)
@@ -90,12 +98,16 @@ class AstroDBWindow(Gtk.ApplicationWindow):
         toolbar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         Box_set_margin_all(toolbar_box, 4)
         
-        self.local_toggle = Gtk.ToggleButton(label="Local")
+        self.local_toggle = Gtk.ToggleButton()
+        self.local_toggle.set_icon_name("folder-symbolic")
+        self.local_toggle.set_tooltip_text("Local Catalogs")
         self.local_toggle.set_active(True)
         self.local_toggle.connect("toggled", self.on_catalog_toggle)
         toolbar_box.append(self.local_toggle)
         
-        self.remote_toggle = Gtk.ToggleButton(label="Remote")
+        self.remote_toggle = Gtk.ToggleButton()
+        self.remote_toggle.set_icon_name("network-server-symbolic")
+        self.remote_toggle.set_tooltip_text("Remote Catalogs")
         self.remote_toggle.connect("toggled", self.on_catalog_toggle)
         toolbar_box.append(self.remote_toggle)
 
@@ -113,27 +125,66 @@ class AstroDBWindow(Gtk.ApplicationWindow):
         # Left Pane: Catalog TreeStore (better for hierarchies than ListStore in pure python GTK4)
         catalog_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         
-        catalog_label = Gtk.Label(label="Catalogs")
-        catalog_label.set_margin_top(4)
-        catalog_label.set_margin_bottom(4)
-        catalog_box.append(catalog_label)
-
-        # TreeStore columns: 0=Display Name, 1=Class, 2=ID, 3=Table Name, 4=Is Folder, 5=Path, 6=Is Loaded
-        self.catalog_store = Gtk.TreeStore(str, str, str, str, bool, str, bool)
-        self.catalog_treeview = Gtk.TreeView(model=self.catalog_store)
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        header_box.set_margin_top(4)
+        header_box.set_margin_bottom(4)
         
-        renderer = Gtk.CellRendererText()
-        col = Gtk.TreeViewColumn("Name", renderer, text=0)
-        self.catalog_treeview.append_column(col)
-
-        self.catalog_treeview.connect("row-activated", self.on_catalog_activated)
-        self.catalog_treeview.connect("test-expand-row", self.on_catalog_expanding)
+        catalog_label = Gtk.Label()
+        catalog_label.set_markup("<span size='small' weight='bold'>Explorer</span>")
+        catalog_label.set_halign(Gtk.Align.START)
+        catalog_label.set_hexpand(True)
+        header_box.append(catalog_label)
         
-        sel = self.catalog_treeview.get_selection()
-        sel.connect("changed", self.on_catalog_selected)
+        options_btn = Gtk.Button(label="...")
+        options_btn.add_css_class("flat")
+        options_btn.connect("clicked", self.on_explorer_options)
+        header_box.append(options_btn)
+        
+        catalog_box.append(header_box)
+
+        self.catalog_store = Gio.ListStore(item_type=CatalogItem)
+        
+        def tree_create_model(item, user_data=None):
+            if item.is_folder:
+                return item.children
+            return None
+            
+        self.tree_model = Gtk.TreeListModel.new(self.catalog_store, passthrough=False, autoexpand=False, create_func=tree_create_model)
+        
+        self.catalog_selection = Gtk.SingleSelection(model=self.tree_model)
+        self.catalog_selection.connect("selection-changed", self.on_catalog_selected)
+        
+        self.catalog_listview = Gtk.ListView(model=self.catalog_selection)
+        
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", self.on_catalog_item_setup)
+        factory.connect("bind", self.on_catalog_item_bind)
+        
+        self.catalog_listview.set_factory(factory)
+
+        self.list_header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.list_header_box.set_margin_top(4)
+        self.list_header_box.set_margin_bottom(4)
+        self.list_header_box.set_margin_start(4)
+        
+        self.status_icon = Gtk.Image.new_from_icon_name("network-offline-symbolic")
+        self.status_icon.set_tooltip_text("Not connected")
+        self.list_header_box.append(self.status_icon)
+        
+        self.url_label = Gtk.Label()
+        self.url_label.set_halign(Gtk.Align.START)
+        self.url_label.set_hexpand(True)
+        self.url_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.list_header_box.append(self.url_label)
+        self.update_catalog_title()
+        
+        catalog_box.append(self.list_header_box)
+        catalog_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
 
         scrolled_catalogs = Gtk.ScrolledWindow()
-        scrolled_catalogs.set_child(self.catalog_treeview)
+        scrolled_catalogs.set_min_content_width(200)
+        scrolled_catalogs.set_min_content_height(200)
+        scrolled_catalogs.set_child(self.catalog_listview)
         scrolled_catalogs.set_vexpand(True)
         catalog_box.append(scrolled_catalogs)
         
@@ -181,6 +232,8 @@ class AstroDBWindow(Gtk.ApplicationWindow):
         self.setup_result_column("Mag", "mag", True)
 
         scrolled_results = Gtk.ScrolledWindow()
+        scrolled_results.set_min_content_width(400)
+        scrolled_results.set_min_content_height(200)
         scrolled_results.set_child(self.column_view)
         scrolled_results.set_vexpand(True)
         right_pane_box.append(scrolled_results)
@@ -189,74 +242,73 @@ class AstroDBWindow(Gtk.ApplicationWindow):
 
         self.refresh_catalogs()
 
-    def on_catalog_activated(self, treeview, path, column):
-        if self.catalog_treeview.row_expanded(path):
-            self.catalog_treeview.collapse_row(path)
-        else:
-            self.catalog_treeview.expand_row(path, False)
+    def on_catalog_item_setup(self, factory, list_item):
+        expander = Gtk.TreeExpander()
+        label = Gtk.Label()
+        label.set_halign(Gtk.Align.START)
+        expander.set_child(label)
+        list_item.set_child(expander)
 
-    def on_catalog_expanding(self, treeview, iter, path):
-        # TreeStore columns: 0=Display Name, 1=Class, 2=ID, 3=Table Name, 4=Is Folder, 5=Path, 6=Is Loaded
-        is_folder = self.catalog_store[iter][4]
-        is_loaded = self.catalog_store[iter][6]
-        remote_path = self.catalog_store[iter][5]
-
-        if is_folder and not is_loaded and not self.local_toggle.get_active():
-            # Loading from FTP
-            if self.ftp_in_progress:
-                return True # prevent expand while another is loading
+    def on_catalog_item_bind(self, factory, list_item):
+        expander = list_item.get_child()
+        tree_row = list_item.get_item()
+        catalog_item = tree_row.get_item()
+        
+        expander.set_list_row(tree_row)
+        label = expander.get_child()
+        label.set_text(catalog_item.display_name)
+        
+        if hasattr(list_item, '_expanded_handler_id'):
+            tree_row.disconnect(list_item._expanded_handler_id)
+            delattr(list_item, '_expanded_handler_id')
             
-            # Remove dummy child
-            dummy_iter = self.catalog_store.iter_children(iter)
-            if dummy_iter:
-                self.catalog_store.remove(dummy_iter)
+        list_item._expanded_handler_id = tree_row.connect("notify::expanded", self.on_catalog_expanded)
 
-            self.catalog_store[iter][6] = True # Mark as loaded
-            self.ftp_in_progress = True
-            
-            host = self.host_entry.get_text()
-            
-            # Spin up a thread to fetch FTP directory
-            def fetch_ftp():
-                try:
-                    ftp = ftplib.FTP(host)
-                    ftp.login()
-                    ftp.cwd(remote_path)
-                    
-                    lines = []
-                    ftp.dir(lines.append)
-                    ftp.quit()
-                    
-                    entries = []
-                    for line in lines:
-                        parts = line.split()
-                        if len(parts) < 9: continue
-                        name = parts[-1]
-                        is_dir = line.startswith('d')
-                        if name in ('.', '..'): continue
-                        entries.append((name, is_dir))
-                    
-                    GLib.idle_add(self.on_ftp_fetched, path, entries)
-                except Exception as e:
-                    GLib.idle_add(self.on_ftp_error, path, str(e))
+    def on_catalog_expanded(self, tree_row, param):
+        if tree_row.get_expanded():
+            catalog_item = tree_row.get_item()
+            if catalog_item.is_folder and not catalog_item.is_loaded and not self.local_toggle.get_active():
+                if self.ftp_in_progress:
+                    return
+                catalog_item.is_loaded = True
+                self.ftp_in_progress = True
+                
+                host = self.host_entry.get_text()
+                remote_path = catalog_item.path
+                
+                def fetch_ftp():
+                    try:
+                        ftp = ftplib.FTP(host)
+                        ftp.login()
+                        ftp.cwd(remote_path)
+                        
+                        lines = []
+                        ftp.dir(lines.append)
+                        ftp.quit()
+                        
+                        entries = []
+                        for line in lines:
+                            parts = line.split()
+                            if len(parts) < 9: continue
+                            name = parts[-1]
+                            is_dir = line.startswith('d')
+                            if name in ('.', '..'): continue
+                            entries.append((name, is_dir))
+                        
+                        GLib.idle_add(self.on_ftp_fetched, catalog_item, entries)
+                    except Exception as e:
+                        GLib.idle_add(self.on_ftp_error, catalog_item, str(e))
 
-            thread = threading.Thread(target=fetch_ftp)
-            thread.daemon = True
-            thread.start()
-            
-            return True # Returning true prevents expansion until we manually expand it later
+                thread = threading.Thread(target=fetch_ftp)
+                thread.daemon = True
+                thread.start()
 
-        return False
-
-    def on_ftp_fetched(self, path, entries):
+    def on_ftp_fetched(self, catalog_item, entries):
         self.ftp_in_progress = False
-        iter = self.catalog_store.get_iter(path)
-        parent_path = self.catalog_store[iter][5]
+        parent_path = catalog_item.path
         
         for name, is_dir in sorted(entries, key=lambda x: (not x[1], x[0].lower())):
             full_path = f"{parent_path}/{name}"
-            # Extract potential class and ID
-            # This is very rough heuristics for CDS
             cat_cls, cat_id, tbl = "", "", ""
             p_parts = full_path.replace(self.remote_entry.get_text(), "").strip("/").split("/")
             
@@ -268,45 +320,92 @@ class AstroDBWindow(Gtk.ApplicationWindow):
                 cat_cls, cat_id = p_parts[0], p_parts[1]
                 tbl = name.replace(".db", "") if name.endswith(".db") else name
 
-            child_iter = self.catalog_store.append(iter, [
-                name, cat_cls, cat_id, tbl, is_dir, full_path, False
-            ])
-            
-            if is_dir:
-                # Append dummy
-                self.catalog_store.append(child_iter, ["Loading...", "", "", "", False, "", True])
-        
-        self.catalog_treeview.expand_row(path, False)
+            item = CatalogItem(name, cat_cls, cat_id, tbl, is_dir, full_path, False)
+            catalog_item.children.append(item)
 
-    def on_ftp_error(self, path, err):
+    def on_ftp_error(self, catalog_item, err):
         self.ftp_in_progress = False
-        iter = self.catalog_store.get_iter(path)
-        self.catalog_store.append(iter, [f"Error: {err}", "", "", "", False, "", True])
-        self.catalog_treeview.expand_row(path, False)
+        item = CatalogItem(f"Error: {err}", "", "", "", False, "", True)
+        catalog_item.children.append(item)
 
-    def on_catalog_selected(self, selection):
-        model, treeiter = selection.get_selected()
-        if treeiter:
-            name, cat_cls, cat_id, tbl_name, is_dir, pth, loaded = model[treeiter]
-            if not is_dir and cat_cls and cat_id:
+    def on_catalog_selected(self, selection, position, n_items):
+        selected_item = self.catalog_selection.get_selected_item()
+        if selected_item:
+            catalog_item = selected_item.get_item()
+            if not catalog_item.is_folder and catalog_item.cat_class and catalog_item.cat_id:
                 self.selected_catalog = {
-                    'name': name,
-                    'cat_class': cat_cls,
-                    'cat_id': cat_id,
-                    'table_name': tbl_name
+                    'name': catalog_item.display_name,
+                    'cat_class': catalog_item.cat_class,
+                    'cat_id': catalog_item.cat_id,
+                    'table_name': catalog_item.table_name
                 }
                 self.query_status.set_text(f"Selected table: {self.selected_catalog['name']}")
-            else:
-                self.selected_catalog = None
+                return
+        self.selected_catalog = None
+
+    def on_explorer_options(self, btn):
+        if self.local_toggle.get_active():
+            self.on_select_dir(btn)
         else:
-            self.selected_catalog = None
+            popover = Gtk.Popover()
+            popover.set_parent(btn)
+            
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+            box.set_margin_top(10)
+            box.set_margin_bottom(10)
+            box.set_margin_start(10)
+            box.set_margin_end(10)
+            
+            h_lbl = Gtk.Label(label="Host")
+            h_lbl.set_halign(Gtk.Align.START)
+            box.append(h_lbl)
+            
+            h_entry = Gtk.Entry()
+            h_entry.set_text(self.host_entry.get_text())
+            box.append(h_entry)
+            
+            p_lbl = Gtk.Label(label="Path")
+            p_lbl.set_halign(Gtk.Align.START)
+            box.append(p_lbl)
+            
+            p_entry = Gtk.Entry()
+            p_entry.set_text(self.remote_entry.get_text())
+            box.append(p_entry)
+            
+            self.connect_btn = Gtk.Button(label="Connect DB")
+            self.connect_btn.add_css_class("suggested-action")
+                
+            def on_apply(b):
+                self.host_entry.set_text(h_entry.get_text())
+                self.remote_entry.set_text(p_entry.get_text())
+                self.refresh_catalogs()
+                self.on_connect(b)
+                popover.unparent()
+            
+            self.connect_btn.connect("clicked", on_apply)
+            box.append(self.connect_btn)
+            
+            popover.set_child(box)
+            popover.popup()
 
     def on_catalog_toggle(self, btn):
         if btn.get_active():
             self.refresh_catalogs()
 
+    def update_catalog_title(self):
+        if hasattr(self, 'url_label'):
+            if self.local_toggle.get_active():
+                path = self.local_entry.get_text()
+                if not path:
+                    path = "Local Database"
+                self.url_label.set_markup(f"<span size='small' weight='bold'>{path}</span>")
+            else:
+                path = self.host_entry.get_text() + self.remote_entry.get_text()
+                self.url_label.set_markup(f"<span size='small' weight='bold'>{path}</span>")
+
     def refresh_catalogs(self):
-        self.catalog_store.clear()
+        self.update_catalog_title()
+        self.catalog_store.remove_all()
         if self.local_toggle.get_active():
             self.populate_local_catalogs()
         else:
@@ -328,22 +427,13 @@ class AstroDBWindow(Gtk.ApplicationWindow):
                         table_name = file[:-3]
                         display_name = f"{cat_class}/{cat_id} - {table_name}"
                         
-                        # Add item to store directly
-                        self.catalog_store.append(None, [
-                            display_name, cat_class, cat_id, table_name, False, "", True
-                        ])
+                        item = CatalogItem(display_name, cat_class, cat_id, table_name, False, "", True)
+                        self.catalog_store.append(item)
 
     def populate_remote_catalogs(self):
-        # We start by adding the root directory as the starting point.
         remote_path = self.remote_entry.get_text()
-        parent_iter = self.catalog_store.append(None, [
-            "CDS FTP Root", "", "", "", True, remote_path, False
-        ])
-        
-        # Add dummy item to make it expandable
-        self.catalog_store.append(parent_iter, [
-            "Loading...", "", "", "", False, "", True
-        ])
+        item = CatalogItem("CDS FTP Root", "", "", "", True, remote_path, False)
+        self.catalog_store.append(item)
 
     def setup_result_column(self, title, property_name, is_float=False):
         factory = Gtk.SignalListItemFactory()
@@ -381,6 +471,7 @@ class AstroDBWindow(Gtk.ApplicationWindow):
                 self.local_entry.set_text(folder.get_path())
                 if self.local_toggle.get_active():
                     self.refresh_catalogs()
+                self.on_connect(None)
         except GLib.Error as e:
             print(f"Error selecting folder: {e}")
 
@@ -390,17 +481,19 @@ class AstroDBWindow(Gtk.ApplicationWindow):
         local = self.local_entry.get_text()
 
         if not local:
-            self.status_label.set_text("Error: Local path required.")
+            self.status_icon.set_from_icon_name("dialog-error-symbolic")
+            self.status_icon.set_tooltip_text("Error: Local path required.")
             return
 
         try:
             self.lib = Library(host, remote, local)
             self.db = Database(self.lib, 9, 1)
-            self.status_label.set_text(f"Connected to libadb version: {self.lib.version}")
-            self.connect_btn.set_sensitive(False)
+            self.status_icon.set_from_icon_name("network-server-symbolic")
+            self.status_icon.set_tooltip_text(f"Connected to libadb version: {self.lib.version}")
             self.local_entry.set_sensitive(False)
         except Exception as e:
-            self.status_label.set_text(f"Connection failed: {e}")
+            self.status_icon.set_from_icon_name("dialog-error-symbolic")
+            self.status_icon.set_tooltip_text(f"Connection failed: {e}")
 
     def on_search(self, btn):
         self.list_store.remove_all()
