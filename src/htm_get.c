@@ -198,6 +198,90 @@ static struct htm_trixel *trixel_is_container(struct htm *htm,
 }
 
 /**
+ * \brief Validate and normalise an HTM vertex for trixel lookup.
+ *
+ * Normalises RA to [0, 2*pi), rejects NaN and out-of-range DEC,
+ * then converts to octahedron coordinates.
+ *
+ * \param htm Spatial indexing instance (used for debug logging).
+ * \param point Target RA/Dec vertex to validate and prepare.
+ * \return 0 on success, -1 on invalid input.
+ */
+static int htm_validate_point(struct htm *htm, struct htm_vertex *point)
+{
+	/* reject NaN coordinates immediately */
+	if (isnan(point->ra) || isnan(point->dec)) {
+		adb_htm_error(htm, "NaN coordinate RA %f DEC %f\n", point->ra,
+					  point->dec);
+		return -1;
+	}
+
+	/* normalize RA to [0, 2*pi) */
+	point->ra = fmod(point->ra, 2.0 * M_PI);
+	if (point->ra < 0.0)
+		point->ra += 2.0 * M_PI;
+
+	/* validate point (DEC must be in [-pi/2, pi/2]) */
+	if (point->ra < 0.0 || point->ra >= 2.0 * M_PI || point->dec < -M_PI_2 ||
+		point->dec > M_PI_2) {
+		adb_htm_debug(htm, ADB_LOG_HTM_GET, "Invalid point %f:%f\n",
+					  point->ra * R2D, point->dec * R2D);
+		return -1;
+	}
+
+	/* convert RA,DEC to octohedron coords */
+	htm_vertex_update_unit(point);
+
+	return 0;
+}
+
+/**
+ * \brief Search the HTM for all trixels containing a point at a given depth.
+ *
+ * Searches all 8 spherical root sectors, collecting every matching trixel
+ * into the results buffer. A point in the interior of a trixel returns 1
+ * result; a point on a boundary between trixels returns 2 or more.
+ *
+ * \param htm Spatial indexing instance.
+ * \param point Target RA/Dec vertex matching position.
+ * \param depth Target recursive block dimension limit to stop at.
+ * \param results Output buffer to receive matching trixel pointers.
+ * \param max_results Size of the results buffer.
+ * \return Number of matching trixels found (0 on invalid input).
+ */
+int htm_get_home_trixels(struct htm *htm, struct htm_vertex *point, int depth,
+						struct htm_trixel **results, int max_results)
+{
+	struct htm_trixel *t;
+	int i, count = 0;
+
+	if (htm_validate_point(htm, point) < 0)
+		return 0;
+
+	if (depth > htm->depth)
+		depth = htm->depth - 1;
+
+	/* northern hemisphere quad trixels */
+	for (i = 0; i < 4 && count < max_results; i++) {
+		t = trixel_is_container(htm, &htm->N[i], point, depth, 0);
+		if (t)
+			results[count++] = t;
+	}
+	/* southern hemisphere quad trixels */
+	for (i = 0; i < 4 && count < max_results; i++) {
+		t = trixel_is_container(htm, &htm->S[i], point, depth, 0);
+		if (t)
+			results[count++] = t;
+	}
+
+	if (count == 0)
+		adb_htm_error(htm, "No valid trixel for X %f Y %f Z %f\n", point->x,
+					  point->y, point->z);
+
+	return count;
+}
+
+/**
  * \brief Search the HTM down to depth for a point's bounding parent trixel.
  *
  * Initiates a top-level search over all 8 spherical root sectors to locate
@@ -211,45 +295,14 @@ static struct htm_trixel *trixel_is_container(struct htm *htm,
 struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 									   struct htm_vertex *point, int depth)
 {
-	struct htm_trixel *t = NULL;
-	int i;
+	struct htm_trixel *result;
+	int count;
 
-	/* normalize RA to [0, 2*pi) */
-	point->ra = fmod(point->ra, 2.0 * M_PI);
-	if (point->ra < 0.0)
-		point->ra += 2.0 * M_PI;
-
-	/* validate point (DEC must be in [-pi/2, pi/2]) */
-	if (point->ra < 0.0 || point->ra >= 2.0 * M_PI || point->dec < -M_PI_2 ||
-		point->dec > M_PI_2) {
-		adb_htm_debug(htm, ADB_LOG_HTM_GET, "Invalid point %f:%f\n",
-					  point->ra * R2D, point->dec * R2D);
+	count = htm_get_home_trixels(htm, point, depth, &result, 1);
+	if (count == 0)
 		return NULL;
-	}
 
-	/* convert RA,DEC to octohedron coords */
-	htm_vertex_update_unit(point);
-
-	if (depth > htm->depth)
-		depth = htm->depth - 1;
-
-	/* northern hemisphere quad trixels */
-	for (i = 0; i < 4; i++) {
-		t = trixel_is_container(htm, &htm->N[i], point, depth, 0);
-		if (t)
-			return t;
-	}
-	/* southern hemisphere quad trixels */
-	for (i = 0; i < 4; i++) {
-		t = trixel_is_container(htm, &htm->S[i], point, depth, 0);
-		if (t)
-			return t;
-	}
-
-	/* we should never get here as one trixel will contain point */
-	adb_htm_error(htm, "No valid trixel for X %f Y %f Z %f\n", point->x,
-				  point->y, point->z);
-	return NULL;
+	return result;
 }
 
 /**
@@ -364,21 +417,24 @@ int vertex_get_trixels_depth(struct htm *htm, struct htm_vertex *v,
  * \return Total collected neighboring elements.
  */
 static int trixel_get_neighbours(struct htm *htm, struct htm_trixel *t,
-								 int depth, struct adb_object_set *set)
+								 int depth, struct adb_object_set *set,
+								 int offset)
 {
 	int neighbours;
 
 	/* vertex A */
 	neighbours = vertex_get_trixels_depth(htm, t->a, t, set->trixels,
-										  htm->trixel_count, depth, 0);
+										  htm->trixel_count, depth, offset);
 
 	/* vertex B */
 	neighbours += vertex_get_trixels_depth(
-		htm, t->b, t, set->trixels, htm->trixel_count, depth, neighbours);
+		htm, t->b, t, set->trixels, htm->trixel_count, depth,
+		offset + neighbours);
 
 	/* vertex C */
 	neighbours += vertex_get_trixels_depth(
-		htm, t->c, t, set->trixels, htm->trixel_count, depth, neighbours);
+		htm, t->c, t, set->trixels, htm->trixel_count, depth,
+		offset + neighbours);
 
 	adb_htm_debug(htm, ADB_LOG_HTM_GET, "found %d neighbours at depth %d\n",
 				  neighbours, depth);
@@ -572,14 +628,27 @@ int htm_clip(struct htm *htm, struct adb_object_set *set, double ra, double dec,
 	adb_htm_debug(htm, ADB_LOG_HTM_GET, "centre RA %f DEC %f\n", ra * R2D,
 				  dec * R2D);
 
-	set->centre = htm_get_home_trixel(htm, &vertex, set->fov_depth);
-	if (set->centre == NULL) {
-		adb_htm_error(htm, " invalid trixel at %3.3f:%3.3f\n", vertex.ra * R2D,
-					  vertex.dec * R2D);
-		return -EINVAL;
+	{
+		struct htm_trixel *results[2];
+		int count;
+
+		count = htm_get_home_trixels(htm, &vertex, set->fov_depth, results, 2);
+		if (count == 0) {
+			adb_htm_error(htm, " invalid trixel at %3.3f:%3.3f\n",
+						  vertex.ra * R2D, vertex.dec * R2D);
+			return -EINVAL;
+		}
+
+		set->centre = results[0];
+		set->boundary_centre = (count > 1) ? results[1] : NULL;
+
+		adb_htm_debug(htm, ADB_LOG_HTM_GET, "origin trixel = ");
+		htm_dump_trixel(htm, set->centre);
+		if (set->boundary_centre) {
+			adb_htm_debug(htm, ADB_LOG_HTM_GET, "boundary trixel = ");
+			htm_dump_trixel(htm, set->boundary_centre);
+		}
 	}
-	adb_htm_debug(htm, ADB_LOG_HTM_GET, "origin trixel = ");
-	htm_dump_trixel(htm, set->centre);
 
 	return 0;
 }
@@ -619,9 +688,14 @@ int htm_get_trixels(struct htm *htm, struct adb_object_set *set)
 		adb_htm_debug(htm, ADB_LOG_HTM_GET, "fov < M_PI depth %d\n",
 					  set->fov_depth);
 
-		/* get neighbours for each trixel */
+		/* get neighbours for centre trixel */
 		neighbours =
-			trixel_get_neighbours(htm, set->centre, set->fov_depth, set);
+			trixel_get_neighbours(htm, set->centre, set->fov_depth, set, 0);
+
+		/* also get neighbours for boundary trixel if present */
+		if (set->boundary_centre)
+			neighbours += trixel_get_neighbours(
+				htm, set->boundary_centre, set->fov_depth, set, neighbours);
 
 		/* get parents for each trixel */
 		parents = trixel_get_parents(htm, set, htm->trixel_count - neighbours,

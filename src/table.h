@@ -62,7 +62,7 @@ struct adb_object_set {
 	struct adb_db *db;
 	struct adb_table *table;
 	struct adb_object_head *object_heads; /*!< clipped objects */
-	struct htm_trixel *centre, **trixels;
+	struct htm_trixel *centre, *boundary_centre, **trixels;
 
 	float fov; /*!< Clipping radius in degrees */
 	float centre_ra; /*!< Clipping centre RA (circular) */

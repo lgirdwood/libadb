@@ -202,6 +202,91 @@ static void test_htm_all_quadrants(void)
 	printf(" -> PASS\n");
 }
 
+static void test_htm_nan_rejection(void)
+{
+	printf("Running HTM NaN Rejection Test...\n");
+	struct htm *htm = htm_new(7, 1);
+	assert(htm != NULL);
+
+	struct htm_vertex v;
+	struct htm_trixel *t;
+	struct htm_trixel *results[2];
+	int count;
+
+	/* NaN RA */
+	v.ra = NAN;
+	v.dec = 45.0 * D2R;
+	t = htm_get_home_trixel(htm, &v, 5);
+	assert(t == NULL);
+	(void)t;
+	printf("   NaN RA correctly rejected\n");
+
+	/* NaN DEC */
+	v.ra = 45.0 * D2R;
+	v.dec = NAN;
+	t = htm_get_home_trixel(htm, &v, 5);
+	assert(t == NULL);
+	(void)t;
+	printf("   NaN DEC correctly rejected\n");
+
+	/* Both NaN */
+	v.ra = NAN;
+	v.dec = NAN;
+	count = htm_get_home_trixels(htm, &v, 5, results, 2);
+	assert(count == 0);
+	(void)count;
+	printf("   Both NaN correctly rejected (multi)\n");
+
+	htm_free(htm);
+	printf(" -> PASS\n");
+}
+
+static void test_htm_boundary_trixels(void)
+{
+	printf("Running HTM Boundary Trixels Test...\n");
+	struct htm *htm = htm_new(7, 1);
+	assert(htm != NULL);
+
+	struct htm_trixel *results[8];
+	struct htm_vertex v;
+	int count;
+
+	/* A point on the equator (DEC=0) sits on the N/S boundary.
+	 * Due to the INSIDE_UP_LIMIT tolerance, it should be accepted
+	 * by both the northern and southern root trixels. */
+	v.ra = 45.0 * D2R;
+	v.dec = 0.0;
+	count = htm_get_home_trixels(htm, &v, 0, results, 8);
+	printf("   DEC=0 boundary: found %d trixels\n", count);
+	assert(count >= 2);
+
+	/* Verify we got trixels from both hemispheres */
+	int has_north = 0, has_south = 0;
+	int i;
+	for (i = 0; i < count; i++) {
+		printf("     trixel %d: hemi=%s quad=%d\n", i,
+			   results[i]->hemisphere ? "S" : "N", results[i]->quadrant);
+		if (results[i]->hemisphere == 0)
+			has_north = 1;
+		else
+			has_south = 1;
+	}
+	assert(has_north && has_south);
+	(void)has_north;
+	(void)has_south;
+	printf("   Both hemispheres represented\n");
+
+	/* Interior point should return exactly 1 */
+	v.ra = 45.0 * D2R;
+	v.dec = 45.0 * D2R;
+	count = htm_get_home_trixels(htm, &v, 0, results, 8);
+	printf("   Interior point: found %d trixel(s)\n", count);
+	assert(count == 1);
+
+	htm_free(htm);
+	printf(" -> PASS\n");
+}
+
 int main(void)
 {
 	printf("Starting HTM Unit Tests...\n");
@@ -211,6 +296,8 @@ int main(void)
 	test_htm_clip_region();
 	test_htm_invalid_trixel();
 	test_htm_all_quadrants();
+	test_htm_nan_rejection();
+	test_htm_boundary_trixels();
 	printf("All HTM Unit Tests Passed Successfully!\n");
 	return 0;
 }

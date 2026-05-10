@@ -275,6 +275,23 @@ struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 									   struct htm_vertex *point, int depth);
 
 /**
+ * \brief Retrieve all trixels encapsulating a specific spatial point
+ * \ingroup htm
+ *
+ * Returns all matching trixels for a point. A point in the interior of a
+ * trixel returns 1 result; a point on a boundary returns 2 or more.
+ *
+ * \param htm HTM context
+ * \param point HTM vertex representing RA/DEC
+ * \param depth Target search bounding depth
+ * \param results Output buffer to receive matching trixel pointers
+ * \param max_results Size of the results buffer
+ * \return Number of matching trixels found (0 on invalid input)
+ */
+int htm_get_home_trixels(struct htm *htm, struct htm_vertex *point, int depth,
+						 struct htm_trixel **results, int max_results);
+
+/**
  * \brief Retrieve depth for specific value matching
  * \ingroup htm
  * \param htm HTM context
