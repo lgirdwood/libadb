@@ -214,7 +214,12 @@ struct htm_trixel *htm_get_home_trixel(struct htm *htm,
 	struct htm_trixel *t = NULL;
 	int i;
 
-	/* validate point */
+	/* normalize RA to [0, 2*pi) */
+	point->ra = fmod(point->ra, 2.0 * M_PI);
+	if (point->ra < 0.0)
+		point->ra += 2.0 * M_PI;
+
+	/* validate point (DEC must be in [-pi/2, pi/2]) */
 	if (point->ra < 0.0 || point->ra >= 2.0 * M_PI || point->dec < -M_PI_2 ||
 		point->dec > M_PI_2) {
 		adb_htm_debug(htm, ADB_LOG_HTM_GET, "Invalid point %f:%f\n",
@@ -538,6 +543,7 @@ int htm_clip(struct htm *htm, struct adb_object_set *set, double ra, double dec,
 	struct adb_table *table = set->table;
 
 	bzero(set->trixels, set->valid_trixels * sizeof(struct htm_trixel *));
+	set->valid_trixels = 0;
 
 	set->min_depth = table_get_object_depth_min(table, min_depth);
 	set->max_depth = table_get_object_depth_max(table, max_depth);
@@ -575,7 +581,6 @@ int htm_clip(struct htm *htm, struct adb_object_set *set, double ra, double dec,
 	adb_htm_debug(htm, ADB_LOG_HTM_GET, "origin trixel = ");
 	htm_dump_trixel(htm, set->centre);
 
-	set->valid_trixels = 0;
 	return 0;
 }
 
