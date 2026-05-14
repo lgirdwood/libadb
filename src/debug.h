@@ -49,24 +49,14 @@ static inline void adberr_(struct adb_db *db, const char *level,
 						   const char *fmt, ...)
 {
 	(void)db;
-	int j, nptrs;
 	va_list va;
-	void *buffer[DEBUG_BUFFER];
-	char **str;
 
 	va_start(va, fmt);
 	fprintf(stderr, "%s:%s:%s:%d:  ", level, file, func, line);
 	vfprintf(stderr, fmt, va);
 	va_end(va);
-
-	nptrs = backtrace(buffer, DEBUG_BUFFER);
-	str = backtrace_symbols(buffer, nptrs);
-
-	for (j = 0; j < nptrs; j++)
-		fprintf(stderr, "  %s\n", str[j]);
-
+	fprintf(stderr, "\n");
 	fflush(stderr);
-	free(str);
 }
 
 #define adb_error(db, format, arg...) \
@@ -103,23 +93,13 @@ static inline void htmerr_(struct htm *htm, const char *level, const char *file,
 						   const char *func, int line, const char *fmt, ...)
 {
 	(void)htm;
-	int j, nptrs;
 	va_list va;
-	void *buffer[DEBUG_BUFFER];
-	char **str;
 
 	va_start(va, fmt);
 	fprintf(stderr, "%s:%s:%s:%d:  ", level, file, func, line);
 	vfprintf(stderr, fmt, va);
 	va_end(va);
-
-	nptrs = backtrace(buffer, DEBUG_BUFFER);
-	str = backtrace_symbols(buffer, nptrs);
-
-	for (j = 0; j < nptrs; j++)
-		fprintf(stderr, "  %s\n", str[j]);
-
-	free(str);
+	fprintf(stderr, "\n");
 }
 
 #define adb_htm_error(htm, format, arg...) \
@@ -158,23 +138,13 @@ static inline void adberrl_(struct adb_library *lib, const char *level,
 							const char *fmt, ...)
 {
 	(void)lib;
-	int j, nptrs;
 	va_list va;
-	void *buffer[DEBUG_BUFFER];
-	char **str;
 
 	va_start(va, fmt);
 	fprintf(stderr, "%s:%s:%s:%d:  ", level, file, func, line);
 	vfprintf(stderr, fmt, va);
 	va_end(va);
-
-	nptrs = backtrace(buffer, DEBUG_BUFFER);
-	str = backtrace_symbols(buffer, nptrs);
-
-	for (j = 0; j < nptrs; j++)
-		fprintf(stderr, "  %s\n", str[j]);
-
-	free(str);
+	fprintf(stderr, "\n");
 }
 
 #define astrolib_error(lib, format, arg...) \

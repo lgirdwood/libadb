@@ -1170,7 +1170,9 @@ int adb_table_import_new(struct adb_db *db, const char *cat_class,
 		return -EINVAL;
 
 	table = &db->table[table_id];
+	memset(table, 0, sizeof(*table));
 	table->db = db;
+	table->id = table_id;
 	table->object.otype = otype;
 
 	adb_info(db, ADB_LOG_CDS_TABLE,
@@ -1370,10 +1372,10 @@ i < adb_size(file_extensions); i++)
 		goto schema;
 }
 
-free(table->path.file);
-adb_error(db, "Error failed to import CDS table %s %d\n", table->path.file,
-		  ret);
-return ret;
+	adb_error(db, "Error failed to import CDS table %s %d\n", table->path.file,
+			  ret);
+	free(table->path.file);
+	return ret;
 
 schema:
 	ret = schema_write(db, table);

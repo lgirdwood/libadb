@@ -188,9 +188,9 @@ static int get_files(struct adb_db *db, struct readme *readme, FILE *fp)
 		if (*line == ' ')
 			continue;
 
-		n = sscanf(line, "%s %d %d %80c", file_info->name, &file_info->length,
+		n = sscanf(line, "%s %d %d %80[^\n\r]", file_info->name, &file_info->length,
 				   &file_info->records, file_info->title);
-		if (n != 4)
+		if (n < 3)
 			continue;
 
 		files++;
