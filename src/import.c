@@ -426,6 +426,8 @@ static void get_import_buffer_size(struct adb_db *db, struct adb_table *table)
 		if (table->import.field[i].text_size > table->import.text_buffer_bytes)
 			table->import.text_buffer_bytes = table->import.field[i].text_size;
 	}
+	table->import.text_buffer_bytes++; /* guarantee room for null terminator */
+
 	adb_info(db, ADB_LOG_CDS_IMPORT, "Using import buffer size %d\n",
 			 table->import.text_buffer_bytes);
 }
@@ -995,7 +997,7 @@ int table_import(struct adb_db *db, int table_id, char *file)
 	/* open data file */
 	f = fopen(file_path, "r");
 	if (f == NULL) {
-		adb_error(db, "Error failed to open file %s\n", file_path);
+		adb_debug(db, ADB_LOG_CDS_IMPORT, "failed to open file %s\n", file_path);
 		return -EIO;
 	}
 
