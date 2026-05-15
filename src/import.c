@@ -1377,6 +1377,7 @@ i < adb_size(file_extensions); i++)
 	adb_error(db, "Error failed to import CDS table %s %d\n", table->path.file,
 			  ret);
 	free(table->path.file);
+	table->path.file = NULL;
 	return ret;
 
 schema:

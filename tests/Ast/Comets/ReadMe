@@ -1,0 +1,27 @@
+Comet Computed Data
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName      Lrecl  Records   Explanations
+--------------------------------------------------------------------------------
+ReadMe            80        .   This file
+comets_computed.dat 136  823   Computed Comet Orbit data                                                       
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: comets_computed.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units   Label     Explanations
+--------------------------------------------------------------------------------
+   1-  16 A16   ---     ID        Comet designation
+  18-  27 F10.5 deg     RA        Right Ascension
+  29-  38 F10.5 deg     DEC       Declination
+  40-  44 F5.2  mag     MAG       Visual Magnitude
+  46-  57 F12.8 AU      Q         Perihelion distance
+  59-  68 F10.8 ---     E         Eccentricity
+  70-  81 F12.8 deg     I         Inclination
+  83-  94 F12.8 deg     W         Argument of perihelion
+  96- 107 F12.8 deg     OMEGA     Longitude of ascending node
+ 109- 123 F15.5 d       JD        Time of Perihelion
+ 125- 129 F5.2  mag     H         Absolute Magnitude
+ 131- 135 F5.2  ---     G         Slope Parameter
+--------------------------------------------------------------------------------

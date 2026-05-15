@@ -1,0 +1,26 @@
+Asteroid Computed Data
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName      Lrecl  Records   Explanations
+--------------------------------------------------------------------------------
+ReadMe            80        .   This file
+asteroids_computed.dat 136  23754   Computed Asteroid Orbit data                                                    
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: asteroids_computed.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units   Label     Explanations
+--------------------------------------------------------------------------------
+   1-  16 A16   ---     ID        Asteroid designation
+  18-  27 F10.5 deg     RA        Right Ascension
+  29-  38 F10.5 deg     DEC       Declination
+  40-  44 F5.2  mag     MAG       Visual Magnitude
+  46-  57 F12.8 AU      A         Semi-major axis
+  59-  68 F10.8 ---     E         Eccentricity
+  70-  81 F12.8 deg     I         Inclination
+  83-  94 F12.8 deg     W         Argument of perihelion
+  96- 107 F12.8 deg     OMEGA     Longitude of ascending node
+ 109- 120 F12.8 deg/d   N         Mean motion
+ 122- 136 F15.5 d       JD        Epoch
+--------------------------------------------------------------------------------
