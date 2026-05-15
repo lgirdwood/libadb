@@ -32,6 +32,7 @@
 #include "private.h"
 #include "readme.h"
 #include "table.h"
+#include "lib.h"
 #include "libastrodb/db.h"
 #include "libastrodb/object.h"
 
@@ -227,16 +228,48 @@ err:
  * \param table_id Table ID to close
  * \return 0 on success, or a negative error code if the ID is invalid
  */
+/**
+ * \brief Recursively clear trixel data for a specific table.
+ *
+ * When a table is closed, the HTM trixels still hold pointers to the
+ * table's object memory.  These must be zeroed so that a future import
+ * or open that reuses the same table slot does not follow stale pointers.
+ */
+static void clear_trixel_data(struct htm_trixel *t, int table_id)
+{
+	if (!t)
+		return;
+	t->data[table_id].objects = NULL;
+	t->data[table_id].num_objects = 0;
+	if (t->child) {
+		clear_trixel_data(&t->child[0], table_id);
+		clear_trixel_data(&t->child[1], table_id);
+		clear_trixel_data(&t->child[2], table_id);
+		clear_trixel_data(&t->child[3], table_id);
+	}
+}
+
 int adb_table_close(struct adb_db *db, int table_id)
 {
 	struct adb_table *table;
+	int i;
 
 	if (table_id < 0 || table_id >= ADB_MAX_TABLES)
 		return -EINVAL;
 	table = &db->table[table_id];
 
 	adb_info(db, ADB_LOG_CDS_TABLE, "Closing table %d %s\n", table_id,
-			 table->path.file);
+			 table->path.file ? table->path.file : "(null)");
+
+	/* Clear stale object pointers from all HTM trixels for this table.
+	 * Without this, a later import reusing the same table_id would
+	 * traverse freed memory in htm_import_object_ascending(). */
+	if (db->htm) {
+		for (i = 0; i < 4; i++) {
+			clear_trixel_data(&db->htm->N[i], table_id);
+			clear_trixel_data(&db->htm->S[i], table_id);
+		}
+	}
 
 	hash_free_maps(table);
 	free(table->objects);
