@@ -5,7 +5,7 @@ File Summary:
  FileName      Lrecl  Records   Explanations
 --------------------------------------------------------------------------------
 ReadMe            80        .   This file
-comets_computed.dat 136  823   Computed Comet Orbit data                                                       
+comets_computed.dat 136  1946   Computed Comet Orbit data                                                       
 --------------------------------------------------------------------------------
 
 Byte-by-byte Description of file: comets_computed.dat
